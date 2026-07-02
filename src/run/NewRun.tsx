@@ -7,9 +7,20 @@ import {
   opponentLevelBonus,
 } from '../game/ascension'
 import { ClubBadge } from '../ui/ClubBadge'
-import { BallIcon, LockIcon, PlayIcon } from '../ui/icons'
+import { BallIcon, FlameIcon, LockIcon, PlayIcon } from '../ui/icons'
+import { TrophyIcon } from './MapIcons'
 
 const VERSION = 'v0.1.0'
+
+/** Posições/atrasos das poeiras douradas do fundo da tela de seleção — fixos para não
+ *  recalcular a cada render (nada de Math.random aqui). */
+const SELECT_DUST = Array.from({ length: 16 }, (_, i) => i)
+
+/** Lore curto da seleção escolhida — só o Brasil por enquanto. */
+const TEAM_LORE: Record<string, string> = {
+  [BRAZIL_ID]:
+    'A pentacampeã. Joga o futebol de encher os olhos — favorita em qualquer chave, mas o peso do hexa não perdoa deslizes.',
+}
 
 /** Resumo dos apertos do nível escolhido, exibido sob o seletor de ascension. */
 /**
@@ -54,12 +65,35 @@ export default function NewRun({
   return (
     <div className="cm-newgame rq-title">
       <img
-        className="rq-title-bg"
-        src={screen === 'menu' ? '/assets/surviveTheCup.png' : '/assets/surviveTheCup_background.png'}
+        className={`rq-title-bg ${screen === 'setup' ? 'rq-title-bg-select' : ''}`}
+        src={
+          screen === 'menu'
+            ? '/assets/surviveTheCup.png'
+            : screen === 'setup'
+              ? '/assets/surviveTheCupSplash2.png'
+              : '/assets/surviveTheCup_background.png'
+        }
         alt=""
         aria-hidden
       />
       <div className="rq-title-veil" aria-hidden />
+      {screen === 'setup' && (
+        <div className="rq-select-fx" aria-hidden>
+          <span className="rq-select-ray rq-select-ray-a" />
+          <span className="rq-select-ray rq-select-ray-b" />
+          {SELECT_DUST.map((i) => (
+            <span
+              key={i}
+              className="rq-select-mote"
+              style={{
+                left: `${(i * 6.7) % 100}%`,
+                animationDelay: `${(i * 0.9) % 12}s`,
+                animationDuration: `${9 + (i % 5)}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       <header className="rq-title-top">
         <div className="rq-profile">
@@ -94,19 +128,10 @@ export default function NewRun({
       )}
 
       {screen === 'setup' && (
-        <div className="rq-event">
+        <div className="rq-select">
           <button className="rq-back" onClick={() => setScreen('menu')}>
             ← Voltar
           </button>
-          <div className="cm-brand rq-event-brand">
-            <span className="cm-brand-ball">
-              <BallIcon size={46} />
-            </span>
-            <div className="cm-brand-lockup">
-              <span className="cm-brand-kicker">Nova jornada</span>
-              <h2 className="cm-title">Monte sua campanha</h2>
-            </div>
-          </div>
 
           {hasSave && (
             <button className="cm-btn cm-btn-primary cm-btn-block cm-btn-lg" onClick={onContinue}>
@@ -114,56 +139,80 @@ export default function NewRun({
             </button>
           )}
 
-          <section className="rq-event-strip">
-            <h3 className="rq-event-label">Sua seleção</h3>
-            <div className="rq-flag-row">
-              {teams.map((c) => {
-                const locked = c.id !== BRAZIL_ID
-                return (
+          <div className="rq-select-hero">
+            <span className="rq-select-badge">
+              <span className="rq-select-badge-ring" aria-hidden />
+              <ClubBadge club={chosen} size={104} />
+            </span>
+            <div className="rq-select-info">
+              <span className="cm-brand-kicker">Sua seleção</span>
+              <h1 className="rq-select-name">{chosen.name}</h1>
+              <p className="rq-select-desc">{TEAM_LORE[chosen.id]}</p>
+              <div className="rq-select-stats">
+                <span className="rq-select-stat">
+                  <TrophyIcon size={18} /> Força {chosen.strength}
+                </span>
+                {ascension > 0 && (
+                  <span className="rq-asc-chip">
+                    <FlameIcon size={13} /> Ascension {ascension}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="rq-select-bottom">
+            <section className="rq-event-strip">
+              <h3 className="rq-event-label">Ascension (dificuldade)</h3>
+              <div className="rq-asc-row" role="radiogroup" aria-label="Nível de ascension">
+                {Array.from({ length: ASCENSION_MAX + 1 }, (_, a) => (
                   <button
-                    key={c.id}
-                    className={`rq-flag ${clubId === c.id ? 'active' : ''} ${locked ? 'rq-flag-locked' : ''}`}
-                    disabled={locked}
-                    title={locked ? `${c.name} — em breve` : c.name}
+                    key={a}
+                    role="radio"
+                    aria-checked={ascension === a}
+                    className={`rq-asc-btn ${ascension === a ? 'active' : ''}`}
+                    style={{ ['--asc-heat' as string]: ascensionHeat(a) }}
+                    onClick={() => setAscension(a)}
                   >
-                    <span className="rq-flag-badge">
-                      <ClubBadge club={c} size={44} />
-                      {locked && (
-                        <span className="rq-flag-lock" aria-hidden>
-                          <LockIcon size={12} />
-                        </span>
-                      )}
-                    </span>
-                    <span className="rq-flag-name">{c.name}</span>
+                    {a}
                   </button>
-                )
-              })}
-            </div>
-          </section>
+                ))}
+              </div>
+              <p className="rq-asc-desc">{ascensionSummary(ascension)}</p>
+            </section>
 
-          <section className="rq-event-strip">
-            <h3 className="rq-event-label">Ascension (dificuldade)</h3>
-            <div className="rq-asc-row" role="radiogroup" aria-label="Nível de ascension">
-              {Array.from({ length: ASCENSION_MAX + 1 }, (_, a) => (
-                <button
-                  key={a}
-                  role="radio"
-                  aria-checked={ascension === a}
-                  className={`rq-asc-btn ${ascension === a ? 'active' : ''}`}
-                  style={{ ['--asc-heat' as string]: ascensionHeat(a) }}
-                  onClick={() => setAscension(a)}
-                >
-                  {a}
-                </button>
-              ))}
-            </div>
-            <p className="rq-asc-desc">{ascensionSummary(ascension)}</p>
-          </section>
+            <section className="rq-event-strip">
+              <h3 className="rq-event-label">Escolha sua seleção</h3>
+              <div className="rq-flag-row">
+                {teams.map((c) => {
+                  const locked = c.id !== BRAZIL_ID
+                  return (
+                    <button
+                      key={c.id}
+                      className={`rq-flag ${clubId === c.id ? 'active' : ''} ${locked ? 'rq-flag-locked' : ''}`}
+                      disabled={locked}
+                      title={locked ? `${c.name} — em breve` : c.name}
+                    >
+                      <span className="rq-flag-badge">
+                        <ClubBadge club={c} size={44} />
+                        {locked && (
+                          <span className="rq-flag-lock" aria-hidden>
+                            <LockIcon size={12} />
+                          </span>
+                        )}
+                      </span>
+                      <span className="rq-flag-name">{c.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
 
-          <button className="rq-event-go" onClick={start}>
-            Começar a jornada — {chosen.name}
-            {ascension > 0 ? ` · A${ascension}` : ''} →
-          </button>
+            <button className="rq-event-go" onClick={start}>
+              Começar a jornada — {chosen.name}
+              {ascension > 0 ? ` · A${ascension}` : ''} →
+            </button>
+          </div>
         </div>
       )}
 

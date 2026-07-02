@@ -28,7 +28,10 @@ export default function RunShell({ api }: { api: RunApi }) {
   const club = ALL_CLUBS[state.clubId]
 
   return (
-    <div className="cm-shell">
+    <div className="cm-shell rq-run-shell">
+      {(tab === 'squad' || tab === 'tactics') && (
+        <div key={tab} className={`rq-shell-bg rq-scene-${tab}`} aria-hidden />
+      )}
       <header className="cm-header">
         <div className="cm-header-club">
           {club && <ClubBadge club={club} size={32} />}

@@ -37,7 +37,7 @@ export default function MarketNodeView({ state, act }: { state: RunState; act: R
   const locked = state.squad.length <= SQUAD_MIN
 
   return (
-    <div className="cm-backdrop">
+    <div className="cm-backdrop rq-scene rq-scene-market">
       <div className="cm-modal rq-market">
         <header className="rq-market-head">
           <span className="rq-market-ico">

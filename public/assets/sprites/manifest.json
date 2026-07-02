@@ -1,0 +1,19 @@
+{
+  "bodyPoolSize": 6,
+  "grid": {
+    "cols": 3,
+    "rows": 3
+  },
+  "runFrames": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "idleFrame": 8,
+  "kitKeyColor": "#39FF14"
+}

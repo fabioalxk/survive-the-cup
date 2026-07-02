@@ -11,6 +11,7 @@ import { divisionName } from './format'
 import Standings from './Standings'
 import SquadView from './SquadView'
 import { ClubBadge } from '../ui/ClubBadge'
+import { ArtIcon } from '../ui/ArtIcon'
 import MarketView from './MarketView'
 import MatchView from './MatchView'
 import { OffersModal, SeasonEndModal, WonModal } from './Modals'
@@ -19,10 +20,10 @@ import type { CareerApi } from './useCareer'
 type Tab = 'home' | 'squad' | 'market' | 'table'
 
 const TABS: [Tab, string, string][] = [
-  ['home', '🏠', 'Início'],
-  ['squad', '👕', 'Meu Time'],
-  ['market', '🛒', 'Contratar'],
-  ['table', '📊', 'Tabela'],
+  ['home', 'home', 'Início'],
+  ['squad', 'jersey', 'Meu Time'],
+  ['market', 'cart', 'Contratar'],
+  ['table', 'chart', 'Tabela'],
 ]
 
 export default function GameShell({ api }: { api: CareerApi }) {
@@ -48,7 +49,9 @@ export default function GameShell({ api }: { api: CareerApi }) {
             className={`cm-nav-btn ${tab === id ? 'active' : ''}`}
             onClick={() => setTab(id)}
           >
-            <span className="cm-nav-ico">{icon}</span>
+            <span className="cm-nav-ico">
+              <ArtIcon name={icon} />
+            </span>
             <span>{label}</span>
           </button>
         ))}
@@ -96,7 +99,9 @@ function Header({ state, onReset }: { state: CareerState; onReset: () => void })
         </div>
       </div>
       <div className="cm-header-stats">
-        <span title="Dinheiro disponível">💰 {fmtMoney(state.money)}</span>
+        <span title="Dinheiro disponível">
+          <ArtIcon name="coin" /> {fmtMoney(state.money)}
+        </span>
         <button className="cm-btn cm-btn-ghost cm-btn-sm" onClick={onReset} title="Começar de novo">
           ⟳
         </button>
@@ -109,7 +114,9 @@ function TransferBanner({ act }: { act: CareerApi['act'] }) {
   return (
     <div className="cm-transfer-banner">
       <div>
-        <strong>🛒 Hora de contratar!</strong>
+        <strong>
+          <ArtIcon name="cart" /> Hora de contratar!
+        </strong>
         <span>Reforce o time antes da próxima temporada. Veja a aba “Contratar”.</span>
       </div>
       <button
@@ -143,7 +150,11 @@ function Dashboard({
   const myPos = positionOf(standings, state.clubId)
   const totalRounds = state.league.totalRounds
   const round = Math.min(state.league.round, totalRounds)
-  const venue = myHome ? '🏠 Em casa' : '✈️ Fora de casa'
+  const venue = (
+    <>
+      <ArtIcon name={myHome ? 'home' : 'plane'} /> {myHome ? 'Em casa' : 'Fora de casa'}
+    </>
+  )
 
   if (!fixture || !home || !away) {
     return (
@@ -189,7 +200,9 @@ function Dashboard({
 
       {state.log.length > 0 && (
         <div className="cm-card cm-log">
-          <h3>📰 Notícias</h3>
+          <h3>
+            <ArtIcon name="news" /> Notícias
+          </h3>
           <ul>
             {state.log.slice(0, 4).map((line, i) => (
               <li key={i}>{line}</li>

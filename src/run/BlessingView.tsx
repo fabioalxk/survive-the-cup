@@ -2,6 +2,7 @@ import type { RunState } from '../game/runTypes'
 import { BLESSING_INFO, pickBlessing } from '../game/run'
 import { ALL_CLUBS } from '../game/worldcup'
 import { ClubBadge } from '../ui/ClubBadge'
+import { ArtIcon } from '../ui/ArtIcon'
 import type { RunApi } from './useRun'
 
 /** Realça números e palavras gritadas da descrição (estilo Slay the Spire). */
@@ -21,7 +22,7 @@ export default function BlessingView({ state, act }: { state: RunState; act: Run
   if (!state.pendingBlessings) return null
   const club = ALL_CLUBS[state.clubId]
   return (
-    <div className="cm-backdrop rq-bless-backdrop">
+    <div className="cm-backdrop rq-scene rq-scene-blessing">
       <div className="rq-bless">
         <div className="rq-bless-bubble">
           {club && <ClubBadge club={club} size={42} />}
@@ -38,7 +39,9 @@ export default function BlessingView({ state, act }: { state: RunState; act: Run
                 className={`rq-bless-card rq-bless-${info.tone}`}
                 onClick={() => act((s) => pickBlessing(s, i))}
               >
-                <span className="rq-bless-ico">{info.emoji}</span>
+                <span className="rq-bless-ico">
+                  <ArtIcon name={`bless_${kind}`} />
+                </span>
                 <strong className="rq-bless-name">{info.label}</strong>
                 <span className="rq-bless-desc">{emphasize(info.desc)}</span>
                 <span className="rq-bless-take">Escolher</span>

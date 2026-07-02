@@ -91,7 +91,7 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
   const summary = done ? (results[results.length - 1] ?? null) : preview
 
   return (
-    <div className="cm-backdrop">
+    <div className="cm-backdrop rq-scene rq-scene-gym">
       <div className="cm-modal rq-gym">
         <header className="rq-gym-head">
           <span className="rq-gym-ico" aria-hidden>

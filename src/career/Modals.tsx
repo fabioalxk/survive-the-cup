@@ -4,13 +4,18 @@ import { divisionName } from './format'
 import type { CareerApi } from './useCareer'
 import { ALL_CLUBS } from '../game/clubs'
 import { ClubBadge } from '../ui/ClubBadge'
+import { ArtIcon } from '../ui/ArtIcon'
 
 /** Resumo exibido ao fim de cada temporada (acesso, queda, título). */
 export function SeasonEndModal({ state, act }: { state: CareerState; act: CareerApi['act'] }) {
   const h = state.lastSeason
   if (!h) return null
   const headline = h.champion
-    ? `🏆 Campeão da ${divisionName(h.division)}!`
+    ? (
+        <>
+          <ArtIcon name="trophy" /> Campeão da {divisionName(h.division)}!
+        </>
+      )
     : h.promoted
       ? `⬆️ Acesso conquistado!`
       : h.relegated
@@ -48,7 +53,9 @@ export function OffersModal({
   return (
     <Backdrop>
       <div className="cm-modal">
-        <h2>📞 Propostas de emprego</h2>
+        <h2>
+          <ArtIcon name="phone" /> Propostas de emprego
+        </h2>
         <p className="cm-modal-sub">
           Seu trabalho chamou atenção. Aceitar significa assumir o novo clube na próxima
           temporada.
@@ -85,7 +92,9 @@ export function WonModal({ state, onNewGame }: { state: CareerState; onNewGame: 
   return (
     <Backdrop>
       <div className="cm-modal cm-modal-won">
-        <div className="cm-won-trophy">🏆</div>
+        <div className="cm-won-trophy">
+          <ArtIcon name="trophy" />
+        </div>
         <h2>VOCÊ É CAMPEÃO BRASILEIRO!</h2>
         <p className="cm-modal-sub">
           {state.managerName} levou o {state.clubs[state.clubId].name} ao título da Série A.

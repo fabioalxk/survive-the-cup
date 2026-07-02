@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Banner, TeamId } from '../sim/types'
 import { BANNER } from '../sim/constants'
+import { ArtIcon } from './ArtIcon'
 import './EventBanner.css'
 
 /** Aparência do time no lance (cor da barra e, se houver, bandeira/escudo). */
@@ -16,23 +17,23 @@ export interface BannerTeamStyle {
  */
 const PHASE_TYPES: ReadonlySet<Banner['type']> = new Set(['half', 'kickoff', 'fulltime'])
 
-/** Ícone (emoji) da faixa conforme o lance — reforça visualmente o evento. */
+/** Ícone (arte gerada) da faixa conforme o lance — reforça visualmente o evento. */
 const bannerIcon = (b: Banner): string => {
-  if (b.title === 'VERMELHO') return '🟥'
-  if (b.title === 'AMARELO') return '🟨'
+  if (b.title === 'VERMELHO') return 'card_red'
+  if (b.title === 'AMARELO') return 'card_yellow'
   switch (b.type) {
     case 'penalty':
-      return '🎯'
+      return 'target'
     case 'corner':
-      return '🚩'
+      return 'corner_flag'
     case 'half':
-      return '⏱️'
+      return 'stopwatch'
     case 'kickoff':
-      return '⚽'
+      return 'ball'
     case 'fulltime':
-      return '🏁'
+      return 'finish_flag'
     default:
-      return '🟢' // falta / vantagem / impedimento: apito do árbitro
+      return 'whistle' // falta / vantagem / impedimento: apito do árbitro
   }
 }
 
@@ -78,7 +79,9 @@ export function EventBanner({
       className={`event-banner ${phase ? 'event-banner--center' : ''} ev-${shown.type} ti-${tone}`}
       style={info ? ({ '--accent': info.shirt } as React.CSSProperties) : undefined}
     >
-      <span className="eb-icon">{bannerIcon(shown)}</span>
+      <span className="eb-icon">
+        <ArtIcon name={bannerIcon(shown)} />
+      </span>
       <span className="eb-body">
         <span className="eb-title">
           {info?.flag && <img className="eb-flag" src={info.flag} alt="" />}

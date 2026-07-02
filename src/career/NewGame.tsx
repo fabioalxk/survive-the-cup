@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CLUBS_BY_DIVISION } from '../game/clubs'
 import { ClubBadge } from '../ui/ClubBadge'
+import { ArtIcon } from '../ui/ArtIcon'
 
 /** Quatro clubes iniciais (Série D) — variados em cor, para escolha rápida. */
 const STARTER_IDS = ['abc', 'america-rn', 'aparecidense', 'campinense']
@@ -26,7 +27,9 @@ export default function NewGame({
     <div className="cm-newgame">
       <div className="cm-newgame-card">
         <div className="cm-brand">
-          <span className="cm-brand-ball">⚽</span>
+          <span className="cm-brand-ball">
+            <ArtIcon name="ball" size={48} />
+          </span>
           <h1 className="cm-title">Brasileirão Manager</h1>
         </div>
         <p className="cm-subtitle">
