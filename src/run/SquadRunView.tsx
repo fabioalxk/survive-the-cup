@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RunState } from '../game/runTypes'
 import { optimizeStartingXI, swapStarter } from '../game/run'
-import { RoleTag, attrColor } from '../ui/attrDisplay'
+import { RoleTag, attrColor, byRole } from '../ui/attrDisplay'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
 import { PlayerDetailPop } from '../ui/PlayerDetail'
 import { BenchIcon, SwapIcon } from '../ui/icons'
 import type { GenPlayer } from '../game/types'
 import type { RunApi } from './useRun'
-
-const ROLE_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 }
-const byRole = (a: GenPlayer, b: GenPlayer) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || b.overall - a.overall
 
 type Side = 'starter' | 'bench'
 
@@ -63,7 +60,7 @@ export default function SquadRunView({ state, act }: { state: RunState; act: Run
         : `✓ ${benchP.name} entra no lugar de ${starterP.name}`,
       losesOnlyGk,
     )
-    setSelId(benchP.id)
+    setSelId(null)
   }
 
   const card = (p: GenPlayer, side: Side) => {

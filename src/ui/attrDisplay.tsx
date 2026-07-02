@@ -149,6 +149,17 @@ export const ROLE_LABEL: Record<Role, string> = {
   FWD: 'Ataque',
 }
 
+/** Ordem de exibição das funções (GK → DEF → MID → FWD) nas listas de elenco. */
+export const ROLE_ORDER: Record<Role, number> = { GK: 0, DEF: 1, MID: 2, FWD: 3 }
+
+/** Comparador padrão de elenco: por função e, dentro dela, do maior overall pro menor. */
+export const byRole = <T extends { role: Role; overall: number }>(a: T, b: T): number =>
+  ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || b.overall - a.overall
+
+/** Grupos de atributos visíveis para a função (o bloco Goleiro só aparece para GK). */
+export const attrGroupsFor = (role: Role) =>
+  ATTR_GROUPS.filter((g) => g.title !== 'Goleiro' || role === 'GK')
+
 /** Rótulo de posição com a cor da função (mesma paleta dos chips do campinho tático). */
 export function RoleTag({ role }: { role: Role }) {
   return <span className={`cm-role cm-role-${role.toLowerCase()}`}>{ROLE_LABEL[role]}</span>
@@ -239,7 +250,7 @@ export function AttrBar({
   return (
     <div className="ps-attr">
       <span className="ps-attr-label">
-        {label}
+        <span className="ps-attr-label-text">{label}</span>
         {desc && <AttrInfo label={label} desc={desc} effects={effects} />}
       </span>
       <span className="ps-attr-bar">
@@ -272,7 +283,7 @@ export function AttrList({ role, attrs }: { role: Role; attrs: Attrs }) {
 
 /** Painel de grupos de atributos de um jogador (reutilizado em telas diferentes). */
 export function AttrGroups({ role, attrs }: { role: Role; attrs: Attrs }) {
-  const groups = ATTR_GROUPS.filter((g) => g.title !== 'Goleiro' || role === 'GK')
+  const groups = attrGroupsFor(role)
   return (
     <div className="ps-groups">
       {groups.map((g) => (

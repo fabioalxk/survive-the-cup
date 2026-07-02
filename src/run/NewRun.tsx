@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BRAZIL_ID, WC_TEAM_LIST } from '../game/worldcup'
 import {
   ASCENSION_MAX,
@@ -6,6 +6,8 @@ import {
   offerLevelPenalty,
   opponentLevelBonus,
 } from '../game/ascension'
+import { resumeMainTheme, startMainTheme, stopMainTheme } from '../sfx/crowd'
+import { BackButton } from '../ui/BackButton'
 import { ClubBadge } from '../ui/ClubBadge'
 import { BallIcon, FlameIcon, LockIcon, PlayIcon } from '../ui/icons'
 import { TrophyIcon } from './MapIcons'
@@ -57,13 +59,18 @@ export default function NewRun({
   const [ascension, setAscension] = useState(0)
   const [screen, setScreen] = useState<Screen>('menu')
 
+  useEffect(() => {
+    startMainTheme()
+    return stopMainTheme
+  }, [])
+
   const start = () => onStart('Técnico', clubId, ascension)
   const chosen = WC_TEAM_LIST.find((c) => c.id === clubId)!
   // Brasil primeiro (jogável); as demais aparecem bloqueadas — conteúdo futuro.
   const teams = [chosen, ...WC_TEAM_LIST.filter((c) => c.id !== BRAZIL_ID)]
 
   return (
-    <div className="cm-newgame rq-title">
+    <div className="cm-newgame rq-title" onClick={resumeMainTheme}>
       <img
         className={`rq-title-bg ${screen === 'setup' ? 'rq-title-bg-select' : ''}`}
         src={
@@ -129,9 +136,7 @@ export default function NewRun({
 
       {screen === 'setup' && (
         <div className="rq-select">
-          <button className="rq-back" onClick={() => setScreen('menu')}>
-            ← Voltar
-          </button>
+          <BackButton onClick={() => setScreen('menu')} />
 
           {hasSave && (
             <button className="cm-btn cm-btn-primary cm-btn-block cm-btn-lg" onClick={onContinue}>
@@ -218,9 +223,7 @@ export default function NewRun({
 
       {screen === 'help' && (
         <div className="rq-event">
-          <button className="rq-back" onClick={() => setScreen('menu')}>
-            ← Voltar
-          </button>
+          <BackButton onClick={() => setScreen('menu')} />
           <div className="cm-brand-lockup rq-event-brand">
             <span className="cm-brand-kicker">Como jogar</span>
             <h2 className="cm-title">A jornada</h2>

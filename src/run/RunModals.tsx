@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import type { RunState } from '../game/runTypes'
 import { ALL_CLUBS } from '../game/worldcup'
+import { defeatSfx, victorySfx } from '../sfx/crowd'
 import { HeartbreakIcon, RestartIcon, SkullIcon } from '../ui/icons'
 import { TrophyIcon } from './MapIcons'
 
@@ -17,6 +19,7 @@ const lastMatchLine = (state: RunState) =>
 
 /** Tela de VIDA PERDIDA: perdeu uma partida mas ainda tem vida — a corrida continua. */
 export function LifeLostModal({ state, onContinue }: { state: RunState; onContinue: () => void }) {
+  useEffect(() => { defeatSfx() }, [])
   return (
     <Backdrop>
       <div className="cm-modal cm-modal-over">
@@ -39,6 +42,7 @@ export function LifeLostModal({ state, onContinue }: { state: RunState; onContin
 
 /** Tela de ELIMINAÇÃO: as vidas acabaram, a corrida acaba — só reinicia do zero. */
 export function GameOverModal({ state, onNewRun }: { state: RunState; onNewRun: () => void }) {
+  useEffect(() => { defeatSfx() }, [])
   return (
     <Backdrop>
       <div className="cm-modal cm-modal-over">
@@ -58,6 +62,7 @@ export function GameOverModal({ state, onNewRun }: { state: RunState; onNewRun: 
 
 /** Tela de VITÓRIA: venceu o chefão final. */
 export function VictoryModal({ state, onNewRun }: { state: RunState; onNewRun: () => void }) {
+  useEffect(() => { victorySfx() }, [])
   const club = ALL_CLUBS[state.clubId]
   return (
     <Backdrop>

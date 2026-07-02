@@ -27,14 +27,10 @@ import { access, mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { ROOT, apiKey, generateImage, runPool } from './_openaiImage.mjs'
 import { SKINS, HAIRS } from './_playerAppearance.mjs'
+import { KIT_KEYS, CAMERA_LOCK, KIT_KEY_PROMPT, PREMIUM_STYLE } from './_spriteStyle.mjs'
 
 const CONCURRENCY = 2
 const BODY_POOL_SIZE = 6
-
-// Precisa bater com KIT_KEY_COLOR em src/render/spriteKit.ts — cor-chave para
-// o replace de uniforme em runtime (verde-sinalização, não ocorre em pele,
-// cabelo nem em kits reais).
-export const KIT_KEY_COLOR = '#39FF14'
 
 export const GRID = { cols: 3, rows: 3 }
 export const RUN_FRAMES = [0, 1, 2, 3, 4, 5, 6, 7]
@@ -51,24 +47,6 @@ const RUN_POSES = [
   'left foot just planted on the ground below the hips, right knee beginning to drive up bent, weight fully on the left leg',
 ]
 
-// Mesmo registro de arte premium usado em ICON_STYLE/FACE_STYLE (generate-art.mjs)
-// — é o que faz o conjunto parecer nível comercial, não clip-art chapado. Evita
-// comparação com "retrato de menu" (puxa a composição pra 3/4 ou perfil).
-const PREMIUM_STYLE =
-  'Premium stylized 3D game character render, rich saturated colors, soft realistic global illumination, ' +
-  'subtle ambient occlusion in the fabric folds and between the limbs, smooth rounded proportions with ' +
-  'a light, appealing cartoon stylization (not flat clip-art, not photoreal), soft specular highlights ' +
-  'on the hair and skin, gentle rim light, subtle cloth texture and stitching detail on the kit, crisp ' +
-  'clean silhouette edge, high production value, the quality of a modern mobile game asset.'
-
-const CAMERA_LOCK =
-  'The camera is a static drone/satellite view locked at a strict 90° top-down angle for EVERY SINGLE ' +
-  'cell, including the running poses. This is NOT a side-view running-animation reference sheet and the ' +
-  'character is NEVER shown in profile or 3/4 view — you must always be looking straight down at the ' +
-  'top of the head and the top of the shoulders, like looking down at someone from a drone directly ' +
-  'above them. Never show the side of the face, never show the character\'s side silhouette. When in ' +
-  'doubt, show MORE of the top of the head/shoulders and LESS of the front of the face.'
-
 const GRID_STYLE =
   `${PREMIUM_STYLE} Sprite sheet for a 2D football video game. ${CAMERA_LOCK} Exactly a 3x3 grid of 9 ` +
   'equal square cells separated by thin faint gray guide lines. CRITICAL: everything outside the ' +
@@ -78,13 +56,10 @@ const GRID_STYLE =
   'The SAME male football player appears in every cell, always the exact same size and the exact same ' +
   'scale, hips always at the same height in the cell, centered horizontally, always facing straight up ' +
   '(north), camera angle never changes. Even lighting from directly above, no directional cast shadow ' +
-  'on the character. ' +
-  `The shirt, shorts and socks are all filled with pure flat solid chroma-key color ${KIT_KEY_COLOR} ` +
-  '(exact single flat color with only subtle ambient-occlusion shading from the 3D render — no other ' +
-  'hue, no pattern on the kit; it will be recolored programmatically later), football boots. This is a ' +
-  'proper running gait cycle broken into 8 biomechanically distinct keyframes, reading left to right ' +
-  'then top to bottom, each cell CLEARLY different from the others in leg and arm position (camera ' +
-  'strictly top-down in every cell, never side-view):\n' +
+  `on the character. ${KIT_KEY_PROMPT} This is a proper running gait cycle broken into 8 ` +
+  'biomechanically distinct keyframes, reading left to right then top to bottom, each cell CLEARLY ' +
+  'different from the others in leg and arm position (camera strictly top-down in every cell, never ' +
+  'side-view):\n' +
   RUN_POSES.map((pose, i) => `Cell ${i + 1} (top-down view): ${pose}.`).join('\n') +
   '\nCell 9 (bottom-right): the player standing fully still in a relaxed idle pose, both feet flat on ' +
   'the ground shoulder-width apart, arms relaxed at the sides, facing up.\n' +
@@ -132,7 +107,7 @@ const run = async () => {
     grid: GRID,
     runFrames: RUN_FRAMES,
     idleFrame: IDLE_FRAME,
-    kitKeyColor: KIT_KEY_COLOR,
+    kitKeys: KIT_KEYS,
   }
   await writeFile(join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2))
 

@@ -7,6 +7,8 @@
 
 export interface Kit {
   shirt: string
+  shorts: string
+  socks: string
   text: string
 }
 
@@ -42,6 +44,23 @@ const WHITE = '#f8fafc'
 const BLACK = '#111827'
 
 /**
+ * Completa shorts/socks quando a fonte de dados não tem essa info (ex.: clubes
+ * fictícios da liga em `clubs.ts`, que só têm camisa+texto). Seleções reais
+ * (`worldcup.ts`) já vêm com shorts/socks reais e passam direto.
+ */
+export const withKitDefaults = (k: {
+  shirt: string
+  text: string
+  shorts?: string
+  socks?: string
+}): Kit => ({
+  shirt: k.shirt,
+  text: k.text,
+  shorts: k.shorts ?? (isLight(k.shirt) ? BLACK : WHITE),
+  socks: k.socks ?? k.shirt,
+})
+
+/**
  * Devolve os uniformes finais de mando e visitante, trocando o do visitante por
  * um reserva quando há conflito com o do mandante.
  */
@@ -50,10 +69,11 @@ export const resolveKits = (home: Kit, away: Kit): { home: Kit; away: Kit } => {
     return { home, away }
   }
   // 1) tenta a 2ª cor do visitante (cor do número), se contrastar com o mando
+  // (shorts/meião do visitante ficam como estão — só a camisa conflitava)
   if (colorDist(home.shirt, away.text) >= CLASH_THRESHOLD) {
-    return { home, away: { shirt: away.text, text: textForShirt(away.text) } }
+    return { home, away: { ...away, shirt: away.text, text: textForShirt(away.text) } }
   }
   // 2) cai para branco ou preto — o que estiver mais longe da cor do mandante
   const alt = colorDist(home.shirt, WHITE) >= colorDist(home.shirt, BLACK) ? WHITE : BLACK
-  return { home, away: { shirt: alt, text: textForShirt(alt) } }
+  return { home, away: { ...away, shirt: alt, text: textForShirt(alt) } }
 }

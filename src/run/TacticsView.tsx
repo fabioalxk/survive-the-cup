@@ -21,9 +21,7 @@ export default function TacticsView({ state, act }: { state: RunState; act: RunA
 
   const [selIdx, setSelIdx] = useState<number | null>(null)
   const slotPlayer = selIdx !== null ? xi[selIdx] : null
-  const sel = slotPlayer
-    ? (state.squad.find((p) => p.name === slotPlayer.name && p.number === slotPlayer.number) ?? null)
-    : null
+  const sel = slotPlayer ? (state.squad.find((p) => p.id === slotPlayer.id) ?? null) : null
 
   return (
     <div className="tv">
@@ -41,6 +39,7 @@ export default function TacticsView({ state, act }: { state: RunState; act: RunA
             slots={slots}
             xi={xi}
             teamId={state.clubId}
+            selected={selIdx}
             onPreset={(presetSlots) => act((s) => setFormation(s, presetSlots))}
             onMove={(index, pos) => act((s) => moveFormationSlot(s, index, pos))}
             onSelect={setSelIdx}

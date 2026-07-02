@@ -1,18 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { Attrs, Role } from '../sim/types'
 import type { RunState } from '../game/runTypes'
-import { GYM_GAIN, boostAttribute, leaveNode } from '../game/run'
+import { GYM_GAIN, boostAttribute, leaveNode, moveFormationSlot, setFormation, startingXI } from '../game/run'
 import { gymTrains } from '../game/ascension'
+import { lineupFor } from '../game/lineup'
 import { overallOf } from '../game/overall'
-import { ATTR_GROUPS, RoleTag, attrColor, attrLabel } from '../ui/attrDisplay'
+import { upgradeSfx } from '../sfx/crowd'
+import { formationName } from '../sim/formation'
+import { attrColor, attrGroupsFor, attrLabel, byRole } from '../ui/attrDisplay'
+import FormationEditor from '../ui/FormationEditor'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
+import { PlayerDetailHead } from '../ui/PlayerDetail'
+import { BenchIcon, ClipboardIcon } from '../ui/icons'
 import { GymIcon } from './MapIcons'
 import type { RunApi } from './useRun'
-
-const ROLE_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 }
-
-/** Grupos de atributos visíveis para a posição (o bloco Goleiro só aparece para GK). */
-const groupsFor = (role: Role) => ATTR_GROUPS.filter((g) => g.title !== 'Goleiro' || role === 'GK')
 
 const afterTrain = (v: number): number => Math.min(100, v + GYM_GAIN)
 
@@ -22,7 +23,7 @@ const ovrIfTrained = (role: Role, attrs: Attrs, key: keyof Attrs): number =>
 
 /** Primeiro atributo ainda treinável (< 100) dentre os visíveis para a posição. */
 const firstTrainable = (role: Role, attrs: Attrs): keyof Attrs => {
-  const keys = groupsFor(role).flatMap((g) => g.keys)
+  const keys = attrGroupsFor(role).flatMap((g) => g.keys)
   return (keys.find((k) => attrs[k.key] < 100) ?? keys[0]).key
 }
 
@@ -37,36 +38,36 @@ interface TrainDelta {
 }
 
 /**
- * Evento de ACADEMIA no mapa: melhoramentos de +20 (teto 100) — a quantidade
- * cai conforme a ascension da corrida (`gymTrains`). Cada treino escolhe 1
- * jogador e 1 atributo — depois é só seguir viagem.
+ * Evento de ACADEMIA no mapa, integrado com a tática: o campinho compartilhado
+ * (`FormationEditor`) mostra os titulares na posição REAL da partida — dá pra
+ * mudar o esquema ali mesmo — e o banco fica numa faixa separada embaixo.
+ * Tocar em qualquer jogador (campo ou banco) abre os atributos treináveis ao
+ * lado: melhoramentos de +20 (teto 100), quantidade cai com a ascension
+ * (`gymTrains`). No celular o painel de treino substitui o campinho, com o
+ * botão de voltar.
  */
 export default function GymNodeView({ state, act }: { state: RunState; act: RunApi['act'] }) {
   const TRAINS = gymTrains(state.ascension)
-  const squad = [...state.squad].sort(
-    (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || b.overall - a.overall,
-  )
-  const [playerId, setPlayerId] = useState<number>(squad[0]?.id ?? 0)
-  const [attr, setAttr] = useState<keyof Attrs>(() =>
-    squad[0] ? firstTrainable(squad[0].role, squad[0].attrs) : 'pace',
-  )
+  const slots = state.formationSlots
+  const xi = lineupFor(startingXI(state), slots)
+  const bench = state.squad.filter((p) => !state.startingIds.includes(p.id)).sort(byRole)
+
+  const [playerId, setPlayerId] = useState<number | null>(null)
+  const [attr, setAttr] = useState<keyof Attrs>('pace')
   const [results, setResults] = useState<TrainDelta[]>([])
 
-  const player = state.squad.find((p) => p.id === playerId)
+  const player = playerId !== null ? (state.squad.find((p) => p.id === playerId) ?? null) : null
+  const isStarter = player !== null && state.startingIds.includes(player.id)
+  const selSlot = player ? xi.findIndex((sp) => sp.id === player.id) : -1
   const trainsLeft = TRAINS - results.length
   const done = trainsLeft <= 0
 
-  // após um treino o atributo escolhido pode ter batido 100 — pula para o próximo treinável
-  useEffect(() => {
-    if (!done && player && player.attrs[attr] >= 100) {
-      setAttr(firstTrainable(player.role, player.attrs))
-    }
-  }, [done, player, attr])
-
   /** Troca de jogador mantendo o atributo escolhido quando ele segue válido e treinável. */
-  const selectPlayer = (p: (typeof squad)[number]) => {
-    setPlayerId(p.id)
-    const visible = groupsFor(p.role).some((g) => g.keys.some((k) => k.key === attr))
+  const selectPlayer = (id: number) => {
+    const p = state.squad.find((pl) => pl.id === id)
+    if (!p) return
+    setPlayerId(id)
+    const visible = attrGroupsFor(p.role).some((g) => g.keys.some((k) => k.key === attr))
     if (!visible || p.attrs[attr] >= 100) setAttr(firstTrainable(p.role, p.attrs))
   }
 
@@ -83,91 +84,141 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
     : null
 
   const train = () => {
-    if (!preview || done) return
-    act((s) => boostAttribute(s, playerId, attr))
+    if (!preview || !player || done) return
+    upgradeSfx()
+    act((s) => boostAttribute(s, player.id, attr))
     setResults((r) => [...r, preview])
+    // o act muta na hora: se o atributo bateu 100, pula pro próximo treinável
+    if (player.attrs[attr] >= 100) setAttr(firstTrainable(player.role, player.attrs))
   }
 
   const summary = done ? (results[results.length - 1] ?? null) : preview
 
   return (
     <div className="cm-backdrop rq-scene rq-scene-gym">
-      <div className="cm-modal rq-gym">
+      <div className={`cm-modal rq-gym ${player ? 'has-sel' : ''}`}>
         <header className="rq-gym-head">
           <span className="rq-gym-ico" aria-hidden>
             <GymIcon size={32} />
           </span>
-          <div>
-            <h2>Treinamento</h2>
+          <div className="rq-gym-title">
+            <h2 className="cm-ribbon cm-ribbon-sm">Treinamento</h2>
             <p>
-              <strong>{TRAINS} melhoramentos</strong> de <strong>+{GYM_GAIN} pontos</strong> cada (
-              {TRAINS * GYM_GAIN} no total, teto 100) — distribua entre jogadores e atributos.
-              {!done && (
-                <>
-                  {' '}
-                  Restam <strong>{trainsLeft}</strong>.
-                </>
-              )}
+              Melhoramentos de <strong>+{GYM_GAIN} pontos</strong> (teto 100). Toque num jogador —
+              do campo ou do banco — pra treinar; arraste no campinho pra mudar a tática.
             </p>
+          </div>
+          <div
+            className={`rq-gym-count ${done ? 'is-done' : ''}`}
+            title={`${TRAINS} melhoramentos nesta academia`}
+          >
+            <strong key={trainsLeft}>{done ? '✓' : trainsLeft}</strong>
+            <span>{done ? 'completo' : trainsLeft === 1 ? 'restante' : 'restantes'}</span>
           </div>
         </header>
 
         <div className="rq-gym-body">
-          <aside className="rq-gym-players" aria-label="Elenco">
-            {squad.map((p) => (
-              <button
-                key={p.id}
-                className={`rq-gym-player ${p.id === playerId ? 'active' : ''}`}
-                disabled={done}
-                onClick={() => selectPlayer(p)}
-              >
-                <PlayerAvatar teamId={state.clubId} name={p.name} id={p.id} size={34} />
-                <span className="rq-gym-p-id">
-                  <strong>{p.name}</strong>
-                  <small>
-                    #{p.number} · <RoleTag role={p.role} />
-                  </small>
-                </span>
-                <span className="rq-gym-p-ovr" style={{ color: attrColor(p.overall) }}>
-                  {p.overall}
-                </span>
-              </button>
-            ))}
-          </aside>
-
-          {player && (
-            <section className="rq-gym-attrs" aria-label="Atributos">
-              {groupsFor(player.role).map((g) => (
-                <div key={g.title} className="rq-gym-group">
-                  <h4>{g.title}</h4>
-                  <div className="rq-gym-chips">
-                    {g.keys.map((k) => {
-                      const val = player.attrs[k.key]
-                      const maxed = val >= 100
-                      const ovrGain = ovrIfTrained(player.role, player.attrs, k.key) - player.overall
-                      return (
-                        <button
-                          key={k.key}
-                          className={`rq-chip ${attr === k.key ? 'active' : ''}`}
-                          disabled={done || maxed}
-                          onClick={() => setAttr(k.key)}
-                          title={`${k.desc}\n${k.effects.map((e) => `• ${e}`).join('\n')}`}
-                        >
-                          <span>{k.label}</span>
-                          <b style={{ color: attrColor(val) }}>{val}</b>
-                          {maxed ? (
-                            <span className="rq-chip-max">MAX</span>
-                          ) : ovrGain > 0 ? (
-                            <span className="rq-chip-gain">+{ovrGain} OVR</span>
-                          ) : null}
-                        </button>
-                      )
-                    })}
-                  </div>
+          <div className="rq-gym-field" aria-label="Tática e elenco">
+            <div className="rq-gym-field-head">
+              <h4>
+                <ClipboardIcon size={14} /> Titulares
+              </h4>
+              <span className="tv-name">{formationName(slots)}</span>
+            </div>
+            <FormationEditor
+              slots={slots}
+              xi={xi}
+              teamId={state.clubId}
+              selected={selSlot >= 0 ? selSlot : null}
+              onPreset={(presetSlots) => act((s) => setFormation(s, presetSlots))}
+              onMove={(index, pos) => act((s) => moveFormationSlot(s, index, pos))}
+              onSelect={(i) => selectPlayer(xi[i].id)}
+            />
+            <div className="rq-gym-bench">
+              <h4>
+                <BenchIcon size={14} /> Banco <span>{bench.length}</span>
+              </h4>
+              {bench.length === 0 ? (
+                <p className="rq-gym-bench-empty">Banco vazio — os 11 do campinho são todo o elenco.</p>
+              ) : (
+                <div className="rq-gym-bench-row">
+                  {bench.map((p) => (
+                    <button
+                      key={p.id}
+                      className={`rq-bench-card tv-role-${p.role.toLowerCase()} ${p.id === playerId ? 'active' : ''}`}
+                      onClick={() => selectPlayer(p.id)}
+                    >
+                      <PlayerAvatar
+                        teamId={state.clubId}
+                        name={p.name}
+                        id={p.id}
+                        size={34}
+                        className="tv-chip-photo"
+                      />
+                      <strong>{p.name}</strong>
+                      <span className="rq-bench-ovr" style={{ color: attrColor(p.overall) }}>
+                        {p.overall}
+                      </span>
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </section>
-          )}
+              )}
+            </div>
+          </div>
+
+          <section className="rq-gym-attrs" aria-label="Atributos">
+            {player ? (
+              <>
+                <button
+                  className="cm-btn cm-btn-ghost cm-btn-sm rq-gym-back"
+                  onClick={() => setPlayerId(null)}
+                >
+                  ← Campinho
+                </button>
+                <PlayerDetailHead
+                  player={player}
+                  teamId={state.clubId}
+                  extra={<> · {isStarter ? 'Titular' : 'Reserva'}</>}
+                />
+                {attrGroupsFor(player.role).map((g) => (
+                  <div key={g.title} className="rq-gym-group">
+                    <h4>{g.title}</h4>
+                    <div className="rq-gym-chips">
+                      {g.keys.map((k) => {
+                        const val = player.attrs[k.key]
+                        const maxed = val >= 100
+                        const ovrGain = ovrIfTrained(player.role, player.attrs, k.key) - player.overall
+                        return (
+                          <button
+                            key={k.key}
+                            className={`rq-chip ${attr === k.key ? 'active' : ''}`}
+                            disabled={done || maxed}
+                            onClick={() => setAttr(k.key)}
+                            title={`${k.desc}\n${k.effects.map((e) => `• ${e}`).join('\n')}`}
+                          >
+                            <span>{k.label}</span>
+                            <b key={val} className="rq-chip-val" style={{ color: attrColor(val) }}>
+                              {val}
+                            </b>
+                            {maxed ? (
+                              <span className="rq-chip-max">MAX</span>
+                            ) : ovrGain > 0 ? (
+                              <span className="rq-chip-gain">+{ovrGain} OVR</span>
+                            ) : null}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="tv-side-empty">
+                <GymIcon size={40} />
+                <p>Toque num jogador do campinho ou do banco pra ver os atributos e treinar.</p>
+              </div>
+            )}
+          </section>
         </div>
 
         <footer className="rq-gym-foot">
@@ -182,46 +233,49 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
               ))}
             </div>
           )}
-          {player && summary && (
-            <>
-              <div className={`rq-gym-summary ${done ? 'rq-gym-done' : ''}`}>
-                {done ? (
-                  <span className="rq-gym-done-ico" aria-hidden>
-                    ✓
-                  </span>
-                ) : (
-                  <PlayerAvatar teamId={state.clubId} name={player.name} id={player.id} size={28} />
-                )}
-                <strong className="rq-gym-summary-name">{summary.playerName}</strong>
-                <span className="rq-gym-delta">
-                  {attrLabel(summary.attr)}
-                  <b style={{ color: attrColor(summary.before) }}>{summary.before}</b>
-                  <span className="rq-gym-arrow">→</span>
-                  <b style={{ color: attrColor(summary.after) }}>{summary.after}</b>
-                </span>
-                {summary.ovrAfter > summary.ovrBefore && (
-                  <span className="rq-gym-ovr-badge">
-                    OVR {summary.ovrBefore} → {summary.ovrAfter}
-                  </span>
-                )}
-              </div>
+          {summary && (
+            <div key={results.length} className={`rq-gym-summary ${done ? 'rq-gym-done' : ''}`}>
               {done ? (
-                <button
-                  className="cm-btn cm-btn-go cm-btn-lg cm-btn-block"
-                  onClick={() => act((s) => leaveNode(s))}
-                >
-                  Seguir viagem →
-                </button>
+                <span className="rq-gym-done-ico" aria-hidden>
+                  ✓
+                </span>
               ) : (
-                <button
-                  className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block"
-                  onClick={train}
-                  disabled={summary.before >= 100}
-                >
-                  Treinar ({trainsLeft} restante{trainsLeft > 1 ? 's' : ''})
-                </button>
+                player && (
+                  <PlayerAvatar teamId={state.clubId} name={player.name} id={player.id} size={28} />
+                )
               )}
-            </>
+              <strong className="rq-gym-summary-name">{summary.playerName}</strong>
+              <span className="rq-gym-delta">
+                {attrLabel(summary.attr)}
+                <b style={{ color: attrColor(summary.before) }}>{summary.before}</b>
+                <span className="rq-gym-arrow">→</span>
+                <b style={{ color: attrColor(summary.after) }}>{summary.after}</b>
+              </span>
+              {summary.ovrAfter > summary.ovrBefore && (
+                <span className="rq-gym-ovr-badge">
+                  OVR {summary.ovrBefore} → {summary.ovrAfter}
+                </span>
+              )}
+            </div>
+          )}
+          {done ? (
+            <button
+              className="cm-btn cm-btn-go cm-btn-lg cm-btn-block"
+              onClick={() => act((s) => leaveNode(s))}
+            >
+              Seguir viagem →
+            </button>
+          ) : (
+            player &&
+            summary && (
+              <button
+                className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block"
+                onClick={train}
+                disabled={summary.before >= 100}
+              >
+                Treinar ({trainsLeft} restante{trainsLeft > 1 ? 's' : ''})
+              </button>
+            )
           )}
         </footer>
       </div>

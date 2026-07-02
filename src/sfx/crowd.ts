@@ -158,6 +158,220 @@ export const wonRewardSfx = (): void => {
   void wonRewardAudio.play()
 }
 
+const loopingTracks = new Map<string, HTMLAudioElement>()
+
+/** Inicia (ou retoma do início) uma trilha em loop, cacheando o elemento por src. */
+const startLoop = (src: string, volume: number): void => {
+  if (typeof window === 'undefined') return
+  let audio = loopingTracks.get(src)
+  if (!audio) {
+    audio = new Audio(src)
+    audio.loop = true
+    audio.volume = volume
+    loopingTracks.set(src, audio)
+  }
+  audio.currentTime = 0
+  void audio.play()
+}
+
+/** Pausa uma trilha em loop iniciada por `startLoop`. */
+const stopLoop = (src: string): void => {
+  loopingTracks.get(src)?.pause()
+}
+
+/** Retoma uma trilha pausada pela política de autoplay, sem reiniciar do início. */
+const resumeLoop = (src: string): void => {
+  const audio = loopingTracks.get(src)
+  if (audio?.paused) void audio.play()
+}
+
+const MERCHANT_TRACK = '/sounds/song-merchant.mp3'
+const MAIN_THEME_TRACK = '/sounds/slay-song-main.mp3'
+
+/** Inicia a trilha do mercador em loop (tela de comprar/vender jogadores). */
+export const startMerchantMusic = (): void => startLoop(MERCHANT_TRACK, 0.5)
+/** Para a trilha do mercador (ao sair da tela de mercado). */
+export const stopMerchantMusic = (): void => stopLoop(MERCHANT_TRACK)
+
+/** Inicia o tema principal em loop (tela de título/menu do modo run). */
+export const startMainTheme = (): void => startLoop(MAIN_THEME_TRACK, 0.4)
+/** Para o tema principal (ao sair da tela de título). */
+export const stopMainTheme = (): void => stopLoop(MAIN_THEME_TRACK)
+/** Retoma o tema principal se o autoplay do navegador o bloqueou até o 1º clique. */
+export const resumeMainTheme = (): void => resumeLoop(MAIN_THEME_TRACK)
+
+/** Blip curto e discreto para qualquer clique de botão (usado pelo listener global). */
+export const uiClick = (): void => {
+  const c = getCtx()
+  if (!c) return
+  if (c.state === 'suspended') void c.resume()
+
+  const now = c.currentTime
+  const osc = c.createOscillator()
+  osc.type = 'triangle'
+  osc.frequency.setValueAtTime(880, now)
+  osc.frequency.exponentialRampToValueAtTime(720, now + 0.04)
+  const gain = c.createGain()
+  gain.gain.setValueAtTime(0.0001, now)
+  gain.gain.exponentialRampToValueAtTime(0.05, now + 0.008)
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05)
+  osc.connect(gain)
+  gain.connect(c.destination)
+  osc.start(now)
+  osc.stop(now + 0.06)
+}
+
+/** Chime de confirmação ao escolher algo (carta de reforço, bênção): duas notas subindo. */
+export const chooseSfx = (): void => {
+  const c = getCtx()
+  if (!c) return
+  if (c.state === 'suspended') void c.resume()
+
+  const now = c.currentTime
+  ;([[660, 0], [990, 0.09]] as const).forEach(([freq, at]) => {
+    const osc = c.createOscillator()
+    osc.type = 'triangle'
+    osc.frequency.value = freq
+    const gain = c.createGain()
+    gain.gain.setValueAtTime(0.0001, now + at)
+    gain.gain.exponentialRampToValueAtTime(0.13, now + at + 0.015)
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.16)
+    osc.connect(gain)
+    gain.connect(c.destination)
+    osc.start(now + at)
+    osc.stop(now + at + 0.18)
+  })
+}
+
+/** Jingle de "subiu de nível" ao treinar um atributo: arpejo ascendente + brilho no topo. */
+export const upgradeSfx = (): void => {
+  const c = getCtx()
+  if (!c) return
+  if (c.state === 'suspended') void c.resume()
+
+  const now = c.currentTime
+  const arpeggio = [523, 659, 784, 1047] // C5 E5 G5 C6
+  arpeggio.forEach((freq, i) => {
+    const at = now + i * 0.07
+    const osc = c.createOscillator()
+    osc.type = 'square'
+    osc.frequency.value = freq
+    const gain = c.createGain()
+    gain.gain.setValueAtTime(0.0001, at)
+    gain.gain.exponentialRampToValueAtTime(0.08, at + 0.015)
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.16)
+    osc.connect(gain)
+    gain.connect(c.destination)
+    osc.start(at)
+    osc.stop(at + 0.18)
+  })
+
+  // brilho final: um tom agudo subindo por cima da última nota do arpejo
+  const sparkle = c.createOscillator()
+  sparkle.type = 'sine'
+  sparkle.frequency.setValueAtTime(1568, now + 0.21)
+  sparkle.frequency.exponentialRampToValueAtTime(2093, now + 0.4)
+  const sGain = c.createGain()
+  sGain.gain.setValueAtTime(0.0001, now + 0.21)
+  sGain.gain.exponentialRampToValueAtTime(0.06, now + 0.24)
+  sGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45)
+  sparkle.connect(sGain)
+  sGain.connect(c.destination)
+  sparkle.start(now + 0.21)
+  sparkle.stop(now + 0.46)
+}
+
+/** Um "cling" metálico curto de moeda, usado pela compra e pela venda no mercado. */
+const coinClink = (c: AudioContext, at: number, pitch: number, gainPeak: number) => {
+  const osc = c.createOscillator()
+  osc.type = 'square'
+  osc.frequency.setValueAtTime(pitch, at)
+  osc.frequency.exponentialRampToValueAtTime(pitch * 1.4, at + 0.05)
+  const bp = c.createBiquadFilter()
+  bp.type = 'bandpass'
+  bp.frequency.value = pitch * 2
+  bp.Q.value = 4
+  const gain = c.createGain()
+  gain.gain.setValueAtTime(0.0001, at)
+  gain.gain.exponentialRampToValueAtTime(gainPeak, at + 0.01)
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.18)
+  osc.connect(bp)
+  bp.connect(gain)
+  gain.connect(c.destination)
+  osc.start(at)
+  osc.stop(at + 0.2)
+}
+
+/** Compra no mercado: dois "clings" de moeda subindo, tipo caixa registradora. */
+export const buySfx = (): void => {
+  const c = getCtx()
+  if (!c) return
+  if (c.state === 'suspended') void c.resume()
+  const now = c.currentTime
+  coinClink(c, now, 900, 0.1)
+  coinClink(c, now + 0.09, 1200, 0.12)
+}
+
+/** Venda no mercado: dois "clings" descendo — moeda entrando no bolso, tom mais grave. */
+export const sellSfx = (): void => {
+  const c = getCtx()
+  if (!c) return
+  if (c.state === 'suspended') void c.resume()
+  const now = c.currentTime
+  coinClink(c, now, 700, 0.11)
+  coinClink(c, now + 0.08, 550, 0.09)
+}
+
+/** Fanfarra de vitória (chefão derrotado): arpejo maior triunfante e mais longo. */
+export const victorySfx = (): void => {
+  const c = getCtx()
+  if (!c) return
+  if (c.state === 'suspended') void c.resume()
+  const now = c.currentTime
+  const notes = [523, 659, 784, 1047, 784, 1047, 1319] // C E G C G C E(oitava)
+  notes.forEach((freq, i) => {
+    const at = now + i * 0.11
+    const osc = c.createOscillator()
+    osc.type = i % 2 === 0 ? 'triangle' : 'square'
+    osc.frequency.value = freq
+    const gain = c.createGain()
+    gain.gain.setValueAtTime(0.0001, at)
+    gain.gain.exponentialRampToValueAtTime(0.1, at + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.28)
+    osc.connect(gain)
+    gain.connect(c.destination)
+    osc.start(at)
+    osc.stop(at + 0.3)
+  })
+}
+
+/** Tom de derrota: três notas descendo e abafadas — vida perdida ou eliminação. */
+export const defeatSfx = (): void => {
+  const c = getCtx()
+  if (!c) return
+  if (c.state === 'suspended') void c.resume()
+  const now = c.currentTime
+  const notes = [440, 349, 261]
+  notes.forEach((freq, i) => {
+    const at = now + i * 0.16
+    const osc = c.createOscillator()
+    osc.type = 'sawtooth'
+    osc.frequency.value = freq
+    const lp = c.createBiquadFilter()
+    lp.type = 'lowpass'
+    lp.frequency.value = 900
+    const gain = c.createGain()
+    gain.gain.setValueAtTime(0.0001, at)
+    gain.gain.exponentialRampToValueAtTime(0.09, at + 0.03)
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.35)
+    osc.connect(lp)
+    lp.connect(gain)
+    gain.connect(c.destination)
+    osc.start(at)
+    osc.stop(at + 0.38)
+  })
+}
+
 /**
  * Apito do árbitro nos fins de tempo:
  *  • 'stop' — um toque seco: os jogadores param, a bola ainda rola;

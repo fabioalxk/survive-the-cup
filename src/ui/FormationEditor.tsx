@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Vec2 } from '../sim/types'
 import { FIELD } from '../sim/constants'
 import { FORMATION_PRESETS, clampSlot, formationName, roleForSlot } from '../sim/formation'
+import { uiClick } from '../sfx/crowd'
 import { ROLE_LABEL } from './attrDisplay'
 import { PlayerAvatar } from './PlayerAvatar'
 
@@ -30,6 +31,7 @@ export default function FormationEditor({
   slots,
   xi,
   teamId,
+  selected,
   onPreset,
   onMove,
   onSelect,
@@ -39,6 +41,8 @@ export default function FormationEditor({
   xi: SlotPlayer[]
   /** elenco dono da escalação — usado pra buscar a foto real do jogador, se houver */
   teamId?: string
+  /** índice do slot destacado como selecionado (anel dourado no chip) */
+  selected?: number | null
   onPreset: (slots: Vec2[]) => void
   onMove: (index: number, pos: Vec2) => void
   /** toque/soltura num chip — quem usa pode abrir os atributos do jogador */
@@ -80,7 +84,7 @@ export default function FormationEditor({
           return (
             <div
               key={i}
-              className={`tv-chip tv-role-${role.toLowerCase()} ${drag?.index === i ? 'is-drag' : ''}`}
+              className={`tv-chip tv-role-${role.toLowerCase()} ${drag?.index === i ? 'is-drag' : ''} ${selected === i ? 'is-sel' : ''}`}
               style={toScreen(pos)}
               title={i === 0 ? 'O goleiro fica no gol' : 'Arraste pra reposicionar'}
               onPointerDown={(e) => {
@@ -97,6 +101,7 @@ export default function FormationEditor({
                   onMove(i, drag.pos)
                   setDrag(null)
                 }
+                uiClick()
                 onSelect?.(i)
               }}
               onPointerCancel={() => setDrag(null)}

@@ -4,11 +4,8 @@ import { AttrGroups, RoleTag, attrColor } from './attrDisplay'
 import { CloseIcon } from './icons'
 import { PlayerAvatar } from './PlayerAvatar'
 
-/**
- * Painel de detalhe de um jogador (cabeçalho de identidade + grupos de
- * atributos) — compartilhado pelas telas de elenco e de tática.
- */
-export function PlayerDetail({
+/** Cabeçalho de identidade do jogador (número, foto, nome, função, OVR). */
+export function PlayerDetailHead({
   player,
   teamId,
   extra,
@@ -19,22 +16,32 @@ export function PlayerDetail({
   extra?: ReactNode
 }) {
   return (
-    <div className="rq-simple-detail">
-      <div className="cm-squad-detail-head">
-        <span className="cm-squad-detail-num">{player.number}</span>
-        <PlayerAvatar teamId={teamId} name={player.name} id={player.id} size={48} />
-        <div className="cm-squad-detail-id">
-          <strong>{player.name}</strong>
-          <span>
-            <RoleTag role={player.role} /> · {player.age} anos
-            {extra}
-          </span>
-        </div>
-        <span className="cm-squad-detail-ovr" style={{ color: attrColor(player.overall) }}>
-          {player.overall}
+    <div className="cm-squad-detail-head">
+      <span className="cm-squad-detail-num">{player.number}</span>
+      <PlayerAvatar teamId={teamId} name={player.name} id={player.id} size={48} />
+      <div className="cm-squad-detail-id">
+        <strong>{player.name}</strong>
+        <span>
+          <RoleTag role={player.role} /> · {player.age} anos
+          {extra}
         </span>
       </div>
-      <AttrGroups role={player.role} attrs={player.attrs} />
+      <span className="cm-squad-detail-ovr" style={{ color: attrColor(player.overall) }}>
+        {player.overall}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Painel de detalhe de um jogador (cabeçalho de identidade + grupos de
+ * atributos) — compartilhado pelas telas de elenco e de tática.
+ */
+export function PlayerDetail(props: ComponentProps<typeof PlayerDetailHead>) {
+  return (
+    <div className="rq-simple-detail">
+      <PlayerDetailHead {...props} />
+      <AttrGroups role={props.player.role} attrs={props.player.attrs} />
     </div>
   )
 }

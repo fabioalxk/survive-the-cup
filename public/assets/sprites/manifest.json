@@ -15,5 +15,9 @@
     7
   ],
   "idleFrame": 8,
-  "kitKeyColor": "#39FF14"
+  "kitKeys": {
+    "shirt": "#39FF14",
+    "shorts": "#0044FF",
+    "socks": "#FF00AA"
+  }
 }

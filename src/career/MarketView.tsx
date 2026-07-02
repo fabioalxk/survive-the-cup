@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import type { CareerState } from '../game/types'
 import { fmtMoney, signPlayer, SQUAD_MAX } from '../game/career'
+import { startMerchantMusic, stopMerchantMusic } from '../sfx/crowd'
 import { MarketPlayerCard } from '../ui/MarketPlayerCard'
 import type { CareerApi } from './useCareer'
 
@@ -8,6 +10,11 @@ import type { CareerApi } from './useCareer'
  * tanto na janela (entre temporadas) quanto durante a temporada.
  */
 export default function MarketView({ state, act }: { state: CareerState; act: CareerApi['act'] }) {
+  useEffect(() => {
+    startMerchantMusic()
+    return stopMerchantMusic
+  }, [])
+
   const club = state.clubs[state.clubId]
   const full = club.squad.length >= SQUAD_MAX
   const market = [...state.market].sort((a, b) => b.overall - a.overall)

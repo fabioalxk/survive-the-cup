@@ -3,6 +3,7 @@ import { BLESSING_INFO, pickBlessing } from '../game/run'
 import { ALL_CLUBS } from '../game/worldcup'
 import { ClubBadge } from '../ui/ClubBadge'
 import { ArtIcon } from '../ui/ArtIcon'
+import { chooseSfx } from '../sfx/crowd'
 import type { RunApi } from './useRun'
 
 /** Realça números e palavras gritadas da descrição (estilo Slay the Spire). */
@@ -24,6 +25,7 @@ export default function BlessingView({ state, act }: { state: RunState; act: Run
   return (
     <div className="cm-backdrop rq-scene rq-scene-blessing">
       <div className="rq-bless">
+        <div className="cm-ribbon rq-bless-ribbon">Bênção da largada</div>
         <div className="rq-bless-bubble">
           {club && <ClubBadge club={club} size={42} />}
           <p>
@@ -37,7 +39,10 @@ export default function BlessingView({ state, act }: { state: RunState; act: Run
               <button
                 key={kind}
                 className={`rq-bless-card rq-bless-${info.tone}`}
-                onClick={() => act((s) => pickBlessing(s, i))}
+                onClick={() => {
+                  chooseSfx()
+                  act((s) => pickBlessing(s, i))
+                }}
               >
                 <span className="rq-bless-ico">
                   <ArtIcon name={`bless_${kind}`} />

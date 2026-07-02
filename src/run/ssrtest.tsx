@@ -3,6 +3,7 @@
  * (sem DOM) para garantir que não há erro de runtime/hook nos componentes.
  */
 import { renderToStaticMarkup } from 'react-dom/server'
+import GymNodeView from './GymNodeView'
 import NewRun from './NewRun'
 import RunShell from './RunShell'
 import TacticsView from './TacticsView'
@@ -45,6 +46,12 @@ assert(mapHtml.includes('Survive the Cup'), 'Shell deve identificar o modo')
 const tacticsHtml = renderToStaticMarkup(<TacticsView state={state} act={() => {}} />)
 assert(tacticsHtml.includes('4-3-3'), 'Tática deve mostrar o nome do esquema atual')
 assert((tacticsHtml.match(/tv-chip /g)?.length ?? 0) === 11, 'Tática deve desenhar 11 jogadores no campinho')
+
+// 2c) academia integrada: campinho com os 11 titulares + faixa do banco
+const gymHtml = renderToStaticMarkup(<GymNodeView state={{ ...state, status: 'gym' }} act={() => {}} />)
+assert((gymHtml.match(/tv-chip /g)?.length ?? 0) === 11, 'Academia deve desenhar os 11 titulares no campinho')
+assert(gymHtml.includes('rq-gym-bench'), 'Academia deve mostrar a faixa do banco')
+assert(gymHtml.includes('Toque num jogador'), 'Academia deve convidar a escolher um jogador')
 
 // 3) entra num nó de partida (o próprio RunShell troca pra RunMatchView em tela cheia)
 const matchNode = state.nodes.find((n) => state.availableNodeIds.includes(n.id) && n.kind === 'match')

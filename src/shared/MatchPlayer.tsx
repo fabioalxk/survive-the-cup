@@ -5,7 +5,7 @@ import { primeAudio } from '../sfx/crowd'
 import type { Vec2 } from '../sim/types'
 import type { GenPlayer } from '../game/types'
 import { lineupFor } from '../game/lineup'
-import { resolveKits } from '../game/kits'
+import { resolveKits, withKitDefaults } from '../game/kits'
 import { defaultFormation, formationName } from '../sim/formation'
 import { ClubBadge, type BadgeClub } from '../ui/ClubBadge'
 import { EventBanner } from '../ui/EventBanner'
@@ -43,6 +43,9 @@ export interface MatchSide extends BadgeClub {
   squad: GenPlayer[]
   /** Âncoras da formação tática; ausente → 4-3-3 padrão. */
   formation?: Vec2[]
+  /** Cor de shorts/meião (seleções reais têm; clubes fictícios não — ver `withKitDefaults`). */
+  shorts?: string
+  socks?: string
 }
 
 /**
@@ -85,7 +88,7 @@ export default function MatchPlayer({
 
   // uniformes resolvidos: visitante troca p/ reserva se houver conflito de cor
   const kits = useMemo(
-    () => resolveKits({ shirt: home.shirt, text: home.text }, { shirt: away.shirt, text: away.text }),
+    () => resolveKits(withKitDefaults(home), withKitDefaults(away)),
     [home, away],
   )
 

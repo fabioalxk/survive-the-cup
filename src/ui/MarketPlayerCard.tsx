@@ -28,7 +28,7 @@ export function MarketPlayerCard({
   action: MarketCardAction
 }) {
   return (
-    <li className="mk-card">
+    <li className={`mk-card cm-frame-${player.role.toLowerCase()}`}>
       <div className="mk-head">
         <PlayerAvatar teamId={teamId} name={player.name} id={player.id} size={44} />
         <div className="mk-id">

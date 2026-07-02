@@ -1,0 +1,42 @@
+{
+  "kick": {
+    "src": "/assets/sprites/action_kick.png",
+    "grid": {
+      "cols": 3,
+      "rows": 2
+    },
+    "frames": 6,
+    "durationMs": 380,
+    "mirrorable": false
+  },
+  "header": {
+    "src": "/assets/sprites/action_header.png",
+    "grid": {
+      "cols": 2,
+      "rows": 2
+    },
+    "frames": 4,
+    "durationMs": 480,
+    "mirrorable": false
+  },
+  "throwin": {
+    "src": "/assets/sprites/action_throwin.png",
+    "grid": {
+      "cols": 2,
+      "rows": 2
+    },
+    "frames": 4,
+    "durationMs": 550,
+    "mirrorable": false
+  },
+  "save": {
+    "src": "/assets/sprites/action_save.png",
+    "grid": {
+      "cols": 2,
+      "rows": 2
+    },
+    "frames": 4,
+    "durationMs": 480,
+    "mirrorable": true
+  }
+}

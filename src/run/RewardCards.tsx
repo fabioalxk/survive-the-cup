@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import type { RunState } from '../game/runTypes'
 import { POTION_BOOST, POTION_INFO, claimPotion, pickReward } from '../game/run'
-import { potionSfx, wonRewardSfx } from '../sfx/crowd'
+import { chooseSfx, potionSfx, wonRewardSfx } from '../sfx/crowd'
 import { AttrList, ROLE_LABEL, attrColor, attrLabel } from '../ui/attrDisplay'
 import { GiftIcon, PotionIcon } from '../ui/icons'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
@@ -10,7 +10,7 @@ import type { RunApi } from './useRun'
 
 function RewardCard({ p, onPick }: { p: GenPlayer; onPick: () => void }) {
   return (
-    <button className={`rc-card cm-role-${p.role.toLowerCase()}`} onClick={onPick}>
+    <button className={`rc-card cm-role-${p.role.toLowerCase()} cm-frame-${p.role.toLowerCase()}`} onClick={onPick}>
       <div className="rc-card-portrait">
         <img className="rc-card-spot" src="/assets/icons/card_spotlight.webp" alt="" aria-hidden="true" />
         <span className="rc-card-role">{ROLE_LABEL[p.role]}</span>
@@ -23,7 +23,6 @@ function RewardCard({ p, onPick }: { p: GenPlayer; onPick: () => void }) {
         <div className="rc-card-name">{p.name}</div>
         <div className="rc-card-age">{p.age} anos</div>
         <AttrList role={p.role} attrs={p.attrs} />
-        <span className="cm-btn cm-btn-primary cm-btn-block rc-pick-btn">Escolher</span>
       </div>
     </button>
   )
@@ -39,7 +38,7 @@ export default function RewardCards({ state, act }: { state: RunState; act: RunA
   return (
     <div className="cm-backdrop rq-scene rq-scene-reward">
       <div className="rc-scene">
-        <div className="rc-banner">
+        <div className="cm-ribbon">
           <GiftIcon size={22} className="rq-h2-ico" /> Reforço conquistado!
         </div>
         <p className="rc-sub">Escolha 1 dos 3 jogadores — ele entra no seu banco de reservas.</p>
@@ -64,7 +63,14 @@ export default function RewardCards({ state, act }: { state: RunState; act: RunA
         )}
         <div className="rc-grid">
           {state.pendingReward.map((p, i) => (
-            <RewardCard key={p.id} p={p} onPick={() => act((s) => pickReward(s, i))} />
+            <RewardCard
+              key={p.id}
+              p={p}
+              onPick={() => {
+                chooseSfx()
+                act((s) => pickReward(s, i))
+              }}
+            />
           ))}
         </div>
       </div>

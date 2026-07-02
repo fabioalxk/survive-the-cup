@@ -17,7 +17,7 @@ import {
 } from './career'
 import { ALL_CLUBS, CLUBS_BY_DIVISION } from './clubs'
 import { lineupFor } from './lineup'
-import { resolveKits } from './kits'
+import { resolveKits, withKitDefaults } from './kits'
 import { createMatch, step } from '../sim/engine'
 import { PHYS } from '../sim/constants'
 
@@ -82,12 +82,15 @@ const fer = ALL_CLUBS['ferroviario']
 const uni = ALL_CLUBS['uniao-rondonopolis']
 assert(fer.shirt === uni.shirt, 'pré-condição: os dois clubes são da mesma cor')
 const k = resolveKits(
-  { shirt: fer.shirt, text: fer.text },
-  { shirt: uni.shirt, text: uni.text },
+  withKitDefaults({ shirt: fer.shirt, text: fer.text }),
+  withKitDefaults({ shirt: uni.shirt, text: uni.text }),
 )
 assert(k.home.shirt !== k.away.shirt, 'mando e visitante devem ter cores diferentes')
 // clube sem conflito mantém o uniforme principal
-const noClash = resolveKits({ shirt: '#e11d2a', text: '#fff' }, { shirt: '#1e40af', text: '#fff' })
+const noClash = resolveKits(
+  withKitDefaults({ shirt: '#e11d2a', text: '#fff' }),
+  withKitDefaults({ shirt: '#1e40af', text: '#fff' }),
+)
 assert(noClash.away.shirt === '#1e40af', 'sem conflito, o visitante mantém a cor')
 
 console.log(`  uniforme reserva: ${fer.name} ${k.home.shirt} vs ${uni.name} ${k.away.shirt}`)

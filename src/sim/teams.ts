@@ -6,13 +6,21 @@ export interface TeamInfo {
   name: string
   of: string // artigo + nome, p/ narração ("do Brasil")
   flag: string // caminho do SVG da bandeira (emoji de bandeira não renderiza no Windows)
-  shirt: string // cor do uniforme
+  shirt: string // cor da camisa
+  shorts: string // cor do calção
+  socks: string // cor da meia
   text: string // cor do número
 }
 
 export const TEAMS: Record<TeamId, TeamInfo> = {
-  home: { id: 'home', name: 'Brasil', of: 'do Brasil', flag: '/flags/br.svg', shirt: '#fde047', text: '#15803d' },
-  away: { id: 'away', name: 'Argentina', of: 'da Argentina', flag: '/flags/ar.svg', shirt: '#7dd3fc', text: '#1e3a8a' },
+  home: {
+    id: 'home', name: 'Brasil', of: 'do Brasil', flag: '/flags/br.svg',
+    shirt: '#fde047', shorts: '#1d4ed8', socks: '#f8fafc', text: '#15803d',
+  },
+  away: {
+    id: 'away', name: 'Argentina', of: 'da Argentina', flag: '/flags/ar.svg',
+    shirt: '#7dd3fc', shorts: '#111827', socks: '#f8fafc', text: '#1e3a8a',
+  },
 }
 
 /** Slots da formação 4-3-3 (coordenadas "atacando para a DIREITA"), em metros. */

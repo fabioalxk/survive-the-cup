@@ -117,6 +117,9 @@
   align-items: flex-start;
   gap: 12px;
 }
+/* superfície pintada (mesma placa dos botões genéricos, ver .cm-btn em
+   career.css) no lugar do gradiente CSS liso — o acento dourado à esquerda
+   vira uma barra própria (::before) já que border-image toma as 4 bordas. */
 .rq-menu-item {
   appearance: none;
   cursor: pointer;
@@ -128,16 +131,27 @@
   color: #eef2fb;
   letter-spacing: 0.03em;
   text-align: left;
-  padding: 13px 34px 13px 24px;
-  background: linear-gradient(90deg, rgba(5, 9, 17, 0.78), rgba(5, 9, 17, 0.45) 70%, rgba(5, 9, 17, 0.15));
-  border: 1px solid rgba(212, 175, 55, 0.22);
-  border-left: 3px solid rgba(212, 175, 55, 0.45);
-  border-radius: 10px;
+  padding: 13px 34px 13px 26px;
+  border-style: solid;
+  border-width: 8px;
+  border-image: url('/assets/ui/btn_plate.webp') 15% fill / 1 / 0 stretch;
+  clip-path: inset(0 round 10px);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
-  transition: transform 0.12s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: transform 0.12s, color 0.15s, filter 0.15s;
   animation: rq-menu-in 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.rq-menu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 3px;
+  background: rgba(212, 175, 55, 0.45);
+  transition: background 0.15s;
 }
 .rq-menu-item:nth-child(2) {
   animation-delay: 0.08s;
@@ -161,18 +175,22 @@
 .rq-menu-item:hover {
   color: #fde68a;
   transform: translateX(6px);
-  border-color: rgba(251, 191, 36, 0.6);
-  border-left-color: var(--cm-gold);
-  box-shadow: 0 0 22px rgba(251, 191, 36, 0.18), inset 0 0 14px rgba(251, 191, 36, 0.06);
+  filter: brightness(1.15);
+}
+.rq-menu-item:hover::before,
+.rq-menu-item-hot::before {
+  background: var(--cm-gold);
 }
 .rq-menu-item-hot {
   color: #ffe9a8;
-  border-left-color: var(--cm-gold);
 }
 
 /* --- painéis (nova jornada / como jogar) --- */
 .rq-back {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   appearance: none;
   background: none;
   border: none;
@@ -183,8 +201,19 @@
   color: var(--cm-muted);
   transition: color 0.15s;
 }
+.rq-back::before {
+  content: '';
+  width: 26px;
+  height: 26px;
+  background: url('/assets/ui/btn_round_back.webp') center / contain no-repeat;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  transition: transform 0.15s;
+}
 .rq-back:hover {
   color: var(--cm-text);
+}
+.rq-back:hover::before {
+  transform: translateX(-2px);
 }
 .rq-help-list {
   margin: 0;
@@ -777,6 +806,8 @@
   border-radius: 50%;
   background: conic-gradient(from 210deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02) 40%, rgba(0, 0, 0, 0.3));
 }
+/* medalhão metálico pintado atrás do escudo (tools/generate-art.mjs "nodes") —
+   só o interior do disco fica visível por baixo do escudo/anel decorativo. */
 .rq-node-badge {
   position: relative;
   width: 100%;
@@ -784,10 +815,12 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 50% 32%, var(--cm-panel-3), var(--cm-panel));
-  border: 2.5px solid rgba(148, 163, 189, 0.7);
+  background: url('/assets/ui/node_medallion.webp') center / 100% 100% no-repeat;
   overflow: hidden;
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.6);
+  outline: 2.5px solid transparent;
+  outline-offset: 1px;
+  transition: outline-color 0.15s;
 }
 /* ---- nós de evento (academia/mercado): emblema SVG solto, sem círculo ---- */
 .rq-node-art {
@@ -971,8 +1004,7 @@
   height: 66px;
 }
 .rq-node-boss .rq-node-badge {
-  border-color: var(--cm-gold);
-  background: radial-gradient(circle at 50% 30%, #3a1414, #1a0808);
+  background: url('/assets/ui/node_medallion_boss.webp') center / 100% 100% no-repeat;
   box-shadow: 0 0 20px rgba(220, 38, 38, 0.55), 0 5px 14px rgba(0, 0, 0, 0.6);
 }
 .rq-node-boss .rq-node-ring {
@@ -991,7 +1023,7 @@
 }
 /* disponível: anel dourado com respiração sutil destacando que dá p/ clicar */
 .rq-node-available .rq-node-badge {
-  border-color: var(--cm-gold);
+  outline-color: var(--cm-gold);
   animation: rq-breathe 2.4s ease-in-out infinite;
 }
 @keyframes rq-breathe {
@@ -1067,7 +1099,7 @@
 }
 /* concluído: só ganha a borda verde + o ✓; mantém a cor cheia */
 .rq-node-cleared .rq-node-badge {
-  border-color: var(--cm-green);
+  outline-color: var(--cm-green);
 }
 /* bloqueado: sem clique, mas cor totalmente normal (nada de cinza/apagado) */
 .rq-node-locked {
@@ -1601,20 +1633,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--cm-muted);
+  border: none;
+  /* badge redondo pintado (tools/generate-art.mjs buttons) — o X já vem na arte */
+  background: url('/assets/ui/btn_round_close.webp') center / 100% 100% no-repeat;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.cm-tactics-close svg {
+  display: none;
 }
 .cm-tactics-close:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.3);
-  transform: scale(1.05);
+  filter: brightness(1.3);
+  transform: scale(1.07);
 }
 .cm-tactics-btn-bottom {
   margin-top: 8px !important;
@@ -1633,49 +1666,38 @@
   align-items: center;
   animation: cm-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
-/* faixa/banner dourado com pontas em bandeira, como um título de troféu */
-.rc-banner {
+/* faixa de pergaminho pintada (tools/generate-art.mjs cards), como o
+   "Choose a Card" dos deck-builders — o texto senta no miolo vazio da arte.
+   Compartilhada pelos títulos das cenas do roguelike (recompensa, mercado,
+   academia, bênção); a variante -sm cabe em cabeçalho de modal. */
+.cm-ribbon {
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  padding: 11px 34px;
-  border-radius: 10px;
+  min-width: 380px;
+  padding: 26px 84px 34px;
   font-family: var(--cm-font-display);
   font-weight: 800;
   font-size: 21px;
   letter-spacing: 0.01em;
   color: #2a1c08;
-  background: linear-gradient(180deg, #f6dc93, #d9a63d 55%, #b9822a);
-  border: 1px solid rgba(255, 235, 180, 0.6);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+  text-shadow: 0 1px 0 rgba(255, 245, 215, 0.5);
+  background: url('/assets/cards/ribbon_title.webp') center / 100% auto no-repeat;
+  filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.55));
 }
-.rc-banner::before,
-.rc-banner::after {
-  content: '';
-  position: absolute;
-  top: 3px;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  filter: brightness(0.85);
+.cm-ribbon-sm {
+  min-width: 0;
+  padding: 14px 48px 21px;
+  font-size: 16px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
 }
-.rc-banner::before {
-  left: -13px;
-  border-width: 15px 13px 15px 0;
-  border-color: transparent #b9822a transparent transparent;
-}
-.rc-banner::after {
-  right: -13px;
-  border-width: 15px 0 15px 13px;
-  border-color: transparent transparent transparent #b9822a;
-}
-.rc-banner .rq-h2-ico {
+.cm-ribbon .rq-h2-ico {
   filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.4));
 }
 .rc-sub {
-  margin: 12px 0 18px;
+  margin: 12px 0 26px;
   color: #dbe6f7;
   font-size: 14.5px;
   text-align: center;
@@ -1689,7 +1711,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(220px, 300px));
   justify-content: center;
-  gap: 26px;
+  gap: 34px;
   margin-top: 8px;
 }
 /* carta grande estilo "carta de jogador": retrato em destaque no topo (estoura
@@ -1700,15 +1722,19 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  border: 1px solid rgba(var(--tone), 0.4);
-  border-radius: 20px;
+  border: none;
+  border-radius: 22px;
+  padding: 20px 27px 34px;
   cursor: pointer;
   text-align: left;
   color: var(--cm-text);
   font-family: var(--cm-font);
-  background: linear-gradient(180deg, rgba(22, 34, 58, 0.92), rgba(12, 19, 34, 0.96));
-  box-shadow: var(--cm-shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1), border-color 0.18s, box-shadow 0.18s;
+  /* moldura pintada por posição (cm-frame-*); o painel interno da arte é o fundo */
+  background: var(--card-frame) center / 100% 100% no-repeat,
+    linear-gradient(180deg, rgba(22, 34, 58, 0.92), rgba(12, 19, 34, 0.96));
+  overflow: hidden;
+  box-shadow: var(--cm-shadow-lg);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.28s;
   animation: rq-deal 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 .rc-card.cm-role-gk {
@@ -1739,20 +1765,24 @@
     transform: none;
   }
 }
-.rc-card:hover {
-  border-color: rgba(var(--tone), 0.9);
-  transform: translateY(-10px);
-  box-shadow: 0 26px 50px rgba(0, 0, 0, 0.55), 0 0 34px rgba(var(--tone), 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+/* a carta inteira é o botão: no hover ela cresce suavemente e ganha glow */
+.rc-card:hover,
+.rc-card:focus-visible {
+  transform: translateY(-8px) scale(1.05);
+  z-index: 1;
+  box-shadow: 0 26px 50px rgba(0, 0, 0, 0.55), 0 0 40px rgba(var(--tone), 0.5);
+}
+.rc-card:active {
+  transform: translateY(-4px) scale(1.02);
 }
 /* topo da carta: glow tingido pela posição + retrato do jogador */
 .rc-card-portrait {
   position: relative;
   height: 168px;
-  border-radius: 20px 20px 0 0;
+  border-radius: 12px;
   overflow: hidden;
-  background: radial-gradient(120% 100% at 50% 0%, rgba(var(--tone), 0.3), transparent 65%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.4));
+  /* sem painel opaco: o arco/emblema da moldura pintada aparece atrás do retrato */
+  background: radial-gradient(120% 100% at 50% 0%, rgba(var(--tone), 0.2), transparent 65%);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -1815,7 +1845,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 14px 16px 16px;
+  padding: 14px 4px 0;
 }
 .rc-card-name {
   font-family: var(--cm-font-display);
@@ -1830,14 +1860,12 @@
 }
 /* lista completa de atributos dentro do card (AttrList reaproveitado) */
 .rc-card .mk-attrs {
-  padding: 8px 0 2px;
-  margin-top: 2px;
+  padding: 10px 0 2px;
+  margin-top: 4px;
   border-top: 1px solid var(--cm-line);
 }
-.rc-pick-btn {
-  margin-top: 4px;
-  display: inline-block;
-  text-align: center;
+.rc-card .ps-attr {
+  padding: 3px 0;
 }
 
 /* ---------- Mercado (nó) ---------- */
@@ -1882,7 +1910,7 @@
 }
 .rq-market-head h2 {
   margin: 0;
-  font-size: 21px;
+  font-size: 17px;
 }
 .rq-market-head p {
   margin: 3px 0 0;
@@ -1962,6 +1990,13 @@
   overflow: hidden;
   padding: 0;
   text-align: left;
+  /* painel de vidro: deixa o cenário pintado da academia respirar por trás */
+  background:
+    radial-gradient(90% 60% at 50% -10%, rgba(37, 99, 235, 0.16), transparent 60%),
+    linear-gradient(180deg, rgba(12, 19, 34, 0.9), rgba(7, 11, 20, 0.94));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: cm-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
 .rq-gym-head {
@@ -1969,9 +2004,49 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 17px 22px;
+  padding: 15px 22px;
   border-bottom: 1px solid var(--cm-line);
   background: linear-gradient(180deg, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0));
+}
+.rq-gym-title {
+  flex: 1;
+  min-width: 0;
+}
+/* contador de melhoramentos: o placar da academia, sempre à vista */
+.rq-gym-count {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 74px;
+  padding: 7px 14px 6px;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  border-radius: 13px;
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.16), rgba(251, 191, 36, 0.05));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.rq-gym-count strong {
+  font-family: var(--cm-font-display);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--cm-gold);
+  font-variant-numeric: tabular-nums;
+  animation: rq-gym-pop 0.3s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.rq-gym-count span {
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--cm-muted);
+  margin-top: 2px;
+}
+.rq-gym-count.is-done {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.18), rgba(34, 197, 94, 0.05));
+}
+.rq-gym-count.is-done strong {
+  color: var(--cm-green);
 }
 .rq-gym-ico {
   flex: none;
@@ -1987,7 +2062,7 @@
 }
 .rq-gym-head h2 {
   margin: 0;
-  font-size: 21px;
+  font-size: 17px;
 }
 .rq-gym-head p {
   margin: 3px 0 0;
@@ -2000,85 +2075,173 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 268px 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
 }
 
 /* as duas colunas rolam por dentro */
-.rq-gym-players,
+.rq-gym-field,
 .rq-gym-attrs {
   overflow-y: auto;
 }
 
-/* coluna esquerda: elenco */
-.rq-gym-players {
+/* coluna esquerda: campinho tático (titulares) + faixa do banco */
+.rq-gym-field {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 10px;
-  border-right: 1px solid var(--cm-line);
-  background: rgba(7, 11, 20, 0.35);
-}
-.rq-gym-player {
-  flex: none;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px;
+  padding: 14px 18px;
+  border-right: 1px solid var(--cm-line);
+  /* holofote suave atrás do campo — clima de treino noturno */
+  background:
+    radial-gradient(70% 55% at 50% 42%, rgba(34, 197, 94, 0.08), transparent 70%),
+    rgba(7, 11, 20, 0.35);
+}
+/* barra "Titulares · esquema atual" no topo do campinho */
+.rq-gym-field-head {
   width: 100%;
-  padding: 7px 10px;
-  background: transparent;
-  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.rq-gym-field-head h4,
+.rq-gym-bench h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--cm-muted);
+}
+.rq-gym-field-head .tv-name {
+  font-size: 16px;
+}
+.rq-gym-field .tv-presets {
+  justify-content: center;
+}
+/* o campinho cede espaço pro cabeçalho, rodapé e banco do modal */
+.rq-gym-field .tv-pitch {
+  width: min(100%, max(300px, calc((100dvh - 440px) * 68 / 105)));
+}
+/* prateleira do banco: painel próprio, colado na base do campo */
+.rq-gym-bench {
+  width: 100%;
+  padding: 9px 12px 8px;
+  background: var(--cm-glass), var(--cm-panel-2);
+  border: 1px solid var(--cm-line);
+  border-radius: var(--cm-radius);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.rq-gym-bench h4 {
+  margin-bottom: 7px;
+}
+.rq-gym-bench h4 span {
+  color: var(--cm-text);
+}
+.rq-gym-bench-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--cm-muted);
+}
+.rq-gym-bench-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.rq-bench-card {
+  flex: none;
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px 7px;
+  background: var(--cm-panel-2);
+  border: 1px solid var(--cm-line);
   border-radius: 11px;
   color: var(--cm-text);
   font-family: var(--cm-font);
   cursor: pointer;
-  text-align: left;
-  transition: background 0.12s, border-color 0.12s;
+  text-align: center;
+  transition: background 0.12s, border-color 0.12s, transform 0.1s;
 }
-.rq-gym-player:hover:not(:disabled) {
-  background: var(--cm-panel-2);
+.rq-bench-card:hover {
+  border-color: rgba(148, 163, 189, 0.55);
+  transform: translateY(-1px);
 }
-.rq-gym-player.active {
-  background: linear-gradient(180deg, rgba(37, 99, 235, 0.24), rgba(37, 99, 235, 0.12));
-  border-color: rgba(96, 165, 250, 0.5);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+.rq-bench-card.active {
+  border-color: var(--cm-gold);
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.18), rgba(251, 191, 36, 0.06));
 }
-.rq-gym-player:disabled {
-  cursor: default;
-  opacity: 0.5;
+/* a moldura da foto segue a cor da função (mesma paleta dos chips do campinho) */
+.rq-bench-card .tv-chip-photo {
+  width: 40px;
+  height: 40px;
 }
-.rq-gym-player.active:disabled {
-  opacity: 1;
-}
-.rq-gym-p-id {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.rq-gym-p-id strong {
-  font-size: 13px;
+.rq-bench-card strong {
+  max-width: 100%;
+  font-size: 12px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.rq-gym-p-id small {
-  font-size: 11px;
-  color: var(--cm-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rq-gym-p-ovr {
+.rq-bench-ovr {
   font-family: var(--cm-font-display);
   font-weight: 800;
-  font-size: 14px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
-/* coluna direita: grupos de atributos */
+/* chip do campinho destacado como selecionado (jogador aberto no painel de treino) */
+.tv-chip.is-sel .tv-chip-photo {
+  border-color: var(--cm-gold);
+  animation: rq-sel-ring 1.6s ease-in-out infinite;
+}
+@keyframes rq-sel-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.35), 0 4px 10px rgba(0, 0, 0, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(251, 191, 36, 0.55), 0 4px 14px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* coluna direita: identidade + grupos de atributos treináveis */
 .rq-gym-attrs {
+  display: flex;
+  flex-direction: column;
   padding: 15px 20px 20px;
+  background: rgba(10, 18, 32, 0.35);
+}
+.rq-gym-attrs > .rq-gym-group {
+  flex: none;
+}
+/* na academia o convite "toque num jogador" vale enquanto a coluna existir
+   (a regra de 900px do .tv-side-empty é pensada pra aba Tática) */
+.rq-gym-attrs .tv-side-empty {
+  display: flex;
+  flex: 1;
+}
+.rq-gym-attrs .cm-squad-detail-head {
+  margin-bottom: 14px;
+  animation: cm-fade 0.2s ease both;
+}
+/* o valor do atributo "pula" quando muda (o key remonta o elemento a cada treino) */
+.rq-chip-val {
+  display: inline-block;
+  animation: rq-gym-pop 0.3s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+/* botão de voltar pro campinho — só faz sentido no celular (uma coluna) */
+.rq-gym-back {
+  display: none;
+  align-self: flex-start;
+  margin-bottom: 10px;
 }
 .rq-gym-group {
   margin-bottom: 15px;
@@ -2162,6 +2325,8 @@
   padding: 13px 20px 17px;
   border-top: 1px solid var(--cm-line);
   background: rgba(7, 11, 20, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .rq-gym-summary {
   display: flex;
@@ -2171,6 +2336,8 @@
   gap: 8px 10px;
   font-size: 14px;
   min-height: 30px;
+  /* remontado via key a cada treino — o resumo dá um pulinho de confirmação */
+  animation: rq-gym-pop 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
 }
 .rq-gym-summary-name {
   font-weight: 700;
@@ -2285,8 +2452,12 @@
     grid-template-columns: 1fr;
   }
 
-  /* Academia no celular: o elenco vira uma FAIXA HORIZONTAL de cards em cima
-     (rola pro lado, como uma prateleira) e os atributos ganham a tela toda. */
+}
+
+/* Academia em tela estreita: UMA coluna que alterna — campinho + banco pra
+   escolher o jogador; com um jogador aberto, o painel de treino toma a tela e
+   o botão "← Campinho" volta pra escolha. */
+@media (max-width: 920px) {
   .cm-backdrop:has(.cm-modal.rq-gym) {
     padding: 8px;
   }
@@ -2295,7 +2466,8 @@
     height: calc(100dvh - 16px);
   }
   .rq-gym-head {
-    padding: 13px 16px;
+    padding: 11px 14px;
+    gap: 10px;
   }
   .rq-gym-ico {
     width: 40px;
@@ -2309,47 +2481,35 @@
   .rq-gym-head p {
     font-size: 12px;
   }
+  .rq-gym-count {
+    min-width: 62px;
+    padding: 5px 10px 4px;
+  }
+  .rq-gym-count strong {
+    font-size: 20px;
+  }
   .rq-gym-body {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
   }
-  .rq-gym-players {
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    gap: 8px;
-    padding: 10px 12px;
+  .rq-gym-field {
+    padding: 10px 12px 12px;
     border-right: none;
-    border-bottom: 1px solid var(--cm-line);
   }
-  .rq-gym-player {
-    width: 104px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px 6px 7px;
-    text-align: center;
-    background: var(--cm-panel-2);
-    border-color: var(--cm-line);
+  .rq-gym-field .tv-pitch {
+    width: min(100%, max(260px, calc((100dvh - 470px) * 68 / 105)));
   }
-  .rq-gym-player.active {
-    border-color: #60a5fa;
-    background: rgba(37, 99, 235, 0.22);
+  .rq-gym.has-sel .rq-gym-field {
+    display: none;
   }
-  .rq-gym-p-id {
-    align-items: center;
-    width: 100%;
-  }
-  .rq-gym-p-id strong {
-    max-width: 100%;
-    font-size: 12px;
-  }
-  .rq-gym-p-id small {
-    max-width: 100%;
-    font-size: 10px;
+  .rq-gym:not(.has-sel) .rq-gym-attrs {
+    display: none;
   }
   .rq-gym-attrs {
     padding: 12px 14px 14px;
+    animation: cm-rise 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+  .rq-gym-back {
+    display: inline-flex;
   }
   .rq-gym-foot {
     padding: 10px 14px 13px;
@@ -2694,6 +2854,11 @@
   max-width: min(1000px, 100%);
   animation: cm-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
+.rq-bless-ribbon {
+  display: flex;
+  width: fit-content;
+  margin: 0 auto 18px;
+}
 .rq-bless-bubble {
   display: flex;
   align-items: center;
@@ -2922,6 +3087,13 @@
     width: 72px;
     height: 72px;
   }
+  /* o tamanho real do escudo/bandeira vem de uma prop JS (size=104, inline
+     style) — só !important derruba o inline e evita que ele vaze por cima
+     do texto da descrição neste breakpoint */
+  .rq-select-badge .cm-crest {
+    width: 72px !important;
+    height: 72px !important;
+  }
   .rq-select-name {
     font-size: 30px;
   }
@@ -2945,6 +3117,11 @@
   }
   .rq-map-legend {
     display: none; /* os rótulos sob os nós já dizem o que cada um é */
+  }
+  /* rótulos mais estreitos: o mapa fica mais denso em telas de celular */
+  .rq-node-cap {
+    max-width: 72px;
+    font-size: 8px;
   }
 
   /* ---- Elenco: as 2 colunas CONTINUAM lado a lado (a troca é toque-toque
@@ -3046,11 +3223,25 @@
     align-self: center;
     aspect-ratio: 68 / 105;
   }
+  /* campo estreito: 3 jogadores por linha (4-3-3 etc.) colidem se o chip
+     ficar largo — encolhe foto/rótulo pra caber sem sobrepor o vizinho */
+  .tv-chip-photo {
+    width: 28px;
+    height: 28px;
+  }
+  .tv-chip-name {
+    font-size: 9px;
+    padding: 1px 5px;
+  }
+  .tv-chip-role {
+    font-size: 7.5px;
+  }
 
   /* ---- Cartas de recompensa: no celular a carta deita (retrato à esquerda) ---- */
-  .rc-banner {
+  .cm-ribbon {
     font-size: 16px;
-    padding: 9px 22px;
+    min-width: 0;
+    padding: 18px 52px 24px;
   }
   .rc-sub {
     font-size: 12.5px;
@@ -3064,7 +3255,7 @@
     flex-direction: row;
     align-items: center;
     border-radius: 14px;
-    padding: 8px 12px 8px 0;
+    padding: 10px 14px 10px 8px;
   }
   .rc-card-portrait {
     flex: none;
@@ -3111,10 +3302,6 @@
     font-size: 11px;
   }
   .rc-card .ps-attr-bar {
-    display: none;
-  }
-  /* a carta inteira já é o botão — o CTA "Escolher" vira redundância */
-  .rc-pick-btn {
     display: none;
   }
   .rq-potion-earned {

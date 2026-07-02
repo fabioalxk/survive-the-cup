@@ -1,4 +1,4 @@
-// Helpers compartilhados de geração de imagem via API da OpenAI (gpt-image-1).
+// Helpers compartilhados de geração de imagem via API da OpenAI (gpt-image-2).
 // Usado por generate-art.mjs (ícones/retratos) e generate-sprites.mjs (corpo em
 // grade de corrida). Único lugar que sabe ler a chave e chamar a API — qualquer
 // mudança de endpoint/retry vale para os dois scripts.
@@ -23,18 +23,19 @@ export const apiKey = async () => {
 export const generateImage = async (
   key,
   prompt,
-  { quality = 'medium', size = '1024x1024', format = 'webp', compression = 85 } = {},
+  // background 'transparent' exige gpt-image-1/1.5; gpt-image-2 só gera opaco (background: null).
+  { quality = 'medium', size = '1024x1024', format = 'webp', compression = 85, model = 'gpt-image-1', background = 'transparent' } = {},
 ) => {
   for (let attempt = 0; attempt < 6; attempt++) {
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-image-1',
+        model,
         prompt,
         size,
         quality,
-        background: 'transparent',
+        ...(background ? { background } : {}),
         output_format: format,
         ...(format !== 'png' ? { output_compression: compression } : {}),
         n: 1,

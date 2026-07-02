@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { RunState } from '../game/runTypes'
 import {
   SQUAD_MAX,
@@ -8,12 +9,12 @@ import {
   sellPlayer,
   shopOffers,
 } from '../game/run'
+import { buySfx, sellSfx, startMerchantMusic, stopMerchantMusic } from '../sfx/crowd'
+import { byRole } from '../ui/attrDisplay'
 import { MarketPlayerCard } from '../ui/MarketPlayerCard'
 import { CoinIcon } from '../ui/icons'
 import { MarketIcon } from './MapIcons'
 import type { RunApi } from './useRun'
-
-const ROLE_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 }
 
 const CoinPrice = ({ value }: { value: number }) => (
   <>
@@ -23,6 +24,11 @@ const CoinPrice = ({ value }: { value: number }) => (
 
 /** Evento de MERCADO no mapa: só aqui dá pra comprar/vender — nunca fora de um nó. */
 export default function MarketNodeView({ state, act }: { state: RunState; act: RunApi['act'] }) {
+  useEffect(() => {
+    startMerchantMusic()
+    return stopMerchantMusic
+  }, [])
+
   // shopOffers é determinístico nos DADOS mas gera ids novos a cada chamada,
   // então quem já foi comprado é reconhecido por nome+idade+posição, não por id.
   const owned = (p: { name: string; age: number; role: string }) =>
@@ -30,9 +36,7 @@ export default function MarketNodeView({ state, act }: { state: RunState; act: R
   const offers = shopOffers(state)
     .filter((o) => !owned(o.player))
     .sort((a, b) => b.player.overall - a.player.overall)
-  const squad = [...state.squad].sort(
-    (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || b.overall - a.overall,
-  )
+  const squad = [...state.squad].sort(byRole)
   const full = state.squad.length >= SQUAD_MAX
   const locked = state.squad.length <= SQUAD_MIN
 
@@ -44,7 +48,7 @@ export default function MarketNodeView({ state, act }: { state: RunState; act: R
             <MarketIcon size={30} />
           </span>
           <div>
-            <h2>Mercador de jogadores</h2>
+            <h2 className="cm-ribbon cm-ribbon-sm">Mercador de jogadores</h2>
             <p>Compare os atributos de cada jogador antes de fechar negócio.</p>
           </div>
           <div className="rq-market-wallet">
@@ -77,7 +81,10 @@ export default function MarketNodeView({ state, act }: { state: RunState; act: R
                         : state.coins < o.fee
                           ? 'Moedas insuficientes'
                           : undefined,
-                      onClick: () => act((s) => buyPlayer(s, o)),
+                      onClick: () => {
+                        buySfx()
+                        act((s) => buyPlayer(s, o))
+                      },
                     }}
                   />
                 ))}
@@ -99,7 +106,10 @@ export default function MarketNodeView({ state, act }: { state: RunState; act: R
                     danger: true,
                     disabled: locked,
                     title: locked ? `Não pode ficar com menos de ${SQUAD_MIN} jogadores` : undefined,
-                    onClick: () => act((s) => sellPlayer(s, p.id)),
+                    onClick: () => {
+                      sellSfx()
+                      act((s) => sellPlayer(s, p.id))
+                    },
                   }}
                 />
               ))}

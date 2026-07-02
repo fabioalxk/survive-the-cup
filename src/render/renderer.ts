@@ -2,21 +2,26 @@ import type { MatchState, Player, TeamId } from '../sim/types'
 import { AIR, FIELD, GOAL, PHYS } from '../sim/constants'
 import { TEAMS } from '../sim/teams'
 import { len, lerpV, norm, perp } from '../sim/vector'
-import { drawRunningPlayer } from './sprites'
+import { drawPlayerSprite } from './sprites'
+
+/** As 3 regiões recoloríveis do uniforme (sprite) + cor do número. */
+export interface KitColors {
+  shirt: string
+  shorts: string
+  socks: string
+  text: string
+}
 
 /**
  * Sobrescrita de cores dos uniformes (modo carreira: clubes reais). Quando
  * definida, substitui as cores do TEAMS (Brasil/Argentina da demo). null = demo.
  */
-let kitOverride: Record<TeamId, { shirt: string; text: string }> | null = null
-export const setMatchKits = (
-  kits: Record<TeamId, { shirt: string; text: string }> | null,
-): void => {
+let kitOverride: Record<TeamId, KitColors> | null = null
+export const setMatchKits = (kits: Record<TeamId, KitColors> | null): void => {
   kitOverride = kits
 }
 /** Cores do uniforme de linha do time (carreira sobrepõe a demo). */
-const kitInfo = (team: TeamId): { shirt: string; text: string } =>
-  kitOverride ? kitOverride[team] : TEAMS[team]
+const kitInfo = (team: TeamId): KitColors => (kitOverride ? kitOverride[team] : TEAMS[team])
 
 /**
  * Em telas retrato (celular) o canvas é girado 90° no CSS p/ o campo landscape
@@ -86,9 +91,10 @@ const COLORS = {
  * Uniforme de goleiro: na vida real o GK sempre veste cor contrastante com a
  * dos jogadores de linha (e do adversário). Verde/laranja são clássicos.
  */
-const GK_KITS: Record<string, { shirt: string; text: string }> = {
-  home: { shirt: '#15803d', text: '#f0fdf4' }, // Brasil de linha é amarelo → GK verde
-  away: { shirt: '#f97316', text: '#1c1917' }, // Argentina de linha é azul → GK laranja
+const GK_KITS: Record<string, KitColors> = {
+  // uniforme de goleiro é monocromático (camisa=short=meião) na vida real
+  home: { shirt: '#15803d', shorts: '#15803d', socks: '#15803d', text: '#f0fdf4' }, // Brasil de linha é amarelo → GK verde
+  away: { shirt: '#f97316', shorts: '#f97316', socks: '#f97316', text: '#1c1917' }, // Argentina de linha é azul → GK laranja
 }
 
 /**
@@ -761,7 +767,7 @@ const drawPlayer = (
   // do botão — só quando em pé (sem sprite de "caído" ainda) e com a imagem já
   // carregada; senão cai pro domo de acrílico abaixo, sem quebrar a tela.
   const useSprite = down < 0.3
-  const spriteDrawn = useSprite && drawRunningPlayer(ctx, p.id, kit.shirt, ip, cx, cy, r * 2.15, speed)
+  const spriteDrawn = useSprite && drawPlayerSprite(ctx, p.id, kit, ip, cx, cy, r * 2.15, speed)
 
   if (!spriteDrawn) {
   // === botão de futebol: domo colorido sobre pedestal metálico ===

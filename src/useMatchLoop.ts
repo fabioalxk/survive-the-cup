@@ -10,15 +10,59 @@ import type {
   Vec2,
 } from './sim/types'
 import { applyFormation, type Rosters } from './sim/formation'
-import { MATCH, PHYS } from './sim/constants'
+import { FIELD, MATCH, PHYS } from './sim/constants'
 import { createMatch, setMatchTeamNames, step, stepCelebration } from './sim/engine'
 import { drawMatch, setMatchKits } from './render/renderer'
+import { triggerAction } from './render/sprites'
 import { goalRoar, refWhistle } from './sfx/crowd'
+
+/**
+ * Lê os eventos NOVOS desde `fromIdx` e dispara a animação de ação certa pro
+ * jogador certo — chute/cabeçada (evento 'shot', distinguidos por
+ * `lastShotHeader`) e defesa do goleiro (evento 'save'). `lastShooterId`/
+ * `lastShotHeader` só valem no MESMO passo em que o evento nasceu, por isso
+ * isto roda logo após cada `step()` (pode haver vários por frame no Turbo).
+ */
+const triggerActionsFromNewEvents = (m: MatchState, fromIdx: number): number => {
+  for (let i = fromIdx; i < m.events.length; i++) {
+    const ev = m.events[i]
+    if (ev.type === 'shot') {
+      const shooter = m.players.find((p) => p.id === m.lastShooterId)
+      if (shooter) {
+        const angle = Math.atan2(m.ball.vel.y, m.ball.vel.x)
+        triggerAction(shooter.id, m.lastShotHeader ? 'header' : 'kick', angle)
+      }
+    } else if (ev.type === 'save') {
+      const gk = m.players.find((p) => p.team === ev.team && p.role === 'GK')
+      if (gk) {
+        // goleiro sempre de frente pro campo (guarda o próprio gol)
+        const facing = gk.team === 'home' ? 0 : Math.PI
+        // espelha a pose (gerada mergulhando pra "direita" de quem está de
+        // frente pro campo) conforme o lado real da bola em relação ao goleiro
+        const perpRight = gk.team === 'home' ? -1 : 1
+        const mirror = (m.ball.pos.y - gk.pos.y) * perpRight < 0
+        triggerAction(gk.id, 'save', facing, mirror)
+      }
+    }
+  }
+  return m.events.length
+}
+
+/** Acha o cobrador do lateral (jogador do time que reinicia mais perto da bola). */
+const findThrowInTaker = (m: MatchState) => {
+  const candidates = m.players.filter((p) => p.team === m.restartTeam)
+  if (!candidates.length) return null
+  return candidates.reduce((best, p) => {
+    const d = Math.hypot(p.pos.x - m.ball.pos.x, p.pos.y - m.ball.pos.y)
+    const dBest = Math.hypot(best.pos.x - m.ball.pos.x, best.pos.y - m.ball.pos.y)
+    return d < dBest ? p : best
+  })
+}
 
 /** Configuração opcional da partida (modo carreira): elencos, cores e nomes reais. */
 export interface MatchSetup {
   rosters?: Rosters
-  kits?: Record<'home' | 'away', { shirt: string; text: string }>
+  kits?: Record<'home' | 'away', { shirt: string; shorts: string; socks: string; text: string }>
   names?: Record<'home' | 'away', string>
 }
 
@@ -96,6 +140,8 @@ export const useMatchLoop = (
     let lastCeleb = false
     let lastBanner = -1
     let lastWhistling = false
+    let lastActionEventIdx = matchRef.current.events.length
+    let lastThrowIn = matchRef.current.throwIn
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame)
@@ -127,6 +173,17 @@ export const useMatchLoop = (
           step(m, PHYS.dt)
           acc -= PHYS.dt
           steps++
+          // dispara animações a partir de eventos/estado deste passo (antes do
+          // próximo passo pisar em `lastShooterId`/`lastShotHeader`)
+          lastActionEventIdx = triggerActionsFromNewEvents(m, lastActionEventIdx)
+          if (m.throwIn && !lastThrowIn) {
+            const taker = findThrowInTaker(m)
+            if (taker) {
+              const angle = taker.pos.y < FIELD.h / 2 ? Math.PI / 2 : -Math.PI / 2
+              triggerAction(taker.id, 'throwin', angle)
+            }
+          }
+          lastThrowIn = m.throwIn
         }
         // descarta a dívida acumulada se estourou o teto (anti "spiral of death")
         if (acc > PHYS.dt) acc = PHYS.dt

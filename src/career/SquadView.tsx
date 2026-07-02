@@ -1,18 +1,14 @@
 import { useState } from 'react'
 import type { CareerState } from '../game/types'
 import { fmtMoney, sellPlayer, SQUAD_MIN } from '../game/career'
-import { ROLE_LABEL, attrColor, AttrGroups } from '../ui/attrDisplay'
+import { ROLE_LABEL, attrColor, byRole, AttrGroups } from '../ui/attrDisplay'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
 import type { CareerApi } from './useCareer'
-
-const ROLE_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 }
 
 /** Tela "Meu Time": elenco ordenado por posição + detalhe do jogador + venda. */
 export default function SquadView({ state, act }: { state: CareerState; act: CareerApi['act'] }) {
   const club = state.clubs[state.clubId]
-  const squad = [...club.squad].sort(
-    (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || b.overall - a.overall,
-  )
+  const squad = [...club.squad].sort(byRole)
   const [selId, setSelId] = useState<number | null>(squad[0]?.id ?? null)
   const player = squad.find((p) => p.id === selId) ?? squad[0]
 
