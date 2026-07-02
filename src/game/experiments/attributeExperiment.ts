@@ -29,6 +29,7 @@ const flatAttrs = (value: number): Attrs => {
 
 const buildTeam = (attr: keyof Attrs, value: number): SeedPlayer[] =>
   ROLES_433.map((role, i) => ({
+    id: i + 1,
     number: i + 1,
     name: `#${i + 1}`,
     role,

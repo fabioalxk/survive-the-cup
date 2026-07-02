@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { canvasSize, setLabelsUpright } from '../render/renderer'
+import { canvasSize, setLabelsUpright, setShowNames } from '../render/renderer'
 import { useMatchLoop, type MatchSetup } from '../useMatchLoop'
 import { primeAudio } from '../sfx/crowd'
 import type { Vec2 } from '../sim/types'
@@ -78,6 +78,7 @@ export default function MatchPlayer({
   const rootRef = useRef<HTMLDivElement>(null)
   const [tactics, setTactics] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  const [showNames, setShowNamesState] = useState(false)
   // âncoras vigentes da partida — a fonte local enquanto o jogo roda
   const [slots, setSlots] = useState<Vec2[]>(() => (home.formation ?? defaultFormation()).map((s) => ({ ...s })))
   const wasRunning = useRef(true)
@@ -114,6 +115,13 @@ export default function MatchPlayer({
       setLabelsUpright(false)
     }
   }, [])
+
+  // nomes dos jogadores acima do campo: desligado por padrão (com todo mundo em
+  // campo, a placa de nome mais atrapalha do que ajuda a acompanhar a jogada)
+  useEffect(() => {
+    setShowNames(showNames)
+  }, [showNames])
+  useEffect(() => () => setShowNames(false), [])
 
   const { hud, running, setRunning, speed, setSpeed, setFormation } = useMatchLoop(canvasRef, SCALE, setup)
   const size = canvasSize(SCALE)
@@ -214,6 +222,7 @@ export default function MatchPlayer({
               <FormationEditor
                 slots={slots}
                 xi={xi}
+                teamId={home.id}
                 onPreset={changeFormation}
                 onMove={(index, pos) => changeFormation(slots.map((s, j) => (j === index ? pos : s)))}
               />
@@ -270,6 +279,14 @@ export default function MatchPlayer({
               </button>
             ))}
           </div>
+          <label className="cm-checkbox">
+            <input
+              type="checkbox"
+              checked={showNames}
+              onChange={(e) => setShowNamesState(e.target.checked)}
+            />
+            Nomes
+          </label>
           {onFormationChange && (
             <button className="cm-btn cm-btn-sm" onClick={openTactics} title="Trocar a tática">
               <ClipboardIcon size={13} className="cm-btn-ico-lead" /> Tática

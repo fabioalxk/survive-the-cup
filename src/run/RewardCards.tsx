@@ -1,6 +1,7 @@
+import { useEffect } from 'react'
 import type { RunState } from '../game/runTypes'
 import { POTION_BOOST, POTION_INFO, claimPotion, pickReward } from '../game/run'
-import { potionSfx } from '../sfx/crowd'
+import { potionSfx, wonRewardSfx } from '../sfx/crowd'
 import { AttrList, ROLE_LABEL, attrColor, attrLabel } from '../ui/attrDisplay'
 import { GiftIcon, PotionIcon } from '../ui/icons'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
@@ -30,6 +31,10 @@ function RewardCard({ p, onPick }: { p: GenPlayer; onPick: () => void }) {
 
 /** Pop-up de recompensa após vencer: 3 cartas caóticas, escolhe 1 pro banco. */
 export default function RewardCards({ state, act }: { state: RunState; act: RunApi['act'] }) {
+  useEffect(() => {
+    if (state.pendingReward) wonRewardSfx()
+  }, [state.pendingReward])
+
   if (!state.pendingReward) return null
   return (
     <div className="cm-backdrop rq-scene rq-scene-reward">

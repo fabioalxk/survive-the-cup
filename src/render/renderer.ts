@@ -2,6 +2,7 @@ import type { MatchState, Player, TeamId } from '../sim/types'
 import { AIR, FIELD, GOAL, PHYS } from '../sim/constants'
 import { TEAMS } from '../sim/teams'
 import { len, lerpV, norm, perp } from '../sim/vector'
+import { drawRunningPlayer } from './sprites'
 
 /**
  * Sobrescrita de cores dos uniformes (modo carreira: clubes reais). Quando
@@ -26,6 +27,12 @@ const kitInfo = (team: TeamId): { shirt: string; text: string } =>
 let labelsUpright = false
 export const setLabelsUpright = (v: boolean): void => {
   labelsUpright = v
+}
+
+/** Placa de nome abaixo do jogador: some por padrão (poluía a leitura do jogo com muitos jogadores em campo). */
+let showNames = false
+export const setShowNames = (v: boolean): void => {
+  showNames = v
 }
 
 /**
@@ -750,6 +757,13 @@ const drawPlayer = (
   const rx = r * (1 + 0.35 * down)
   const ry = r * (1 - 0.4 * down)
 
+  // Jogador correndo (sprite gerado por IA, ver src/render/sprites.ts) no lugar
+  // do botão — só quando em pé (sem sprite de "caído" ainda) e com a imagem já
+  // carregada; senão cai pro domo de acrílico abaixo, sem quebrar a tela.
+  const useSprite = down < 0.3
+  const spriteDrawn = useSprite && drawRunningPlayer(ctx, p.id, kit.shirt, ip, cx, cy, r * 2.15, speed)
+
+  if (!spriteDrawn) {
   // === botão de futebol: domo colorido sobre pedestal metálico ===
   // 1) pedestal/base (disco mais largo, claro/metálico) deslocado p/ baixo —
   //    aparece como uma meia-lua sob o domo: a marca do futebol de botão.
@@ -875,9 +889,11 @@ const drawPlayer = (
     ctx.stroke()
     ctx.restore()
   }
+  } // !spriteDrawn — fim do domo de acrílico (fallback)
 
-  // seta de orientação (heading): para onde o corpo está virado, só em pé
-  if (speed > 0.6 && down < 0.4) {
+  // seta de orientação (heading): o sprite já mostra a direção girando, então a
+  // seta some quando ele está ativo — só aparece no fallback (botão) em pé.
+  if (!spriteDrawn && speed > 0.6 && down < 0.4) {
     const d = norm(p.vel)
     const pl = perp(d)
     const tip = { x: cx + d.x * r * 1.4, y: cy + d.y * r * 1.4 }
@@ -892,7 +908,9 @@ const drawPlayer = (
     ctx.fill()
   }
 
-  // número — com leve realce claro atrás p/ ressaltar no domo colorido
+  // número — só no botão de fallback: em cima do sprite correndo ele atrapalha
+  // a leitura da animação (poluía o corpo em movimento).
+  if (!spriteDrawn) {
   ctx.globalAlpha = 1 - down * 0.4
   ctx.font = `bold ${Math.round(r * 1.05)}px "Segoe UI", Roboto, sans-serif`
   ctx.textAlign = 'center'
@@ -904,6 +922,7 @@ const drawPlayer = (
     ctx.fillStyle = kit.text
     ctx.fillText(num, cx, cy)
   })
+  } // !spriteDrawn — fim do número (só no fallback)
   ctx.restore()
 
   // marca de "caído" — aparece junto com a transição
@@ -920,6 +939,7 @@ const drawPlayer = (
 
   // placa de nome abaixo do botão (estilo transmissão): pílula escura com um
   // ponto na cor do time e o nome em branco — legível sobre qualquer fundo.
+  if (!showNames) return
   ctx.save()
   ctx.globalAlpha = 1 - down * 0.5
   ctx.font = `600 ${Math.round(scale * 1.12)}px "Segoe UI", Roboto, sans-serif`

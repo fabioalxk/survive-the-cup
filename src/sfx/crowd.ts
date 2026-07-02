@@ -148,6 +148,16 @@ const whistleBlast = (c: AudioContext, at: number, dur: number) => {
   trill.stop(at + dur)
 }
 
+let wonRewardAudio: HTMLAudioElement | null = null
+
+/** Toca o efeito de recompensa conquistada (arquivo de áudio, ex.: cartas de reforço). */
+export const wonRewardSfx = (): void => {
+  if (typeof window === 'undefined') return
+  if (!wonRewardAudio) wonRewardAudio = new Audio('/sounds/sfx-won-reward.mp3')
+  wonRewardAudio.currentTime = 0
+  void wonRewardAudio.play()
+}
+
 /**
  * Apito do árbitro nos fins de tempo:
  *  • 'stop' — um toque seco: os jogadores param, a bola ainda rola;

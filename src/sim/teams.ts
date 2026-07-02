@@ -182,6 +182,7 @@ const chaosAttrs = (attrs: Attrs, role: Role, seed: number): Attrs =>
   })
 
 export interface SeedPlayer {
+  id: number
   number: number
   name: string
   role: Role
@@ -195,6 +196,7 @@ export const rosterFor = (team: TeamId): SeedPlayer[] =>
     const role = ROLES_433[i]
     const seed = strSeed(`${team}:${spec.name}:${spec.number}`)
     return {
+      id: seed,
       number: spec.number,
       name: spec.name,
       role,

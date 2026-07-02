@@ -40,6 +40,7 @@ export default function TacticsView({ state, act }: { state: RunState; act: RunA
           <FormationEditor
             slots={slots}
             xi={xi}
+            teamId={state.clubId}
             onPreset={(presetSlots) => act((s) => setFormation(s, presetSlots))}
             onMove={(index, pos) => act((s) => moveFormationSlot(s, index, pos))}
             onSelect={setSelIdx}

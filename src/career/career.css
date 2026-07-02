@@ -1406,6 +1406,20 @@ a:focus-visible {
 .cm-match-controls .cm-btn-ghost {
   margin-left: auto;
 }
+.cm-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cm-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.cm-checkbox input {
+  accent-color: #22c55e;
+  cursor: pointer;
+}
 
 /* Histórico da partida: quem marcou, em qual minuto, faltas, cartões... —
    principalmente útil no desktop, onde sobra espaço abaixo do campo. */

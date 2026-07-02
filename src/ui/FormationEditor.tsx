@@ -3,6 +3,7 @@ import type { Vec2 } from '../sim/types'
 import { FIELD } from '../sim/constants'
 import { FORMATION_PRESETS, clampSlot, formationName, roleForSlot } from '../sim/formation'
 import { ROLE_LABEL } from './attrDisplay'
+import { PlayerAvatar } from './PlayerAvatar'
 
 /** Campo vertical na tela (ataque para CIMA) ⇄ coordenadas do motor (ataque para a DIREITA). */
 const toScreen = (p: Vec2) => ({
@@ -12,6 +13,7 @@ const toScreen = (p: Vec2) => ({
 
 /** O que o campinho precisa saber de cada titular para desenhar o chip do slot. */
 export interface SlotPlayer {
+  id: number
   number: number
   name: string
 }
@@ -27,6 +29,7 @@ export interface SlotPlayer {
 export default function FormationEditor({
   slots,
   xi,
+  teamId,
   onPreset,
   onMove,
   onSelect,
@@ -34,6 +37,8 @@ export default function FormationEditor({
   slots: Vec2[]
   /** titular de cada slot, na MESMA ordem das âncoras */
   xi: SlotPlayer[]
+  /** elenco dono da escalação — usado pra buscar a foto real do jogador, se houver */
+  teamId?: string
   onPreset: (slots: Vec2[]) => void
   onMove: (index: number, pos: Vec2) => void
   /** toque/soltura num chip — quem usa pode abrir os atributos do jogador */
@@ -96,7 +101,7 @@ export default function FormationEditor({
               }}
               onPointerCancel={() => setDrag(null)}
             >
-              <span className="tv-chip-num">{p.number}</span>
+              <PlayerAvatar teamId={teamId} name={p.name} id={p.id} size={32} className="tv-chip-photo" />
               <span className="tv-chip-name">{p.name}</span>
               <span className="tv-chip-role">{ROLE_LABEL[role]}</span>
             </div>

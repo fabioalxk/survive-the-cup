@@ -28,6 +28,7 @@ export const lineupFor = (squad: GenPlayer[], slots: Vec2[] = FORMATION_433): Se
   return rolesFor(slots).map((role, i) => {
     const p = pickFor(role)
     return {
+      id: p.id,
       number: p.number,
       name: p.name,
       role,

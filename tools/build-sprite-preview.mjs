@@ -71,18 +71,32 @@ const buildHtml = (manifest, bodies) => `<title>Preview — sprites de jogador c
   }
   .stage canvas { image-rendering: pixelated; }
   .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .pitchRow { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
-  .pitchCell { background: #14301f; border-radius: 8px; padding: 12px; text-align: center; }
-  .pitchCell canvas { image-rendering: pixelated; }
-  .pitchCell span { display: block; font-size: 11px; color: #a7c8b3; margin-top: 6px; }
   code { background: #1f2c3a; padding: 1px 5px; border-radius: 4px; }
+  .fieldPanel { margin-top: 20px; }
+  .fieldPanel .row { margin-bottom: 10px; }
+  .fieldPanel h2 { font-size: 14px; margin: 0; }
+  .fieldPanel p { color: #93a3b5; font-size: 12px; margin: 2px 0 0; }
+  .zoomToggle { display: flex; gap: 6px; }
+  .zoomToggle button {
+    background: #1f2c3a; color: #e8edf3; border: 2px solid transparent; border-radius: 6px;
+    padding: 4px 10px; font-size: 12px; cursor: pointer;
+  }
+  .zoomToggle button.active { border-color: #4ade80; }
+  .idleToggle { background: #1f2c3a; color: #e8edf3; border: 2px solid transparent; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  .idleToggle.active { border-color: #f7d117; }
+  #fieldStage {
+    background-image: repeating-linear-gradient(90deg, #3a7a48 0 40px, #458a55 40px 80px);
+    border-radius: 12px; overflow: hidden;
+  }
+  #realField { display: block; width: 100%; height: auto; }
 </style>
 
 <h1>⚽ Sprites de jogador correndo — preview</h1>
 <p class="sub">
   Uma única pose vista de cima cobre as 360° (o jogo gira o sprite com <code>ctx.rotate</code> pelo vetor de
   velocidade). A cor da camisa/shorts/meião é trocada em runtime por matiz preservando a luminosidade —
-  um sprite serve para qualquer clube.
+  um sprite serve para qualquer clube. O quadro de corrida faz <em>crossfade</em> com o próximo (mistura por
+  alfa) em vez de trocar seco — é o que dá a sensação de movimento contínuo com só 8 poses.
 </p>
 
 <div class="layout">
@@ -96,7 +110,7 @@ const buildHtml = (manifest, bodies) => `<title>Preview — sprites de jogador c
       <input type="range" id="angle" min="0" max="359" value="0" />
     </div>
     <div class="field">
-      <label>Velocidade da animação</label>
+      <div class="row"><label style="margin:0">Velocidade da corrida</label><button class="idleToggle" id="idleToggle">Parado (idle)</button></div>
       <input type="range" id="speed" min="0" max="100" value="55" />
     </div>
     <div class="field">
@@ -107,7 +121,17 @@ const buildHtml = (manifest, bodies) => `<title>Preview — sprites de jogador c
 
   <div>
     <div class="stage"><canvas id="hero" width="360" height="360"></canvas></div>
-    <div class="pitchRow" id="pitchRow"></div>
+
+    <div class="fieldPanel">
+      <div class="row">
+        <div>
+          <h2>Tamanho real em campo (34px de diâmetro — igual ao botão hoje)</h2>
+          <p>O jogador em destaque (anel amarelo) espelha exatamente o ângulo/animação de cima.</p>
+        </div>
+        <div class="zoomToggle" id="zoomToggle"></div>
+      </div>
+      <div id="fieldStage"><canvas id="realField" width="900" height="260"></canvas></div>
+    </div>
   </div>
 </div>
 
@@ -205,21 +229,39 @@ async function getTintedCanvas(bodyName, teamHex) {
 }
 
 // ---- estado + render ---------------------------------------------------
-let state = { bodyName: BODIES[0].name, teamHex: TEAM_COLORS[0].hex, angle: 0, speed: 55, playing: true, frameIdx: 0, acc: 0 };
+const REAL_PX = 34; // diâmetro real hoje: PHYS.playerRadius(0.9m) * 1.55 * SCALE(12px/m) ≈ 33.5px
+let state = { bodyName: BODIES[0].name, teamHex: TEAM_COLORS[0].hex, angle: 0, speed: 55, idle: false, frameFloat: 0, zoom: 1 };
 
-function frameCellFor(idx) {
-  const frame = idx < MANIFEST.runFrames.length ? MANIFEST.runFrames[idx] : MANIFEST.idleFrame;
+function gridCellOf(frame) {
   return { col: frame % MANIFEST.grid.cols, row: Math.floor(frame / MANIFEST.grid.cols) };
 }
 
-function drawSprite(ctx, canvasSrc, cx, cy, size, angleDeg) {
+/**
+ * Desenha o sprite girado, com crossfade entre o quadro atual e o próximo
+ * (mistura por alfa) — some com o "pulo" de ter só 8 poses de corrida.
+ */
+function drawSprite(ctx, canvasSrc, cx, cy, size, angleDeg, frameFloat, idle) {
   const cellW = canvasSrc.width / MANIFEST.grid.cols;
   const cellH = canvasSrc.height / MANIFEST.grid.rows;
-  const { col, row } = frameCellFor(state.frameIdx);
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate((angleDeg * Math.PI) / 180);
-  ctx.drawImage(canvasSrc, col * cellW, row * cellH, cellW, cellH, -size / 2, -size / 2, size, size);
+  const draw = (frame, alpha) => {
+    const { col, row } = gridCellOf(frame);
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(canvasSrc, col * cellW, row * cellH, cellW, cellH, -size / 2, -size / 2, size, size);
+  };
+  if (idle) {
+    draw(MANIFEST.idleFrame, 1);
+  } else {
+    const n = MANIFEST.runFrames.length;
+    const f = ((frameFloat % n) + n) % n;
+    const i0 = Math.floor(f);
+    const t = f - i0;
+    draw(MANIFEST.runFrames[i0], 1);
+    if (t > 0.001) draw(MANIFEST.runFrames[(i0 + 1) % n], t);
+  }
+  ctx.globalAlpha = 1;
   ctx.restore();
 }
 
@@ -229,36 +271,50 @@ const heroCtx = heroCanvas.getContext('2d');
 async function renderHero() {
   const tinted = await getTintedCanvas(state.bodyName, state.teamHex);
   heroCtx.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
-  drawSprite(heroCtx, tinted, heroCanvas.width / 2, heroCanvas.height / 2, 260, state.angle);
+  drawSprite(heroCtx, tinted, heroCanvas.width / 2, heroCanvas.height / 2, 260, state.angle, state.frameFloat, state.idle);
 }
 
-// mini campo com 6 jogadores (um por corpo do pool) correndo em direções diferentes
-const pitchRow = document.getElementById('pitchRow');
-const pitchCells = BODIES.map((b, i) => {
-  const wrap = document.createElement('div'); wrap.className = 'pitchCell';
-  const c = document.createElement('canvas'); c.width = 72; c.height = 72;
-  const label = document.createElement('span'); label.textContent = b.name;
-  wrap.append(c, label); pitchRow.append(wrap);
-  return { canvas: c, ctx: c.getContext('2d'), body: b.name, angle: (360 / BODIES.length) * i };
-});
-async function renderPitchRow() {
-  for (const cell of pitchCells) {
-    const tinted = await getTintedCanvas(cell.body, state.teamHex);
-    cell.ctx.clearRect(0, 0, 72, 72);
-    drawSprite(cell.ctx, tinted, 36, 36, 58, cell.angle + state.angle);
+// ---- campo em tamanho real: N jogadores decorativos + 1 sincronizado com o herói ----
+const realCanvas = document.getElementById('realField');
+const realCtx = realCanvas.getContext('2d');
+const DECOR_COUNT = 9;
+const decorPlayers = Array.from({ length: DECOR_COUNT }, (_, i) => ({
+  body: BODIES[i % BODIES.length].name,
+  x: (i + 0.5) / DECOR_COUNT,
+  y: 0.28 + 0.44 * ((i * 0.61803) % 1), // espalhado, determinístico (proporção áurea)
+  angle: (360 / DECOR_COUNT) * i * 1.3,
+  phase: i * 1.7,
+}));
+
+async function renderRealField() {
+  const w = realCanvas.width, h = realCanvas.height;
+  realCtx.clearRect(0, 0, w, h);
+  const size = REAL_PX * state.zoom;
+  for (const p of decorPlayers) {
+    const tinted = await getTintedCanvas(p.body, state.teamHex);
+    drawSprite(realCtx, tinted, p.x * w, p.y * h, size, p.angle, state.frameFloat + p.phase, state.idle);
   }
+  // jogador em destaque — mesmo ângulo/corpo/frame do herói acima
+  const highlighted = await getTintedCanvas(state.bodyName, state.teamHex);
+  const hx = w / 2, hy = h * 0.72;
+  realCtx.beginPath();
+  realCtx.arc(hx, hy, size / 2 + 5, 0, Math.PI * 2);
+  realCtx.strokeStyle = '#fde047';
+  realCtx.lineWidth = 2;
+  realCtx.stroke();
+  drawSprite(realCtx, highlighted, hx, hy, size, state.angle, state.frameFloat, state.idle);
 }
 
 // ---- loop de animação (independente de FPS, como o jogo real) ---------
 let last = performance.now();
 function tick(now) {
   const dt = (now - last) / 1000; last = now;
-  if (state.playing) {
-    state.acc += dt * (0.5 + state.speed / 40); // velocidade mapeia p/ passadas/seg
-    while (state.acc > 1 / 10) { state.acc -= 1 / 10; state.frameIdx = (state.frameIdx + 1) % (MANIFEST.runFrames.length + 1); }
+  if (!state.idle) {
+    const stepsPerSec = 2 + (state.speed / 100) * 10; // cadência da passada
+    state.frameFloat += dt * stepsPerSec;
   }
   renderHero();
-  renderPitchRow();
+  renderRealField();
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
@@ -284,6 +340,18 @@ angleInput.oninput = () => { state.angle = +angleInput.value; angleLabel.textCon
 
 const speedInput = document.getElementById('speed');
 speedInput.oninput = () => { state.speed = +speedInput.value; };
+
+const idleToggle = document.getElementById('idleToggle');
+idleToggle.onclick = () => { state.idle = !state.idle; idleToggle.classList.toggle('active', state.idle); };
+
+const zoomToggleEl = document.getElementById('zoomToggle');
+[1, 2, 3].forEach((z) => {
+  const btn = document.createElement('button');
+  btn.textContent = z + 'x';
+  btn.className = z === 1 ? 'active' : '';
+  btn.onclick = () => { state.zoom = z; [...zoomToggleEl.children].forEach((c) => c.classList.remove('active')); btn.classList.add('active'); };
+  zoomToggleEl.append(btn);
+});
 
 // arrastar direto no canvas herói também gira o ângulo (mais intuitivo)
 let dragging = false;

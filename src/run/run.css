@@ -1524,33 +1524,26 @@
 .tv-role-gk {
   cursor: default;
 }
-.tv-chip-num {
-  display: grid;
-  place-items: center;
+.tv-chip-photo {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  font-family: var(--cm-font-display);
-  font-weight: 800;
-  font-size: 14px;
-  color: #fff;
   border: 2px solid rgba(255, 255, 255, 0.75);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
   transition: transform 0.12s ease, border-color 0.12s;
 }
-.tv-role-gk .tv-chip-num {
-  background: #b45309;
+.tv-role-gk .tv-chip-photo {
+  border-color: #b45309;
 }
-.tv-role-def .tv-chip-num {
-  background: #1d4ed8;
+.tv-role-def .tv-chip-photo {
+  border-color: #1d4ed8;
 }
-.tv-role-mid .tv-chip-num {
-  background: #15803d;
+.tv-role-mid .tv-chip-photo {
+  border-color: #15803d;
 }
-.tv-role-fwd .tv-chip-num {
-  background: #b91c1c;
+.tv-role-fwd .tv-chip-photo {
+  border-color: #b91c1c;
 }
-.tv-chip.is-drag .tv-chip-num {
+.tv-chip.is-drag .tv-chip-photo {
   transform: scale(1.18);
   border-color: var(--cm-gold);
 }
