@@ -3,9 +3,11 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 16px;
-  max-width: 1280px;
-  margin: 0 auto;
+  padding: 16px clamp(16px, 3vw, 48px);
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* ---------- placar (estilo transmissão de TV) ---------- */

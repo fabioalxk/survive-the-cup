@@ -23,8 +23,12 @@ const CoinPrice = ({ value }: { value: number }) => (
 
 /** Evento de MERCADO no mapa: só aqui dá pra comprar/vender — nunca fora de um nó. */
 export default function MarketNodeView({ state, act }: { state: RunState; act: RunApi['act'] }) {
+  // shopOffers é determinístico nos DADOS mas gera ids novos a cada chamada,
+  // então quem já foi comprado é reconhecido por nome+idade+posição, não por id.
+  const owned = (p: { name: string; age: number; role: string }) =>
+    state.squad.some((s) => s.name === p.name && s.age === p.age && s.role === p.role)
   const offers = shopOffers(state)
-    .filter((o) => !state.squad.some((p) => p.id === o.player.id))
+    .filter((o) => !owned(o.player))
     .sort((a, b) => b.player.overall - a.player.overall)
   const squad = [...state.squad].sort(
     (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || b.overall - a.overall,

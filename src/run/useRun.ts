@@ -7,7 +7,7 @@ import { clearRunSave, loadRun, saveRun } from '../game/runSave'
 export interface RunApi {
   state: RunState | null
   act: (fn: (s: RunState) => void) => void
-  start: (managerName: string, clubId: string) => void
+  start: (managerName: string, clubId: string, ascension: number) => void
   reset: () => void
 }
 
@@ -28,9 +28,9 @@ export const useRun = (): RunApi => {
   )
 
   const start = useCallback(
-    (managerName: string, clubId: string) => {
+    (managerName: string, clubId: string, ascension: number) => {
       const seed = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0
-      ref.current = newRun(managerName, clubId, seed)
+      ref.current = newRun(managerName, clubId, seed, ascension)
       saveRun(ref.current)
       render()
     },

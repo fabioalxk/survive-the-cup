@@ -1,21 +1,30 @@
 import type { Attrs, Vec2 } from '../sim/types'
 import { clampSlot, defaultFormation } from '../sim/formation'
 import type { GenPlayer } from './types'
-import type { PotionKind, RunNode, RunState } from './runTypes'
+import type { BlessingKind, PotionKind, RunNode, RunState } from './runTypes'
 import { ALL_CLUBS } from './worldcup'
-import { generateMap, generateRewardCards, generateStartSquad } from './runGen'
+import {
+  generateMap,
+  generateRewardCards,
+  generateStarPlayer,
+  generateStartSquad,
+  generateWonderkid,
+} from './runGen'
 import { generatePlayer, valueOf } from './generate'
 import { overallOf } from './overall'
 import { bestEleven, squadStrength } from './strength'
 import { quickResult } from './quicksim'
 import { makeRng, mixSeed, type Rng } from './random'
+import { clampAscension, gymTrains, offerLevelPenalty } from './ascension'
 
-const RUN_VERSION = 3
+const RUN_VERSION = 5
 export const START_COINS = 100
 /** Vidas da run: pode perder 1 partida e continuar; a 2ª derrota elimina. */
 export const START_LIVES = 2
 export const SQUAD_MIN = 11
 export const SQUAD_MAX = 23
+/** Quanto cada melhoramento da academia soma ao atributo (teto 100). */
+export const GYM_GAIN = 20
 
 // ---- Poções: ganhas ao vencer, usadas num jogador, valem por UMA partida ----
 /** Quanto a poção soma ao atributo — pode PASSAR de 100 (teto 120). */
@@ -64,15 +73,17 @@ const ensureStartingXI = (state: RunState): void => {
 }
 
 /** Cria uma nova corrida: técnico + clube escolhido, elenco cru de 11, mapa gerado. */
-export const newRun = (managerName: string, clubId: string, seed: number): RunState => {
+export const newRun = (managerName: string, clubId: string, seed: number, ascension = 0): RunState => {
+  ascension = clampAscension(ascension)
   const rng = makeRng(seed)
   const squad = generateStartSquad(rng, clubId)
-  const nodes = generateMap(rng, clubId)
+  const nodes = generateMap(rng, clubId, ascension)
   const state: RunState = {
     version: RUN_VERSION,
     seed,
     managerName,
     clubId,
+    ascension,
     squad,
     startingIds: bestEleven(squad).map((p) => p.id),
     formationSlots: defaultFormation(),
@@ -86,9 +97,12 @@ export const newRun = (managerName: string, clubId: string, seed: number): RunSt
     potions: [],
     activePotions: [],
     pendingPotion: null,
+    pendingBlessings: rollBlessings(rng),
     lastMatch: null,
-    status: 'map',
-    log: [`${managerName} assume o ${ALL_CLUBS[clubId]?.name ?? clubId} para a jornada.`],
+    status: 'blessing',
+    log: [
+      `${managerName} assume o ${ALL_CLUBS[clubId]?.name ?? clubId} para a jornada.${ascension > 0 ? ` 🔥 Ascension ${ascension}.` : ''}`,
+    ],
   }
   return state
 }
@@ -128,6 +142,123 @@ const clearNode = (state: RunState, node: RunNode): void => {
   state.stage = node.stage
   state.availableNodeIds = node.next
   state.currentNodeId = null
+  state.status = 'map'
+}
+
+// =====================================================================
+// BÊNÇÃO DA LARGADA (estilo Neow do Slay the Spire): 3 ofertas antes do
+// 1º nó — 1 segura, 1 de poder e 1 amaldiçoada. O jogador leva UMA.
+// =====================================================================
+
+export const BLESS_COINS = 150
+export const BLESS_PACT_COINS = 300
+export const BLESS_CAPTAIN_BOOST = 10
+
+export type BlessingTone = 'safe' | 'power' | 'cursed'
+
+export const BLESSING_INFO: Record<
+  BlessingKind,
+  { emoji: string; label: string; desc: string; tone: BlessingTone }
+> = {
+  sponsor: {
+    emoji: '💰',
+    label: 'Patrocínio Master',
+    desc: `Ganhe ${BLESS_COINS} moedas para gastar no mercado.`,
+    tone: 'safe',
+  },
+  potionkit: {
+    emoji: '🧪',
+    label: 'Kit do Preparador',
+    desc: `Comece com o inventário cheio: ${POTIONS_MAX} poções sortidas.`,
+    tone: 'safe',
+  },
+  extralife: {
+    emoji: '❤️',
+    label: 'Torcida Apaixonada',
+    desc: 'Ganhe 1 vida extra para a jornada inteira.',
+    tone: 'safe',
+  },
+  star: {
+    emoji: '🌟',
+    label: 'O Craque',
+    desc: 'Um craque de outro nível chega e já assume a titularidade.',
+    tone: 'power',
+  },
+  captain: {
+    emoji: '🎖️',
+    label: 'Braçadeira de Capitão',
+    desc: `Seu melhor jogador ganha +${BLESS_CAPTAIN_BOOST} em TODOS os atributos.`,
+    tone: 'power',
+  },
+  wonderkid: {
+    emoji: '💎',
+    label: 'Joia da Base',
+    desc: 'Uma promessa de 17 anos, caótica e imprevisível, sobe para o elenco.',
+    tone: 'power',
+  },
+  pact: {
+    emoji: '😈',
+    label: 'Pacto com o Agente',
+    desc: `Ganhe ${BLESS_PACT_COINS} moedas… mas PERDE 1 vida.`,
+    tone: 'cursed',
+  },
+}
+
+const blessingsOf = (tone: BlessingTone): BlessingKind[] =>
+  (Object.keys(BLESSING_INFO) as BlessingKind[]).filter((k) => BLESSING_INFO[k].tone === tone)
+
+/** Sorteia as 3 ofertas da largada: sempre 1 segura + 1 de poder + 1 amaldiçoada. */
+const rollBlessings = (rng: Rng): BlessingKind[] =>
+  (['safe', 'power', 'cursed'] as BlessingTone[]).map((tone) => rng.pick(blessingsOf(tone)))
+
+const applyBlessing = (state: RunState, kind: BlessingKind, rng: Rng): void => {
+  switch (kind) {
+    case 'sponsor':
+      state.coins += BLESS_COINS
+      break
+    case 'potionkit':
+      while (state.potions.length < POTIONS_MAX) state.potions.push(rng.pick(POTION_KINDS))
+      break
+    case 'extralife':
+      state.lives += 1
+      break
+    case 'star': {
+      const p = generateStarPlayer(rng)
+      state.squad.push(p)
+      optimizeStartingXI(state)
+      log(state, `🌟 ${p.name} (${p.overall} OVR) chega como o craque do time.`)
+      break
+    }
+    case 'captain': {
+      const captain = [...startingXI(state)].sort((a, b) => b.overall - a.overall)[0]
+      for (const k of Object.keys(captain.attrs) as (keyof Attrs)[])
+        captain.attrs[k] = clamp(captain.attrs[k] + BLESS_CAPTAIN_BOOST, 1, 100)
+      refreshRating(captain)
+      log(state, `🎖️ ${captain.name} vestiu a braçadeira: agora ${captain.overall} OVR.`)
+      break
+    }
+    case 'wonderkid': {
+      const p = generateWonderkid(rng)
+      state.squad.push(p)
+      log(state, `💎 ${p.name}, ${p.age} anos, sobe da base (${p.overall} OVR) para o banco.`)
+      break
+    }
+    case 'pact':
+      state.coins += BLESS_PACT_COINS
+      state.lives -= 1
+      break
+  }
+}
+
+/** Escolhe UMA das 3 bênçãos da largada e começa a jornada no mapa. */
+export const pickBlessing = (state: RunState, index: number): void => {
+  if (state.status !== 'blessing' || !state.pendingBlessings) return
+  const kind = state.pendingBlessings[index]
+  if (!kind) return
+  applyBlessing(state, kind, rngForNode(state, 'blessing:' + kind))
+  const info = BLESSING_INFO[kind]
+  log(state, `${info.emoji} Bênção da largada: ${info.label}.`)
+  state.pendingBlessings = null
   state.status = 'map'
 }
 
@@ -298,7 +429,7 @@ export const finishMatch = (state: RunState, homeGoals: number, awayGoals: numbe
     return
   }
 
-  state.pendingReward = generateRewardCards(node.stage, rng)
+  state.pendingReward = generateRewardCards(node.stage, rng, state.ascension)
   maybeDropPotion(state, rng)
   clearNode(state, node)
   state.status = 'reward'
@@ -408,7 +539,7 @@ export const shopOffers = (state: RunState): ShopOffer[] => {
   if (!node || node.kind !== 'market') return []
   const rng = rngForNode(state, node.id + ':shop')
   const roles = ['GK', 'DEF', 'DEF', 'MID', 'MID', 'FWD', 'FWD'] as const
-  const level = 45 + node.stage * 6
+  const level = 45 + node.stage * 6 - offerLevelPenalty(state.ascension)
   return Array.from({ length: 5 }, () => {
     const p = generatePlayer(rng.pick([...roles]), level + rng.range(-6, 14), rng.int(1, 39), rng)
     return { player: p, fee: Math.max(4, Math.round(coinValueOf(p.overall, p.age) * rng.range(0.9, 1.2))) }
@@ -445,15 +576,15 @@ export const sellPlayer = (state: RunState, playerId: number): boolean => {
 // ACADEMIA (só dentro de um nó de academia)
 // =====================================================================
 
-/** Bufa MUITO um atributo de um jogador (+20, teto 100) — até 5 usos por nó de academia (100 pontos no total). */
+/** Bufa MUITO um atributo de um jogador (+GYM_GAIN, teto 100) — usos por nó de academia limitados por `gymTrains`. */
 export const boostAttribute = (state: RunState, playerId: number, attr: keyof Attrs): boolean => {
   if (state.status !== 'gym') return false
   const p = state.squad.find((pl) => pl.id === playerId)
   // já no teto do treino (ou acima dele, por poção) — não pode reduzir o atributo
   if (!p || p.attrs[attr] >= 100) return false
-  p.attrs[attr] = clamp(p.attrs[attr] + 20, 1, 100)
+  p.attrs[attr] = clamp(p.attrs[attr] + GYM_GAIN, 1, 100)
   refreshRating(p)
-  log(state, `${p.name} treinou forte: +20 em atributo, agora ${p.overall} OVR.`)
+  log(state, `${p.name} treinou forte: +${GYM_GAIN} em atributo, agora ${p.overall} OVR.`)
   return true
 }
 
@@ -490,13 +621,13 @@ const autoShop = (state: RunState): void => {
   }
 }
 
-/** Usa os 5 melhoramentos da academia no melhor titular, sempre no atributo mais fraco atual. */
+/** Usa os melhoramentos da academia no melhor titular, sempre no atributo mais fraco atual. */
 const autoGym = (state: RunState): void => {
   const xi = startingXI(state)
   if (xi.length === 0) return
   const target = [...xi].sort((a, b) => b.overall - a.overall)[0]
   const keys = Object.keys(target.attrs) as (keyof Attrs)[]
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < gymTrains(state.ascension); i++) {
     const weakest = keys.reduce((a, b) => (target.attrs[a] < target.attrs[b] ? a : b))
     boostAttribute(state, target.id, weakest)
   }
@@ -531,7 +662,9 @@ export interface RunAutoPlayResult {
 export const autoPlayRun = (state: RunState, maxNodes = 60): RunAutoPlayResult => {
   let nodesVisited = 0
   while (state.status !== 'gameover' && state.status !== 'victory' && nodesVisited < maxNodes) {
-    if (state.status === 'map') {
+    if (state.status === 'blessing') {
+      pickBlessing(state, 1) // o bot leva sempre a bênção de PODER (índice 1)
+    } else if (state.status === 'map') {
       const candidates = state.availableNodeIds
         .map((id) => nodeOf(state, id))
         .filter((n): n is RunNode => !!n && !n.cleared)

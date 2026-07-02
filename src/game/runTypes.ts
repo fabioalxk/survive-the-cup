@@ -38,7 +38,22 @@ export interface ActivePotion {
   amount: number
 }
 
+/**
+ * Bênção da largada (estilo Neow do Slay the Spire): oferta única antes do 1º nó.
+ * Grupos: seguras (sponsor/potionkit/extralife), de poder (star/captain/wonderkid)
+ * e amaldiçoada (pact) — o sorteio pega 1 de cada grupo.
+ */
+export type BlessingKind =
+  | 'sponsor'
+  | 'potionkit'
+  | 'extralife'
+  | 'star'
+  | 'captain'
+  | 'wonderkid'
+  | 'pact'
+
 export type RunStatus =
+  | 'blessing' // escolhendo a bênção da largada (antes do 1º nó)
   | 'map' // escolhendo o próximo nó
   | 'match' // partida em andamento
   | 'reward' // pop-up dos 3 jogadores após vencer
@@ -48,12 +63,14 @@ export type RunStatus =
   | 'gameover' // eliminado (acabaram as vidas)
   | 'victory' // venceu o chefão final
 
-/** Estado completo de uma "corrida" (run) do modo Slay of the CM. */
+/** Estado completo de uma "corrida" (run) do modo Survive the Cup. */
 export interface RunState {
   version: number
   seed: number
   managerName: string
   clubId: string
+  /** Nível de dificuldade da corrida (0 a 10, como no Slay the Spire). */
+  ascension: number
   squad: GenPlayer[]
   /** ids dos 11 titulares — subconjunto de `squad`. */
   startingIds: number[]
@@ -75,6 +92,8 @@ export interface RunState {
   activePotions: ActivePotion[]
   /** poção ganha na última vitória (exibida no pop-up de recompensa). */
   pendingPotion: PotionKind | null
+  /** as 3 bênçãos oferecidas na largada (null depois de escolher). */
+  pendingBlessings: BlessingKind[] | null
   lastMatch: {
     oppName: string
     homeGoals: number

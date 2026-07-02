@@ -33,10 +33,14 @@ export const loadRun = (): RunState | null => {
     if (typeof state.lives !== 'number') state.lives = START_LIVES
     // migração: saves antigos não tinham formação editável (era 4-3-3 fixo)
     if (!state.formationSlots) state.formationSlots = defaultFormation()
+    // migração v3 → v4: saves antigos não tinham nível de ascension (= 0, dificuldade normal)
+    if (typeof state.ascension !== 'number') state.ascension = 0
     // migração v2 → v3: saves antigos não tinham o sistema de poções
     if (!state.potions) state.potions = []
     if (!state.activePotions) state.activePotions = []
     if (state.pendingPotion === undefined) state.pendingPotion = null
+    // migração v4 → v5: saves antigos não tinham a bênção da largada (já em jornada: nada a oferecer)
+    if (state.pendingBlessings === undefined) state.pendingBlessings = null
     let maxId = 0
     for (const p of state.squad) maxId = Math.max(maxId, p.id)
     for (const n of state.nodes) for (const p of n.opponent?.squad ?? []) maxId = Math.max(maxId, p.id)

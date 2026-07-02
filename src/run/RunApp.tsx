@@ -5,7 +5,7 @@ import RunShell from './RunShell'
 import '../career/career.css'
 import './run.css'
 
-/** Raiz do modo "Slay of the CM": menu inicial quando não há corrida, senão a corrida. */
+/** Raiz do modo "Survive the Cup": menu inicial quando não há corrida, senão a corrida. */
 export default function RunApp() {
   const api = useRun()
   if (!api.state) {

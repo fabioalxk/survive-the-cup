@@ -1,12 +1,13 @@
 import type { Role } from '../sim/types'
 import type { ChaosCfg } from '../sim/chaos'
 import { ROLES_433 } from '../sim/teams'
-import { generatePlayer, generateSquadShaped } from './generate'
+import { generatePlayer, generateSquadShaped, valueOf } from './generate'
 import { ALL_CLUBS } from './worldcup'
 import { wcRoster } from './worldcupPlayers'
 import type { Rng } from './random'
 import type { GenPlayer } from './types'
 import type { NodeKind, OpponentDef, RunNode } from './runTypes'
+import { offerLevelPenalty, opponentLevelBonus } from './ascension'
 
 /** Nº de fases regulares antes do chefão (a fase STAGE_COUNT+1 é o chefão). */
 export const STAGE_COUNT = 6
@@ -33,7 +34,7 @@ const clampCol = (c: number): number => Math.max(0, Math.min(MAP_WIDTH - 1, c))
  * (o elenco cresce por carta/academia a cada vitória) e dá um salto só no
  * chefão final, para ele realmente parecer o chefão.
  */
-const STAGE_LEVEL: Record<number, number> = { 1: 35, 2: 39, 3: 43, 4: 47, 5: 51, 6: 55, 7: 64 }
+const STAGE_LEVEL: Record<number, number> = { 1: 37, 2: 41, 3: 45, 4: 49, 5: 53, 6: 57, 7: 66 }
 
 /** Nível-alvo do elenco inicial do jogador — abaixo da fase 1 (favorito logo de cara). */
 export const START_LEVEL = 50
@@ -71,6 +72,33 @@ const START_SHAPE: Role[] = ROLES_433
 export const generateStartSquad = (rng: Rng, clubId: string): GenPlayer[] =>
   generateSquadShaped(START_SHAPE, START_LEVEL, chaosFor(1), rng, wcRoster(clubId))
 
+// ---- Geradores das bênçãos da largada (tela estilo Neow, antes do 1º nó) ----
+
+/** Nível do craque da bênção 'star' — bem acima do elenco inicial (START_LEVEL). */
+const BLESS_STAR_LEVEL = 72
+/** Nível da joia de 17 anos da bênção 'wonderkid' — acima do elenco, abaixo do craque. */
+const BLESS_WONDERKID_LEVEL = 62
+/** Reancora a idade de um jogador gerado (o valor de mercado depende dela). */
+const withAge = (p: GenPlayer, age: number): GenPlayer => {
+  p.age = age
+  p.value = valueOf(p.overall, age)
+  return p
+}
+
+/** Craque da bênção 'star': jogador de linha em idade de auge, pronto para ser titular. */
+export const generateStarPlayer = (rng: Rng): GenPlayer =>
+  withAge(
+    generatePlayer(rng.pick(['DEF', 'MID', 'FWD', 'FWD']), BLESS_STAR_LEVEL + rng.range(-3, 3), rng.int(1, 39), rng),
+    rng.int(24, 28),
+  )
+
+/** Joia da bênção 'wonderkid': 17 anos com caos extremo — picos altíssimos e buracos. */
+export const generateWonderkid = (rng: Rng): GenPlayer =>
+  withAge(
+    generatePlayer(rng.pick(['DEF', 'MID', 'FWD']), BLESS_WONDERKID_LEVEL, rng.int(1, 39), rng, REWARD_CHAOS),
+    17,
+  )
+
 /**
  * Escolhe a seleção adversária COERENTE com a fase: as seleções ficam ordenadas
  * pela força real (~2016, `strength` em worldcup.ts) e cada fase sorteia dentro
@@ -100,9 +128,9 @@ const pickClubId = (rng: Rng, exclude: Set<string>, stage: number): string => {
  * verdade dos jogadores e a hierarquia real entre eles; as demais seguem com
  * nomes fictícios gerados.
  */
-const generateOpponent = (stage: number, rng: Rng, exclude: Set<string>): OpponentDef => {
+const generateOpponent = (stage: number, rng: Rng, exclude: Set<string>, ascension: number): OpponentDef => {
   const clubId = pickClubId(rng, exclude, stage)
-  const level = STAGE_LEVEL[stage] + rng.range(-4, 4)
+  const level = STAGE_LEVEL[stage] + opponentLevelBonus(ascension) + rng.range(-4, 4)
   const squad = generateSquadShaped(ROLES_433, level, chaosFor(stage), rng, wcRoster(clubId))
   return { clubId, squad }
 }
@@ -198,7 +226,7 @@ const ensureKind = (nodes: RunNode[], kind: NodeKind, minStage: number, rng: Rng
  * regras (fase 1 sempre partida, mercado só da fase 3 em diante, academia perto
  * do chefão) e liga tudo ao chefão no topo.
  */
-export const generateMap = (rng: Rng, playerClubId: string): RunNode[] => {
+export const generateMap = (rng: Rng, playerClubId: string, ascension: number): RunNode[] => {
   const { edges, used } = buildGraph(rng)
   const cells = [...used]
     .map((id) => {
@@ -226,7 +254,7 @@ export const generateMap = (rng: Rng, playerClubId: string): RunNode[] => {
       lane: cell.col,
       kind,
       next: [...(edges.get(cell.id) ?? [])],
-      opponent: kind === 'match' ? generateOpponent(cell.stage, rng, usedClubs) : undefined,
+      opponent: kind === 'match' ? generateOpponent(cell.stage, rng, usedClubs, ascension) : undefined,
       cleared: false,
     })
   }
@@ -241,7 +269,7 @@ export const generateMap = (rng: Rng, playerClubId: string): RunNode[] => {
     lane: Math.floor((MAP_WIDTH - 1) / 2),
     kind: 'boss',
     next: [],
-    opponent: generateOpponent(STAGE_COUNT + 1, rng, usedClubs),
+    opponent: generateOpponent(STAGE_COUNT + 1, rng, usedClubs, ascension),
     cleared: false,
   })
 
@@ -253,9 +281,9 @@ export const generateMap = (rng: Rng, playerClubId: string): RunNode[] => {
  * caóticos, e de propósito ACIMA da fase atual — é a recompensa por vencer que
  * deixa o técnico mais forte que o mapa, sustentando a escalada até o chefão.
  */
-export const generateRewardCards = (stage: number, rng: Rng): GenPlayer[] => {
+export const generateRewardCards = (stage: number, rng: Rng, ascension: number): GenPlayer[] => {
   const roles: Role[] = ['GK', 'DEF', 'DEF', 'MID', 'MID', 'FWD', 'FWD']
-  const level = STAGE_LEVEL[stage] + rng.range(18, 36)
+  const level = STAGE_LEVEL[stage] + rng.range(18, 36) - offerLevelPenalty(ascension)
   return Array.from({ length: 3 }, () =>
     generatePlayer(rng.pick(roles), level, rng.int(1, 39), rng, REWARD_CHAOS),
   )

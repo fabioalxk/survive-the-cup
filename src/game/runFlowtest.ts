@@ -17,6 +17,7 @@ import {
   leaveNode,
   continueAfterDefeat,
   finishMatch,
+  pickBlessing,
   usePotion,
   claimPotion,
   SQUAD_MIN,
@@ -37,11 +38,15 @@ const assert = (cond: boolean, msg: string) => {
 // 1) nova run
 const clubId = Object.keys(ALL_CLUBS)[0]
 const state = newRun('Testador', clubId, 999)
-assert(state.status === 'map', 'deveria começar no mapa')
+assert(state.status === 'blessing', 'deveria começar na escolha da bênção da largada')
+assert((state.pendingBlessings?.length ?? 0) === 3, 'a largada deve oferecer 3 bênçãos')
 assert(state.squad.length === 11, 'elenco inicial deve ter 11 jogadores')
 assert(state.startingIds.length === 11, 'deve ter 11 titulares de saída')
 assert(state.coins === 100, 'deve começar com 100 moedas')
 assert(state.lives === START_LIVES, `deve começar com ${START_LIVES} vidas`)
+pickBlessing(state, 1) // bênção de PODER (índice 1): nunca mexe em moedas nem vidas
+assert(state.status === 'map', 'após a bênção deveria ir ao mapa')
+assert(state.pendingBlessings === null, 'a oferta de bênçãos deve ser consumida na escolha')
 assert(state.availableNodeIds.length > 0, 'deve haver nós disponíveis na fase 1')
 
 // 2) escalação: bota um reserva fictício e promove no lugar de um titular
@@ -128,6 +133,7 @@ assert(match.time > 0, 'o relógio da partida deve avançar')
 
 // 6) regras de vida e empate: derrota consome 1 vida (não elimina), empate classifica
 const s2 = newRun('Vidas', clubId, 777)
+pickBlessing(s2, 1)
 const firstMatch = s2.nodes.find((n) => s2.availableNodeIds.includes(n.id) && n.kind === 'match')
 if (firstMatch) {
   enterNode(s2, firstMatch.id)
@@ -163,6 +169,7 @@ if (firstMatch) {
 
 // 7) poções: bufam ACIMA de 100 (teto 120) e o efeito acaba junto com a partida
 const s3 = newRun('Poções', clubId, 555)
+pickBlessing(s3, 1)
 const potionMatch = s3.nodes.find((n) => s3.availableNodeIds.includes(n.id) && n.kind === 'match')
 if (potionMatch) {
   const target = startingXI(s3)[1]

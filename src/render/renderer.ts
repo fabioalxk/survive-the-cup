@@ -60,12 +60,14 @@ export const canvasSize = (scale: number) => ({
 })
 
 const COLORS = {
-  grassDark: '#2f8f3e',
-  grassLight: '#3aa64c',
-  surround: '#14532d',
-  surroundEdge: '#0c3a1f',
-  line: 'rgba(255,255,255,0.92)',
-  lineSoft: 'rgba(255,255,255,0.55)',
+  // verde dessaturado, na paleta do mapa desenhado à mão (nada de verde-neon)
+  grassDark: '#3a7a48',
+  grassLight: '#458a55',
+  surround: '#1c3d27',
+  surroundEdge: '#122b1a',
+  // linhas cor de giz, um tico abaixo do branco puro
+  line: 'rgba(244,246,235,0.88)',
+  lineSoft: 'rgba(244,246,235,0.5)',
   ball: '#f8fafc',
   ballEdge: '#0f172a',
   controller: '#fde047',

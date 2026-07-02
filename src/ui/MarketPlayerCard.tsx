@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { GenPlayer } from '../game/types'
-import { ATTR_GROUPS, AttrBar, RoleTag, attrColor } from './attrDisplay'
+import { AttrList, RoleTag, attrColor } from './attrDisplay'
 import { PlayerAvatar } from './PlayerAvatar'
 
 export interface MarketCardAction {
@@ -27,9 +27,6 @@ export function MarketPlayerCard({
   price: ReactNode
   action: MarketCardAction
 }) {
-  const attrs = ATTR_GROUPS.flatMap((g) => g.keys).filter(
-    (k) => k.key !== 'goalkeeping' || player.role === 'GK',
-  )
   return (
     <li className="mk-card">
       <div className="mk-head">
@@ -45,11 +42,7 @@ export function MarketPlayerCard({
           <small>Geral</small>
         </span>
       </div>
-      <div className="mk-attrs">
-        {attrs.map((k) => (
-          <AttrBar key={k.key} label={k.label} value={player.attrs[k.key]} />
-        ))}
-      </div>
+      <AttrList role={player.role} attrs={player.attrs} />
       <div className="mk-foot">
         <span className="mk-price">{price}</span>
         <button

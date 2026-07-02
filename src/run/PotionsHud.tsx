@@ -12,9 +12,10 @@ import type { RunApi } from './useRun'
 const deltaColor = (v: number): string => (v > 100 ? '#4ade80' : attrColor(v))
 
 /**
- * Inventário de poções no cabeçalho da run: cada frasco é um botão (pulsa quando
- * usável, ou seja, no mapa) que abre um pop-up para escolher o titular que vai
- * tomá-la — com o antes → depois do atributo e o ganho real de OVR por jogador.
+ * Inventário de poções da run (cabeçalho no mapa, barra de controles na partida):
+ * cada frasco é um botão (pulsa quando usável — no mapa ou no meio do jogo) que
+ * abre um pop-up para escolher o titular que vai tomá-la — com o antes → depois
+ * do atributo e o ganho real de OVR por jogador.
  * Enquanto o efeito dura (até o fim da próxima partida), um chip na cor da poção
  * mostra quem está bufado e o valor turbinado.
  */
@@ -22,14 +23,22 @@ export default function PotionsHud({
   state,
   act,
   onOpenPicker,
+  onClosePicker,
 }: {
   state: RunState
   act: RunApi['act']
   onOpenPicker?: () => void
+  onClosePicker?: () => void
 }) {
   const [picking, setPicking] = useState<number | null>(null)
   const kind = picking !== null ? state.potions[picking] : undefined
-  const usable = state.status === 'map'
+  const inMatch = state.status === 'match'
+  const usable = state.status === 'map' || inMatch
+  const horizon = inMatch ? 'desta partida' : 'da próxima partida'
+  const closePicker = () => {
+    setPicking(null)
+    onClosePicker?.()
+  }
 
   return (
     <>
@@ -56,14 +65,14 @@ export default function PotionsHud({
             setPicking(i)
             onOpenPicker?.()
           }}
-          title={`${POTION_INFO[k].label}: +${POTION_BOOST} de ${attrLabel(k)} num titular (pode passar de 100, teto ${POTION_ATTR_CAP}) até o fim da próxima partida${usable ? '' : ' — volte ao mapa para usar'}`}
+          title={`${POTION_INFO[k].label}: +${POTION_BOOST} de ${attrLabel(k)} num titular (pode passar de 100, teto ${POTION_ATTR_CAP}) até o fim ${horizon}${usable ? '' : ' — disponível no mapa ou durante a partida'}`}
         >
           <PotionIcon kind={k} size={21} />
         </button>
       ))}
 
       {picking !== null && kind && (
-        <div className="cm-backdrop" onClick={() => setPicking(null)}>
+        <div className="cm-backdrop" onClick={closePicker}>
           <div
             className={`cm-modal rq-potion-modal rq-potion-${kind}`}
             onClick={(e) => e.stopPropagation()}
@@ -76,7 +85,7 @@ export default function PotionsHud({
                 <h2>{POTION_INFO[kind].label}</h2>
                 <p>
                   <strong>+{POTION_BOOST}</strong> de <strong>{attrLabel(kind)}</strong> para 1
-                  titular, valendo só na <strong>próxima partida</strong> — pode passar de 100
+                  titular, valendo até o fim <strong>{horizon}</strong> — pode passar de 100
                   (teto {POTION_ATTR_CAP}).
                 </p>
               </div>
@@ -100,7 +109,7 @@ export default function PotionsHud({
                       onClick={() => {
                         potionSfx()
                         act((s) => usePotion(s, picking, p.id))
-                        setPicking(null)
+                        closePicker()
                       }}
                     >
                       <PlayerAvatar teamId={state.clubId} name={p.name} id={p.id} size={34} />
@@ -131,7 +140,7 @@ export default function PotionsHud({
             </div>
 
             <footer className="rq-potion-foot">
-              <button className="cm-btn cm-btn-ghost cm-btn-block" onClick={() => setPicking(null)}>
+              <button className="cm-btn cm-btn-ghost cm-btn-block" onClick={closePicker}>
                 Guardar para depois
               </button>
             </footer>

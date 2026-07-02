@@ -7,7 +7,7 @@ import NewRun from './NewRun'
 import RunShell from './RunShell'
 import TacticsView from './TacticsView'
 import { GameOverModal, LifeLostModal, VictoryModal } from './RunModals'
-import { continueAfterDefeat, newRun, enterNode, quickPlayNode, leaveNode } from '../game/run'
+import { continueAfterDefeat, newRun, enterNode, pickBlessing, quickPlayNode, leaveNode } from '../game/run'
 import { ALL_CLUBS } from '../game/worldcup'
 import type { RunApi } from './useRun'
 import type { RunState } from '../game/runTypes'
@@ -25,15 +25,21 @@ const apiFor = (state: RunState): RunApi => ({
 
 // 1) tela inicial
 const newRunHtml = renderToStaticMarkup(<NewRun onStart={() => {}} hasSave={false} onContinue={() => {}} />)
-assert(newRunHtml.includes('Slay of the CM'), 'NewRun deve renderizar o título')
+assert(newRunHtml.includes('Survive the Cup'), 'NewRun deve renderizar o título')
 
 // 2) shell no mapa (mapa + escudo do clube + moedas)
 const clubId = Object.keys(ALL_CLUBS)[0]
 const state = newRun('SSR', clubId, 4242)
+
+// 2a) tela da bênção da largada (status inicial de toda corrida nova)
+const blessHtml = renderToStaticMarkup(<RunShell api={apiFor(state)} />)
+assert((blessHtml.match(/rq-bless-card/g)?.length ?? 0) >= 3, 'largada deve oferecer 3 bênçãos')
+pickBlessing(state, 1)
+
 const mapHtml = renderToStaticMarkup(<RunShell api={apiFor(state)} />)
 assert(mapHtml.includes('cm-coin-chip'), 'Shell deve mostrar as moedas')
 assert(mapHtml.includes('cm-lives-chip'), 'Shell deve mostrar as vidas no cabeçalho')
-assert(mapHtml.includes('Slay of the CM'), 'Shell deve identificar o modo')
+assert(mapHtml.includes('Survive the Cup'), 'Shell deve identificar o modo')
 
 // 2b) aba Tática: campinho com os 11 titulares nas âncoras da formação
 const tacticsHtml = renderToStaticMarkup(<TacticsView state={state} act={() => {}} />)

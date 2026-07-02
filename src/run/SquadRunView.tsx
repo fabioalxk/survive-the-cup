@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RunState } from '../game/runTypes'
 import { optimizeStartingXI, swapStarter } from '../game/run'
-import { RoleTag, attrColor, AttrGroups } from '../ui/attrDisplay'
+import { RoleTag, attrColor } from '../ui/attrDisplay'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
-import { SwapIcon } from '../ui/icons'
+import { PlayerDetail } from '../ui/PlayerDetail'
+import { BenchIcon, SwapIcon } from '../ui/icons'
 import type { GenPlayer } from '../game/types'
 import type { RunApi } from './useRun'
 
@@ -115,7 +116,11 @@ export default function SquadRunView({ state, act }: { state: RunState; act: Run
             Banco <span>{bench.length}</span>
           </h3>
           {bench.length === 0 ? (
-            <p className="rq-empty">Ninguém no banco agora — vença partidas ou compre no mercado pra ganhar reforços.</p>
+            <div className="rq-empty">
+              <BenchIcon size={52} className="rq-empty-ico" />
+              <strong>Banco vazio</strong>
+              <p>Vença partidas ou compre no mercado pra ganhar reforços.</p>
+            </div>
           ) : (
             <ul>{bench.map((p) => card(p, 'bench'))}</ul>
           )}
@@ -123,22 +128,11 @@ export default function SquadRunView({ state, act }: { state: RunState; act: Run
       </div>
 
       {sel && (
-        <div className="rq-simple-detail">
-          <div className="cm-squad-detail-head">
-            <span className="cm-squad-detail-num">{sel.number}</span>
-            <PlayerAvatar teamId={state.clubId} name={sel.name} id={sel.id} size={48} />
-            <div className="cm-squad-detail-id">
-              <strong>{sel.name}</strong>
-              <span>
-                <RoleTag role={sel.role} /> · {sel.age} anos · {selSide === 'starter' ? 'Titular' : 'Reserva'}
-              </span>
-            </div>
-            <span className="cm-squad-detail-ovr" style={{ color: attrColor(sel.overall) }}>
-              {sel.overall}
-            </span>
-          </div>
-          <AttrGroups role={sel.role} attrs={sel.attrs} />
-        </div>
+        <PlayerDetail
+          player={sel}
+          teamId={state.clubId}
+          extra={<> · {selSide === 'starter' ? 'Titular' : 'Reserva'}</>}
+        />
       )}
 
       {toast && <div className={`rq-toast ${toast.warn ? 'rq-toast-warn' : ''}`}>{toast.msg}</div>}

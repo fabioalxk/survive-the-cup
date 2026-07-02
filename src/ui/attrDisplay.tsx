@@ -252,6 +252,24 @@ export function AttrBar({
   )
 }
 
+/**
+ * Lista compacta de TODOS os atributos (sem títulos de grupo) — usada nos cards
+ * de mercado e de recompensa, onde o espaço é curto mas nada pode ficar oculto.
+ * Atributos exclusivos de goleiro só aparecem para o GK.
+ */
+export function AttrList({ role, attrs }: { role: Role; attrs: Attrs }) {
+  const keys = ATTR_GROUPS.flatMap((g) => g.keys).filter(
+    (k) => k.key !== 'goalkeeping' || role === 'GK',
+  )
+  return (
+    <div className="mk-attrs">
+      {keys.map((k) => (
+        <AttrBar key={k.key} label={k.label} value={attrs[k.key]} />
+      ))}
+    </div>
+  )
+}
+
 /** Painel de grupos de atributos de um jogador (reutilizado em telas diferentes). */
 export function AttrGroups({ role, attrs }: { role: Role; attrs: Attrs }) {
   const groups = ATTR_GROUPS.filter((g) => g.title !== 'Goleiro' || role === 'GK')

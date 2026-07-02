@@ -29,12 +29,15 @@ export default function FormationEditor({
   xi,
   onPreset,
   onMove,
+  onSelect,
 }: {
   slots: Vec2[]
   /** titular de cada slot, na MESMA ordem das âncoras */
   xi: SlotPlayer[]
   onPreset: (slots: Vec2[]) => void
   onMove: (index: number, pos: Vec2) => void
+  /** toque/soltura num chip — quem usa pode abrir os atributos do jogador */
+  onSelect?: (index: number) => void
 }) {
   const [drag, setDrag] = useState<{ index: number; pos: Vec2 } | null>(null)
   const name = formationName(slots)
@@ -85,9 +88,11 @@ export default function FormationEditor({
                 setDrag({ index: i, pos: toField(e.currentTarget.parentElement!, e.clientX, e.clientY) })
               }}
               onPointerUp={() => {
-                if (drag?.index !== i) return
-                onMove(i, drag.pos)
-                setDrag(null)
+                if (drag?.index === i) {
+                  onMove(i, drag.pos)
+                  setDrag(null)
+                }
+                onSelect?.(i)
               }}
               onPointerCancel={() => setDrag(null)}
             >

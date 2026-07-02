@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { ALL_CLUBS } from '../game/worldcup'
 import { benchHasUpgrade, continueAfterDefeat, START_LIVES } from '../game/run'
 import { ClubBadge } from '../ui/ClubBadge'
-import { ClipboardIcon, CoinIcon, HeartIcon, MapIcon, RestartIcon, ShirtIcon } from '../ui/icons'
+import { ClipboardIcon, CoinIcon, FlameIcon, HeartIcon, MapIcon, RestartIcon, ShirtIcon } from '../ui/icons'
 import MapView from './MapView'
 import SquadRunView from './SquadRunView'
 import TacticsView from './TacticsView'
 import RunMatchView from './RunMatchView'
 import RewardCards from './RewardCards'
+import BlessingView from './BlessingView'
 import MarketNodeView from './MarketNodeView'
 import GymNodeView from './GymNodeView'
 import PotionsHud from './PotionsHud'
@@ -33,12 +34,17 @@ export default function RunShell({ api }: { api: RunApi }) {
           {club && <ClubBadge club={club} size={32} />}
           <div>
             <strong>{club?.name ?? state.clubId}</strong>
-            <span className="cm-header-sub">Téc. {state.managerName} · Slay of the CM</span>
+            <span className="cm-header-sub">Téc. {state.managerName} · Survive the Cup</span>
           </div>
         </div>
         <div className="cm-header-stats">
+          {state.ascension > 0 && (
+            <span className="rq-asc-chip" title={`Ascension ${state.ascension} — dificuldade aumentada`}>
+              <FlameIcon size={13} /> A{state.ascension}
+            </span>
+          )}
           <span className="cm-lives-chip" title="Vidas — dá para perder 1 partida; a 2ª derrota elimina">
-            {Array.from({ length: START_LIVES }, (_, i) => (
+            {Array.from({ length: Math.max(START_LIVES, state.lives) }, (_, i) => (
               <HeartIcon key={i} size={16} className={i < state.lives ? 'cm-life' : 'cm-life cm-life-off'} />
             ))}
           </span>
@@ -82,6 +88,7 @@ export default function RunShell({ api }: { api: RunApi }) {
         {tab === 'tactics' && <TacticsView state={state} act={act} />}
       </main>
 
+      {state.status === 'blessing' && <BlessingView state={state} act={act} />}
       {state.status === 'reward' && <RewardCards state={state} act={act} />}
       {state.status === 'market' && <MarketNodeView state={state} act={act} />}
       {state.status === 'gym' && <GymNodeView state={state} act={act} />}

@@ -58,13 +58,13 @@ const KIND_ART: Record<string, (p: MapIconProps) => JSX.Element> = {
 const KIND_LABEL: Record<string, string> = {
   match: 'Partida',
   market: 'Mercado',
-  gym: 'Academia',
+  gym: 'Treinamento',
   boss: 'CHEFÃO',
 }
 /** Legenda inferior do mapa. */
 const LEGEND: Array<{ kind: string; Icon: (p: MapIconProps) => JSX.Element; label: string }> = [
   { kind: 'match', Icon: ShieldIcon, label: 'Partida' },
-  { kind: 'gym', Icon: GymIcon, label: 'Academia' },
+  { kind: 'gym', Icon: GymIcon, label: 'Treinamento' },
   { kind: 'market', Icon: MarketIcon, label: 'Mercado' },
   { kind: 'boss', Icon: TrophyIcon, label: 'Chefão' },
 ]
@@ -74,27 +74,26 @@ type NodeStatus = 'cleared' | 'available' | 'locked'
 function NodeButton({
   node,
   status,
+  far,
   onClick,
 }: {
   node: RunNode
   status: NodeStatus
+  /** fog of war: fase distante (mais de 1 à frente) fica esmaecida — o chefão nunca. */
+  far: boolean
   onClick: () => void
 }) {
   const x = xOf(node)
   const y = yOf(node.stage)
   const isBoss = node.kind === 'boss'
   const club = node.opponent ? ALL_CLUBS[node.opponent.clubId] : undefined
-  // rótulo sob o nó: nome da seleção nas partidas (e no chefão, com 🏆);
-  // "Mercado"/"Academia" nos nós de evento — igual em todos os tipos.
-  const cap = isBoss
-    ? `🏆 ${club?.name ?? 'CHEFÃO'}`
-    : club
-      ? club.name
-      : KIND_LABEL[node.kind]
+  // rótulo sob o nó: nome da seleção nas partidas (o chefão ganha o troféu no
+  // JSX); "Mercado"/"Treinamento" nos nós de evento — igual em todos os tipos.
+  const cap = isBoss ? (club?.name ?? 'CHEFÃO') : club ? club.name : KIND_LABEL[node.kind]
   const Art = KIND_ART[node.kind]
   return (
     <button
-      className={`rq-node rq-node-${node.kind} rq-node-${status}`}
+      className={`rq-node rq-node-${node.kind} rq-node-${status}${far ? ' rq-node-far' : ''}`}
       style={{ left: `${x}%`, top: `${y}%` }}
       onClick={onClick}
       disabled={status !== 'available'}
@@ -123,7 +122,10 @@ function NodeButton({
         </>
       )}
       {status === 'cleared' && <span className="rq-node-check">✓</span>}
-      <span className={`rq-node-cap${isBoss ? ' rq-node-cap-boss' : ''}`}>{cap}</span>
+      <span className={`rq-node-cap${isBoss ? ' rq-node-cap-boss' : ''}`}>
+        {isBoss && <TrophyIcon size={11} className="rq-cap-ico" />}
+        {cap}
+      </span>
     </button>
   )
 }
@@ -173,7 +175,7 @@ export default function MapView({ state, act }: { state: RunState; act: RunApi['
 
       <div className="rq-map-scroll" ref={scrollRef}>
         <div className="rq-map" style={{ height: MAP_HEIGHT }}>
-          <img className="rq-map-bg" src="/assets/slayOfCM_background.png" alt="" />
+          <img className="rq-map-bg" src="/assets/surviveTheCup_background.png" alt="" />
         <div className="rq-map-veil" aria-hidden />
 
         <svg className="rq-map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -224,6 +226,7 @@ export default function MapView({ state, act }: { state: RunState; act: RunApi['
             key={n.id}
             node={n}
             status={statusOf(n)}
+            far={n.kind !== 'boss' && n.stage > state.stage + 1}
             onClick={() => act((s) => enterNode(s, n.id))}
           />
         ))}

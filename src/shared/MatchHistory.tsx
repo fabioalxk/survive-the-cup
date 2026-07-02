@@ -4,7 +4,9 @@ import type { MatchEvent } from '../sim/types'
  * Histórico de lances da partida: quem marcou, em qual minuto, faltas, cartões
  * etc. Reaproveita o mesmo `MatchState.events` que alimenta a faixa efêmera
  * (`EventBanner`), aqui como lista persistente para o jogador conferir o que
- * já aconteceu no jogo — inclusive depois do apito final.
+ * já aconteceu no jogo — inclusive depois do apito final. `events` já chega
+ * mais-recente-primeiro (o hook da partida inverte): estilo ticker ao vivo,
+ * mesmo com pouca altura visível a primeira linha é sempre a última novidade.
  */
 export function MatchHistory({ events }: { events: MatchEvent[] }) {
   if (events.length === 0) return null

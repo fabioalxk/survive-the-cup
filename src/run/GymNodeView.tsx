@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { Attrs, Role } from '../sim/types'
 import type { RunState } from '../game/runTypes'
-import { boostAttribute, leaveNode } from '../game/run'
+import { GYM_GAIN, boostAttribute, leaveNode } from '../game/run'
+import { gymTrains } from '../game/ascension'
 import { overallOf } from '../game/overall'
 import { ATTR_GROUPS, RoleTag, attrColor, attrLabel } from '../ui/attrDisplay'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
@@ -10,16 +11,10 @@ import type { RunApi } from './useRun'
 
 const ROLE_ORDER = { GK: 0, DEF: 1, MID: 2, FWD: 3 }
 
-/** Quanto o treino adiciona ao atributo escolhido (teto 100). */
-const GAIN = 20
-
-/** Quantos melhoramentos por visita à academia (5 × 20 = 100 pontos no total). */
-const TRAINS = 5
-
 /** Grupos de atributos visíveis para a posição (o bloco Goleiro só aparece para GK). */
 const groupsFor = (role: Role) => ATTR_GROUPS.filter((g) => g.title !== 'Goleiro' || role === 'GK')
 
-const afterTrain = (v: number): number => Math.min(100, v + GAIN)
+const afterTrain = (v: number): number => Math.min(100, v + GYM_GAIN)
 
 /** Nota geral que o jogador teria se treinasse `key` agora — mostra o impacto real do treino. */
 const ovrIfTrained = (role: Role, attrs: Attrs, key: keyof Attrs): number =>
@@ -42,10 +37,12 @@ interface TrainDelta {
 }
 
 /**
- * Evento de ACADEMIA no mapa: até 5 melhoramentos de +20 (100 pontos no total, teto 100).
- * Cada treino escolhe 1 jogador e 1 atributo — depois é só seguir viagem.
+ * Evento de ACADEMIA no mapa: melhoramentos de +20 (teto 100) — a quantidade
+ * cai conforme a ascension da corrida (`gymTrains`). Cada treino escolhe 1
+ * jogador e 1 atributo — depois é só seguir viagem.
  */
 export default function GymNodeView({ state, act }: { state: RunState; act: RunApi['act'] }) {
+  const TRAINS = gymTrains(state.ascension)
   const squad = [...state.squad].sort(
     (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || b.overall - a.overall,
   )
@@ -101,10 +98,10 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
             <GymIcon size={32} />
           </span>
           <div>
-            <h2>Academia</h2>
+            <h2>Treinamento</h2>
             <p>
-              <strong>{TRAINS} melhoramentos</strong> de <strong>+{GAIN} pontos</strong> cada (
-              {TRAINS * GAIN} no total, teto 100) — distribua entre jogadores e atributos.
+              <strong>{TRAINS} melhoramentos</strong> de <strong>+{GYM_GAIN} pontos</strong> cada (
+              {TRAINS * GYM_GAIN} no total, teto 100) — distribua entre jogadores e atributos.
               {!done && (
                 <>
                   {' '}

@@ -13,9 +13,21 @@
   box-sizing: border-box;
 }
 
+/* App de tela cheia: a PÁGINA nunca rola — cada tela ocupa 100% do viewport e
+   só as áreas internas (mapa, listas, modais) têm scroll próprio. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  user-select: none; /* UI de jogo: nada de selecionar texto sem querer */
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
   background:
     radial-gradient(1100px 520px at 15% -10%, rgba(37, 99, 235, 0.14), transparent 60%),
     radial-gradient(900px 480px at 88% -6%, rgba(16, 185, 129, 0.09), transparent 55%),
@@ -24,6 +36,40 @@ body {
   background-attachment: fixed;
   color: var(--cm-text, #e8eef9);
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* campos de texto continuam selecionáveis normalmente */
+input,
+textarea {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* nada de "arrastar fantasma" de imagem/canvas — quebra a imersão */
+img,
+svg,
+canvas {
+  -webkit-user-drag: none;
+}
+
+/* scrollbars finas e escuras (estilo overlay de jogo) em todas as áreas roláveis */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 189, 0.35) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 189, 0.28);
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 189, 0.5);
 }
 
 ::selection {

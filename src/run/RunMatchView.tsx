@@ -20,7 +20,9 @@ export default function RunMatchView({ state, act }: { state: RunState; act: Run
       onDone={(homeGoals, awayGoals) => act((s) => finishMatch(s, homeGoals, awayGoals))}
       onSkip={() => act((s) => quickPlayNode(s))}
       onFormationChange={(slots) => act((s) => setFormation(s, slots))}
-      extraControls={(m) => <PotionsHud state={state} act={act} onOpenPicker={m.pause} />}
+      extraControls={(m) => (
+        <PotionsHud state={state} act={act} onOpenPicker={m.pause} onClosePicker={m.resume} />
+      )}
     />
   )
 }

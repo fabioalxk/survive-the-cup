@@ -1,5 +1,5 @@
 /**
- * Seleções nacionais para o modo "Slay of the CM" — o técnico assume uma
+ * Seleções nacionais para o modo "Survive the Cup" — o técnico assume uma
  * seleção (Brasil sempre disponível) e enfrenta outras seleções pelo mapa.
  * Identidade só: nome + cores do uniforme + bandeira (SVG em `public/flags/wc/`,
  * baixado de flagcdn.com — usar arquivo em vez de emoji evita o problema de

@@ -1,9 +1,9 @@
-Slay of the CM
+Survive the Cup
 
 Então, vou explicar aqui as regras do jogo que eu tava pensando em criar. Eu queria fazer um time de futebol, mas num jogo indie. 
 Então, você começa com um certo número de jogadores, talvez 11 jogadores, igual no jogo de futebol normal. Só que aí você tem que ir enfrentando outros times. A cada vez que você vence um time, você tem que ir para a próxima fase desse jogo, e aí você tem que escolher no mapa. 
 
-No caso o mapa teria esse background public\assets\slayOfCM_background.png
+No caso o mapa teria esse background public\assets\surviveTheCup_background.png
 E daí seria uns tracejados, entende? Tem a fase 1, fase 2, fase 3. É estrutura Você começa em uma fase lá de baixo, digamos assim, um quadradinho. Aí, depois, você tem que ir escalando até chegar lá em cima no último quadradinho, que seria o chefe. Entende? 
 Vou até tentar ilustrar aqui. Eu vou ilustrar na horizontal, mas de baixo pra cima, tá? Eu vou ilustrar como que seria aqui, meio que um desenho. 
 

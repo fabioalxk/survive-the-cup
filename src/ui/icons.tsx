@@ -356,3 +356,53 @@ export function CloseIcon(p: IconProps) {
     </svg>
   )
 }
+
+/** Chama — chip de Ascension (dificuldade aumentada). */
+export function FlameIcon(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <path
+        d="M12 2.4c.5 3-1.1 4.6-2.7 6.2C7.6 10.3 6 12 6 15a6 6 0 0 0 12 0c0-2.1-.8-3.7-1.9-5.2-.4 1-.9 1.7-1.8 2.3.3-3.6-.7-7.2-2.3-9.7Z"
+        fill="currentColor"
+      />
+      <path
+        d="M12 21.4a3.4 3.4 0 0 1-3.4-3.4c0-1.7 1-2.6 1.9-3.5.6-.6 1.1-1.2 1.3-2 1.4 1.2 3.6 3.2 3.6 5.5a3.4 3.4 0 0 1-3.4 3.4Z"
+        fill="rgba(255,255,255,0.4)"
+      />
+    </svg>
+  )
+}
+
+/** Cadeado — conteúdo bloqueado (ex.: seleções ainda não jogáveis). */
+export function LockIcon(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <rect x="5" y="10.4" width="14" height="10.2" rx="2.2" fill="currentColor" />
+      <path
+        d="M8.2 10.4V7.8a3.8 3.8 0 0 1 7.6 0v2.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+      />
+      <circle cx="12" cy="14.8" r="1.5" fill="rgba(7,11,20,0.8)" />
+      <rect x="11.3" y="15.4" width="1.4" height="2.6" rx="0.7" fill="rgba(7,11,20,0.8)" />
+    </svg>
+  )
+}
+
+/** Banco de reservas vazio — estado vazio da coluna "Banco". */
+export function BenchIcon(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      {/* assento e encosto */}
+      <rect x="2.6" y="10.6" width="18.8" height="3" rx="1" fill="currentColor" opacity="0.85" />
+      <rect x="3.6" y="6.2" width="16.8" height="2.6" rx="1" fill="currentColor" opacity="0.45" />
+      {/* pés */}
+      <rect x="4.6" y="13.6" width="2.2" height="6" rx="0.9" fill="currentColor" opacity="0.6" />
+      <rect x="17.2" y="13.6" width="2.2" height="6" rx="0.9" fill="currentColor" opacity="0.6" />
+      {/* garrafinha esquecida em cima do banco */}
+      <rect x="10" y="7.2" width="1.9" height="3.4" rx="0.8" fill="currentColor" />
+      <rect x="10.5" y="6.2" width="0.9" height="1.2" rx="0.4" fill="currentColor" />
+    </svg>
+  )
+}

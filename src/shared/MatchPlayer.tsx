@@ -13,7 +13,8 @@ import FormationEditor from '../ui/FormationEditor'
 import { ClipboardIcon, CloseIcon, PauseIcon, PlayIcon, SkipIcon, WhistleIcon } from '../ui/icons'
 import { MatchHistory } from './MatchHistory'
 
-const SCALE = 7
+/* px por metro do canvas: 10 → 1130×760 nativo, nítido mesmo ampliado no desktop */
+const SCALE = 10
 
 /** Velocidades nomeadas — mais claras que "3× 9× 18×". */
 const SPEEDS: [string, number][] = [
@@ -61,8 +62,8 @@ export default function MatchPlayer({
    * repassada aqui para quem chama persistir (ex.: `formationSlots` da run).
    */
   onFormationChange?: (slots: Vec2[]) => void
-  /** controles extras na barra da partida (ex.: poções da run) — recebe `pause` p/ congelar o jogo. */
-  extraControls?: (m: { pause: () => void }) => ReactNode
+  /** controles extras na barra da partida (ex.: poções da run) — recebe `pause`/`resume` p/ congelar e retomar o jogo. */
+  extraControls?: (m: { pause: () => void; resume: () => void }) => ReactNode
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [tactics, setTactics] = useState(false)
@@ -112,14 +113,19 @@ export default function MatchPlayer({
     setFormation('home', next)
     onFormationChange?.(next)
   }
-  const openTactics = () => {
+  // congela o jogo lembrando se rodava, p/ retomar como estava (tática e poções)
+  const freeze = () => {
     wasRunning.current = running
     setRunning(false)
+  }
+  const unfreeze = () => setRunning(wasRunning.current)
+  const openTactics = () => {
+    freeze()
     setTactics(true)
   }
   const closeTactics = () => {
     setTactics(false)
-    setRunning(wasRunning.current)
+    unfreeze()
   }
 
   useEffect(() => {
@@ -165,7 +171,6 @@ export default function MatchPlayer({
           width={size.width}
           height={size.height}
           onClick={primeAudio}
-          style={{ ['--pw' as string]: `${size.width}px` }}
         />
         {!over && (
           <EventBanner
@@ -246,7 +251,7 @@ export default function MatchPlayer({
               <ClipboardIcon size={13} className="cm-btn-ico-lead" /> Tática
             </button>
           )}
-          {extraControls?.({ pause: () => setRunning(false) })}
+          {extraControls?.({ pause: freeze, resume: unfreeze })}
           {onSkip && (
             <button className="cm-btn cm-btn-ghost cm-btn-sm" onClick={onSkip}>
               Pular <SkipIcon size={13} className="cm-btn-ico-trail" />
