@@ -1216,7 +1216,7 @@ a:focus-visible {
 
 /* ---------- Partida animada (moldura do jogo — o canvas em si não muda) ---------- */
 .cm-match {
-  max-width: none;
+  position: relative;
   margin: 0 auto;
   width: 100%;
   height: 100%;
@@ -1228,14 +1228,14 @@ a:focus-visible {
   align-items: center;
   padding: 16px clamp(16px, 3vw, 48px);
 }
-/* O quadro inteiro (placar + campo + controles + histórico) tem a largura que
-   faz o campo (113×76) caber na altura útil (~300px de placar/controles/margens
-   + as primeiras linhas do histórico, que agora ficam visíveis sem rolar).
-   Assim o canvas nunca precisa ser achatado — a proporção é sempre a nativa. */
-.cm-match > * {
+/* O palco (campo + HUD sobreposto) só existe como caixa no desktop; no retrato
+   os filhos empilham direto no .cm-match, preservando o layout de celular. */
+.cm-stage {
+  display: contents;
+}
+.cm-match > *,
+.cm-stage > * {
   flex: none;
-  width: min(100%, calc((100vh - 300px) * 113 / 76));
-  width: min(100%, calc((100dvh - 300px) * 113 / 76));
 }
 .cm-scoreboard {
   display: grid;
@@ -1463,34 +1463,163 @@ a:focus-visible {
   color: var(--cm-red);
 }
 
+/* ---------- Desktop (landscape): modo transmissão ----------
+   O campo domina a tela — ocupa toda a altura útil sem nunca distorcer (a
+   largura do palco deriva da altura pela proporção nativa 113×76) — e o HUD
+   (placar/controles) flutua SOBRE o gramado, como grafismo de TV. As sobras
+   laterais ganham ambientação de estádio em vez de fundo morto. */
+@media (orientation: landscape) {
+  .cm-match {
+    padding: 12px;
+    background:
+      radial-gradient(
+        120% 130% at 50% 40%,
+        rgba(20, 83, 45, 0.5) 0%,
+        rgba(12, 58, 31, 0.35) 45%,
+        rgba(4, 8, 16, 0.92) 100%
+      ),
+      #04070f;
+  }
+  .cm-stage {
+    display: block;
+    position: relative;
+    width: min(100%, calc((100vh - 24px) * 113 / 76));
+    width: min(100%, calc((100dvh - 24px) * 113 / 76));
+    border-radius: 18px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  }
+  .cm-pitch {
+    border-radius: 18px;
+  }
+  /* placar-pílula flutuante no topo do campo */
+  .cm-scoreboard {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    width: min(560px, calc(100% - 28px));
+    padding: 8px 14px;
+    border-radius: 14px;
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(6, 11, 20, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  /* controles-pílula flutuantes na base do campo */
+  .cm-match-controls {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    max-width: calc(100% - 28px);
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    background: rgba(6, 11, 20, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .cm-match-controls .cm-btn-ghost {
+    margin-left: 0;
+  }
+  /* telões (fim de jogo/tática) cobrem o HUD flutuante */
+  .cm-match-over {
+    z-index: 3;
+  }
+  .cm-history {
+    width: min(100%, calc((100vh - 24px) * 113 / 76));
+    width: min(100%, calc((100dvh - 24px) * 113 / 76));
+  }
+}
+/* Tela bem larga (ultrawide ou tela cheia 16:9+): o histórico encaixa na sobra
+   lateral, ao lado do campo — o lance a lance fica visível sem rolar nada. */
+@media (orientation: landscape) and (min-aspect-ratio: 2 / 1) {
+  .cm-history {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 16px;
+    margin: 0;
+    width: min(320px, calc((100vw - (100dvh - 24px) * 113 / 76) / 2 - 28px));
+    max-height: calc(100dvh - 32px);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .cm-history-list {
+    max-height: none;
+    min-height: 0;
+  }
+}
+/* tela cheia é recurso de desktop — em celular os navegadores não cooperam */
+@media (orientation: portrait) {
+  .cm-btn-fullscreen {
+    display: none;
+  }
+}
+
 /* Em telas retrato o campo gira 90°: aproveita a altura do celular.
    O dimensionamento é baseado no GRAMADO (68m), não no canvas cheio (76m): a
    faixa de arquibancada nas laterais transborda e é cortada (overflow hidden),
    de modo que a grama enche toda a largura útil do aparelho — fica bem maior.
-   Os gols ficam nas PONTAS DO COMPRIMENTO, então nunca são cortados. */
+   Os gols ficam nas PONTAS DO COMPRIMENTO, então nunca são cortados.
+   A partida INTEIRA cabe numa tela: placar e controles são fixos e enxutos, e
+   o campo fica com TODA a altura que sobra entre eles (nada rola). */
 @media (orientation: portrait) {
   .cm-match {
     max-width: none;
-    padding: 6px 0 0;
+    padding: 14px 0 4px; /* 14px de topo: o relógio flutua ACIMA do placar */
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    /* stretch: o .cm-pitch tem contain:size (container query) e colapsaria a 0 se centrado */
+    align-items: stretch;
     gap: 4px;
+    overflow: hidden;
   }
   .cm-scoreboard,
   .cm-match-controls {
     border-radius: 0;
-    padding: 10px 12px;
+    padding: 7px 10px;
   }
+  .cm-sb-team {
+    font-size: 13px;
+    gap: 6px;
+  }
+  .cm-sb-score {
+    font-size: 22px;
+    gap: 6px;
+  }
+  /* o canvas gira 90° e se dimensiona pelo próprio container (unidades cq*):
+     a grama enche a largura e o comprimento respeita a altura que sobrou */
   .cm-pitch {
-    height: min(calc(99vw * 113 / 68), 88vh);
+    flex: 1;
+    min-height: 0;
     align-items: center;
+    container-type: size;
   }
   .cm-pitch-canvas {
     width: auto;
-    height: min(calc(99vw * 76 / 68), calc(88vh * 76 / 113));
+    height: min(calc(99vw * 76 / 68), 76vh); /* fallback sem container queries */
+    height: min(calc(100cqw * 76 / 68), calc(100cqh * 76 / 113));
     transform: rotate(90deg);
+  }
+  /* controles enxutos numa linha só — a prioridade da tela é o jogo */
+  .cm-match-controls {
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .cm-match-controls .cm-btn-sm {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+  .cm-btn-play-pause {
+    min-width: 40px;
   }
   /* histórico é recurso de desktop — no celular o campo já ocupa a tela toda */
   .cm-history {
@@ -1751,6 +1880,45 @@ a:focus-visible {
   .ps-groups {
     grid-template-columns: 1fr;
   }
+
+  /* HUD compacto de celular: cabeçalho e abas mínimos — em portrait a altura
+     é ouro, cada tela precisa caber inteira no viewport */
+  .cm-shell {
+    padding: 8px 10px;
+  }
+  .cm-header {
+    gap: 6px 10px;
+    padding: 7px 12px;
+  }
+  .cm-header-club {
+    gap: 9px;
+  }
+  .cm-header-club strong {
+    font-size: 15px;
+  }
+  .cm-header-sub {
+    display: none;
+  }
+  .cm-header-stats {
+    gap: 6px;
+    font-size: 13px;
+  }
+  .cm-coin-chip,
+  .cm-lives-chip {
+    padding: 4px 9px;
+  }
+  .cm-nav {
+    margin: 8px 0;
+    gap: 6px;
+  }
+  .cm-nav-btn {
+    padding: 8px 6px;
+    font-size: 12px;
+    gap: 6px;
+  }
+  .cm-main {
+    gap: 10px;
+  }
 }
 @media (max-width: 480px) {
   .cm-hero-team-id strong {
@@ -1758,12 +1926,6 @@ a:focus-visible {
   }
   .cm-hero-match {
     gap: 8px;
-  }
-  .cm-shell {
-    padding: 10px;
-  }
-  .cm-nav-btn {
-    font-size: 12px;
   }
 }
 

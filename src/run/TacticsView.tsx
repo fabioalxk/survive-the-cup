@@ -5,7 +5,7 @@ import { moveFormationSlot, setFormation, startingXI } from '../game/run'
 import { lineupFor } from '../game/lineup'
 import FormationEditor from '../ui/FormationEditor'
 import { ClipboardIcon } from '../ui/icons'
-import { PlayerDetail } from '../ui/PlayerDetail'
+import { PlayerDetailPop } from '../ui/PlayerDetail'
 import type { RunApi } from './useRun'
 
 /**
@@ -47,7 +47,7 @@ export default function TacticsView({ state, act }: { state: RunState; act: RunA
         </div>
         <aside className="tv-side">
           {sel ? (
-            <PlayerDetail player={sel} teamId={state.clubId} />
+            <PlayerDetailPop player={sel} teamId={state.clubId} onClose={() => setSelIdx(null)} />
           ) : (
             <div className="tv-side-empty">
               <ClipboardIcon size={40} className="tv-side-empty-ico" />

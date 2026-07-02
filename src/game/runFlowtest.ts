@@ -167,7 +167,7 @@ if (firstMatch) {
   }
 }
 
-// 7) poções: bufam ACIMA de 100 (teto 120) e o efeito acaba junto com a partida
+// 7) poções: bufam ACIMA de 100 (teto POTION_ATTR_CAP) e o efeito acaba junto com a partida
 const s3 = newRun('Poções', clubId, 555)
 pickBlessing(s3, 1)
 const potionMatch = s3.nodes.find((n) => s3.availableNodeIds.includes(n.id) && n.kind === 'match')

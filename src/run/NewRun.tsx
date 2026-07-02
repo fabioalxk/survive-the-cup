@@ -94,11 +94,11 @@ export default function NewRun({
       )}
 
       {screen === 'setup' && (
-        <div className="cm-newgame-card rq-panel">
+        <div className="rq-event">
           <button className="rq-back" onClick={() => setScreen('menu')}>
             ← Voltar
           </button>
-          <div className="cm-brand">
+          <div className="cm-brand rq-event-brand">
             <span className="cm-brand-ball">
               <BallIcon size={46} />
             </span>
@@ -114,52 +114,53 @@ export default function NewRun({
             </button>
           )}
 
-          <div className="cm-step">
-            <span>Sua seleção</span>
-          </div>
-          <div className="cm-club-grid rq-team-grid">
-            {teams.map((c) => {
-              const locked = c.id !== BRAZIL_ID
-              return (
-                <button
-                  key={c.id}
-                  className={`cm-club-card ${clubId === c.id ? 'active' : ''} ${locked ? 'rq-club-locked' : ''}`}
-                  disabled={locked}
-                  title={locked ? `${c.name} — em breve` : c.name}
-                >
-                  <ClubBadge club={c} size={40} />
-                  <span className="cm-club-card-name">{c.name}</span>
-                  {clubId === c.id && <span className="cm-club-check">✓</span>}
-                  {locked && (
-                    <span className="rq-club-lock" aria-hidden>
-                      <LockIcon size={13} />
+          <section className="rq-event-strip">
+            <h3 className="rq-event-label">Sua seleção</h3>
+            <div className="rq-flag-row">
+              {teams.map((c) => {
+                const locked = c.id !== BRAZIL_ID
+                return (
+                  <button
+                    key={c.id}
+                    className={`rq-flag ${clubId === c.id ? 'active' : ''} ${locked ? 'rq-flag-locked' : ''}`}
+                    disabled={locked}
+                    title={locked ? `${c.name} — em breve` : c.name}
+                  >
+                    <span className="rq-flag-badge">
+                      <ClubBadge club={c} size={44} />
+                      {locked && (
+                        <span className="rq-flag-lock" aria-hidden>
+                          <LockIcon size={12} />
+                        </span>
+                      )}
                     </span>
-                  )}
+                    <span className="rq-flag-name">{c.name}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+
+          <section className="rq-event-strip">
+            <h3 className="rq-event-label">Ascension (dificuldade)</h3>
+            <div className="rq-asc-row" role="radiogroup" aria-label="Nível de ascension">
+              {Array.from({ length: ASCENSION_MAX + 1 }, (_, a) => (
+                <button
+                  key={a}
+                  role="radio"
+                  aria-checked={ascension === a}
+                  className={`rq-asc-btn ${ascension === a ? 'active' : ''}`}
+                  style={{ ['--asc-heat' as string]: ascensionHeat(a) }}
+                  onClick={() => setAscension(a)}
+                >
+                  {a}
                 </button>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+            <p className="rq-asc-desc">{ascensionSummary(ascension)}</p>
+          </section>
 
-          <div className="cm-step">
-            <span>Ascension (dificuldade)</span>
-          </div>
-          <div className="rq-asc-row" role="radiogroup" aria-label="Nível de ascension">
-            {Array.from({ length: ASCENSION_MAX + 1 }, (_, a) => (
-              <button
-                key={a}
-                role="radio"
-                aria-checked={ascension === a}
-                className={`rq-asc-btn ${ascension === a ? 'active' : ''}`}
-                style={{ ['--asc-heat' as string]: ascensionHeat(a) }}
-                onClick={() => setAscension(a)}
-              >
-                {a}
-              </button>
-            ))}
-          </div>
-          <p className="rq-asc-desc">{ascensionSummary(ascension)}</p>
-
-          <button className="cm-btn cm-btn-go cm-btn-block cm-btn-lg" onClick={start}>
+          <button className="rq-event-go" onClick={start}>
             Começar a jornada — {chosen.name}
             {ascension > 0 ? ` · A${ascension}` : ''} →
           </button>
@@ -167,41 +168,47 @@ export default function NewRun({
       )}
 
       {screen === 'help' && (
-        <div className="cm-newgame-card rq-panel">
+        <div className="rq-event">
           <button className="rq-back" onClick={() => setScreen('menu')}>
             ← Voltar
           </button>
-          <div className="cm-brand-lockup">
+          <div className="cm-brand-lockup rq-event-brand">
             <span className="cm-brand-kicker">Como jogar</span>
             <h2 className="cm-title">A jornada</h2>
           </div>
-          <div className="rq-title-tags">
-            <span className="rq-title-tag rq-tag-red">Roguelike</span>
-            <span className="rq-title-tag rq-tag-blue">Copa do Mundo</span>
-            <span className="rq-title-tag rq-tag-gold">Perdeu, acabou</span>
-          </div>
-          <p className="cm-subtitle">
-            Escolha uma seleção da Copa do Mundo e suba o mapa enfrentando um adversário por fase
-            até o chefão final. Perdeu uma vez? Eliminado — recomeça do zero. Vença para ser
-            campeão.
-          </p>
-          <ul className="rq-help-list">
-            <li>
-              <b>Mapa:</b> escolha o caminho fase a fase — cada rota mistura partidas, academia,
-              mercado e bênçãos.
-            </li>
-            <li>
-              <b>Partidas:</b> uma derrota encerra a corrida. Não existe replay.
-            </li>
-            <li>
-              <b>Entre os jogos:</b> treine jogadores na academia, contrate reforços no mercado e
-              use poções nos momentos decisivos.
-            </li>
-            <li>
-              <b>Ascension:</b> venceu o chefão? Suba a dificuldade até o nível {ASCENSION_MAX} e
-              prove que não foi sorte.
-            </li>
-          </ul>
+
+          <section className="rq-event-strip">
+            <div className="rq-title-tags">
+              <span className="rq-title-tag rq-tag-red">Roguelike</span>
+              <span className="rq-title-tag rq-tag-blue">Copa do Mundo</span>
+              <span className="rq-title-tag rq-tag-gold">Perdeu, acabou</span>
+            </div>
+            <p className="cm-subtitle">
+              Escolha uma seleção da Copa do Mundo e suba o mapa enfrentando um adversário por fase
+              até o chefão final. Perdeu uma vez? Eliminado — recomeça do zero. Vença para ser
+              campeão.
+            </p>
+          </section>
+
+          <section className="rq-event-strip">
+            <ul className="rq-help-list">
+              <li>
+                <b>Mapa:</b> escolha o caminho fase a fase — cada rota mistura partidas, academia,
+                mercado e bênçãos.
+              </li>
+              <li>
+                <b>Partidas:</b> uma derrota encerra a corrida. Não existe replay.
+              </li>
+              <li>
+                <b>Entre os jogos:</b> treine jogadores na academia, contrate reforços no mercado e
+                use poções nos momentos decisivos.
+              </li>
+              <li>
+                <b>Ascension:</b> venceu o chefão? Suba a dificuldade até o nível {ASCENSION_MAX} e
+                prove que não foi sorte.
+              </li>
+            </ul>
+          </section>
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import type { GenPlayer } from '../game/types'
 import { AttrGroups, RoleTag, attrColor } from './attrDisplay'
+import { CloseIcon } from './icons'
 import { PlayerAvatar } from './PlayerAvatar'
 
 /**
@@ -34,6 +35,25 @@ export function PlayerDetail({
         </span>
       </div>
       <AttrGroups role={player.role} attrs={player.attrs} />
+    </div>
+  )
+}
+
+/**
+ * PlayerDetail "destacável": no desktop fica no fluxo da tela como sempre; no
+ * celular o CSS (`.rq-detail-pop`) o transforma numa cartela fixa no rodapé,
+ * com o ✕ para fechar — assim a tela de trás continua cabendo inteira.
+ */
+export function PlayerDetailPop({
+  onClose,
+  ...detail
+}: { onClose: () => void } & ComponentProps<typeof PlayerDetail>) {
+  return (
+    <div className="rq-detail-pop">
+      <button className="cm-tactics-close rq-detail-close" onClick={onClose} title="Fechar">
+        <CloseIcon size={16} />
+      </button>
+      <PlayerDetail {...detail} />
     </div>
   )
 }

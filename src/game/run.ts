@@ -27,9 +27,9 @@ export const SQUAD_MAX = 23
 export const GYM_GAIN = 20
 
 // ---- Poções: ganhas ao vencer, usadas num jogador, valem por UMA partida ----
-/** Quanto a poção soma ao atributo — pode PASSAR de 100 (teto 120). */
-export const POTION_BOOST = 20
-export const POTION_ATTR_CAP = 120
+/** Quanto a poção soma ao atributo — pode PASSAR de 100 (teto 150). */
+export const POTION_BOOST = 50
+export const POTION_ATTR_CAP = 150
 export const POTIONS_MAX = 3
 /** Chance de uma vitória (fora o chefão) render uma poção. */
 const POTION_DROP_CHANCE = 0.5
@@ -273,8 +273,8 @@ const refreshRating = (p: GenPlayer): void => {
 }
 
 /**
- * Usa uma poção do inventário num jogador: +20 no atributo correspondente,
- * podendo PASSAR de 100 (teto 120). Pode ser tomada no mapa ou NO MEIO da
+ * Usa uma poção do inventário num jogador: +50 no atributo correspondente,
+ * podendo PASSAR de 100 (teto 150). Pode ser tomada no mapa ou NO MEIO da
  * partida (o motor lê os atributos ao vivo) — o efeito acaba no apito final.
  */
 export const usePotion = (state: RunState, index: number, playerId: number): boolean => {

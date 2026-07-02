@@ -406,3 +406,35 @@ export function BenchIcon(p: IconProps) {
     </svg>
   )
 }
+
+/** Expandir — entrar em tela cheia na partida. */
+export function ExpandIcon(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <path
+        d="M9 4.5H5.7A1.2 1.2 0 0 0 4.5 5.7V9M15 4.5h3.3a1.2 1.2 0 0 1 1.2 1.2V9M9 19.5H5.7a1.2 1.2 0 0 1-1.2-1.2V15M15 19.5h3.3a1.2 1.2 0 0 0 1.2-1.2V15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** Recolher — sair da tela cheia da partida. */
+export function CompressIcon(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <path
+        d="M9 4.5V7.8A1.2 1.2 0 0 1 7.8 9H4.5M15 4.5v3.3A1.2 1.2 0 0 0 16.2 9h3.3M9 19.5v-3.3A1.2 1.2 0 0 0 7.8 15H4.5M15 19.5v-3.3a1.2 1.2 0 0 1 1.2-1.2h3.3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}

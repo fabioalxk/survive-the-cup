@@ -10,11 +10,20 @@ import { defaultFormation, formationName } from '../sim/formation'
 import { ClubBadge, type BadgeClub } from '../ui/ClubBadge'
 import { EventBanner } from '../ui/EventBanner'
 import FormationEditor from '../ui/FormationEditor'
-import { ClipboardIcon, CloseIcon, PauseIcon, PlayIcon, SkipIcon, WhistleIcon } from '../ui/icons'
+import {
+  ClipboardIcon,
+  CloseIcon,
+  CompressIcon,
+  ExpandIcon,
+  PauseIcon,
+  PlayIcon,
+  SkipIcon,
+  WhistleIcon,
+} from '../ui/icons'
 import { MatchHistory } from './MatchHistory'
 
-/* px por metro do canvas: 10 → 1130×760 nativo, nítido mesmo ampliado no desktop */
-const SCALE = 10
+/* px por metro do canvas: 12 → 1356×912 nativo, nítido mesmo em tela cheia no desktop */
+const SCALE = 12
 
 /** Velocidades nomeadas — mais claras que "3× 9× 18×". */
 const SPEEDS: [string, number][] = [
@@ -66,7 +75,9 @@ export default function MatchPlayer({
   extraControls?: (m: { pause: () => void; resume: () => void }) => ReactNode
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
   const [tactics, setTactics] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   // âncoras vigentes da partida — a fonte local enquanto o jogo roda
   const [slots, setSlots] = useState<Vec2[]>(() => (home.formation ?? defaultFormation()).map((s) => ({ ...s })))
   const wasRunning = useRef(true)
@@ -137,6 +148,17 @@ export default function MatchPlayer({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [tactics])
 
+  // acompanha entrar/sair da tela cheia (inclusive via Esc, que o navegador trata)
+  useEffect(() => {
+    const sync = () => setFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', sync)
+    return () => document.removeEventListener('fullscreenchange', sync)
+  }, [])
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) void document.exitFullscreen()
+    else void rootRef.current?.requestFullscreen()
+  }
+
   // No intervalo os times trocam de lado no campo (attackDir inverte no motor);
   // o placar acompanha, mantendo cada time do lado em que seu goleiro está.
   const swapped = hud.half === 2
@@ -144,7 +166,9 @@ export default function MatchPlayer({
   const right = swapped ? { side: home, goals: hud.home } : { side: away, goals: hud.away }
 
   return (
-    <div className="cm-match">
+    <div className="cm-match" ref={rootRef}>
+      {/* palco: campo + HUD sobreposto (placar/controles) — no desktop vira overlay de transmissão */}
+      <div className="cm-stage">
       <div className="cm-scoreboard">
         <span className="cm-sb-team">
           <span className="cm-sb-stripe" style={{ background: left.side.shirt }} aria-hidden />
@@ -252,6 +276,13 @@ export default function MatchPlayer({
             </button>
           )}
           {extraControls?.({ pause: freeze, resume: unfreeze })}
+          <button
+            className="cm-btn cm-btn-sm cm-btn-fullscreen"
+            onClick={toggleFullscreen}
+            title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+          >
+            {fullscreen ? <CompressIcon size={14} /> : <ExpandIcon size={14} />}
+          </button>
           {onSkip && (
             <button className="cm-btn cm-btn-ghost cm-btn-sm" onClick={onSkip}>
               Pular <SkipIcon size={13} className="cm-btn-ico-trail" />
@@ -259,6 +290,7 @@ export default function MatchPlayer({
           )}
         </div>
       )}
+      </div>
 
       <MatchHistory events={hud.events} />
     </div>

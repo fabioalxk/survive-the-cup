@@ -3,7 +3,7 @@ import type { RunState } from '../game/runTypes'
 import { optimizeStartingXI, swapStarter } from '../game/run'
 import { RoleTag, attrColor } from '../ui/attrDisplay'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
-import { PlayerDetail } from '../ui/PlayerDetail'
+import { PlayerDetailPop } from '../ui/PlayerDetail'
 import { BenchIcon, SwapIcon } from '../ui/icons'
 import type { GenPlayer } from '../game/types'
 import type { RunApi } from './useRun'
@@ -128,10 +128,11 @@ export default function SquadRunView({ state, act }: { state: RunState; act: Run
       </div>
 
       {sel && (
-        <PlayerDetail
+        <PlayerDetailPop
           player={sel}
           teamId={state.clubId}
           extra={<> · {selSide === 'starter' ? 'Titular' : 'Reserva'}</>}
+          onClose={() => setSelId(null)}
         />
       )}
 
