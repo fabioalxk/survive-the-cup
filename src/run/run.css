@@ -1735,7 +1735,9 @@
   width: 100%;
   border: none;
   border-radius: 22px;
-  padding: 20px 36px 40px;
+  /* respiro em % da largura: a moldura pintada estica junto com o card, então a
+     folga precisa acompanhar a espessura da borda da arte (~12% de cada lado) */
+  padding: 20px 14% 15%;
   cursor: pointer;
   text-align: left;
   color: var(--cm-text);
@@ -1876,8 +1878,10 @@
   border-top: 1px solid var(--cm-line);
 }
 .rc-card .ps-attr {
-  grid-template-columns: 1fr 56px 22px;
-  gap: 6px;
+  /* rótulo fixo + barra flexível (mesmo padrão do .mk-attrs do mercado): as
+     barras se alinham e preenchem a largura sem vão morto até o número */
+  grid-template-columns: 82px minmax(0, 1fr) 24px;
+  gap: 8px;
   padding: 3px 0;
 }
 

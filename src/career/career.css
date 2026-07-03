@@ -1135,7 +1135,8 @@ a:focus-visible {
   background: var(--card-frame) center / 100% 100% no-repeat, var(--cm-panel);
   border: none;
   border-radius: 14px;
-  padding: 18px 34px 30px;
+  /* respiro em % da largura: acompanha a espessura da borda da arte esticada */
+  padding: 18px 13% 12%;
   overflow: hidden;
   transition: transform 0.12s, box-shadow 0.15s, filter 0.15s;
 }
