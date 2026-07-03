@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import type { CareerState } from '../game/types'
 import { fmtMoney, sellPlayer, SQUAD_MIN } from '../game/career'
-import { ROLE_LABEL, attrColor, byRole, AttrGroups } from '../ui/attrDisplay'
+import { ROLE_LABEL, attrColor, byRole } from '../ui/attrDisplay'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
+import { PlayerDetail } from '../ui/PlayerDetail'
 import type { CareerApi } from './useCareer'
 
 /** Tela "Meu Time": elenco ordenado por posição + detalhe do jogador + venda. */
@@ -41,20 +42,7 @@ export default function SquadView({ state, act }: { state: CareerState; act: Car
 
       {player && (
         <div className="cm-squad-detail">
-          <div className="cm-squad-detail-head">
-            <span className="cm-squad-detail-num">{player.number}</span>
-            <PlayerAvatar teamId={club.id} name={player.name} id={player.id} size={48} />
-            <div className="cm-squad-detail-id">
-              <strong>{player.name}</strong>
-              <span>
-                {ROLE_LABEL[player.role]} · {player.age} anos · {fmtMoney(player.value)}
-              </span>
-            </div>
-            <span className="cm-squad-detail-ovr" style={{ color: attrColor(player.overall) }}>
-              {player.overall}
-            </span>
-          </div>
-          <AttrGroups role={player.role} attrs={player.attrs} />
+          <PlayerDetail player={player} teamId={club.id} extra={<> · {fmtMoney(player.value)}</>} />
           <button
             className="cm-btn cm-btn-danger"
             disabled={club.squad.length <= SQUAD_MIN}

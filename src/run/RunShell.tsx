@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ALL_CLUBS } from '../game/worldcup'
 import { benchHasUpgrade, continueAfterDefeat, START_LIVES } from '../game/run'
+import { STAGE_COUNT } from '../game/runGen'
 import { ClubBadge } from '../ui/ClubBadge'
 import { ClipboardIcon, CoinIcon, FlameIcon, HeartIcon, MapIcon, RestartIcon, ShirtIcon } from '../ui/icons'
 import MapView from './MapView'
@@ -17,7 +18,7 @@ import type { RunApi } from './useRun'
 
 type Tab = 'map' | 'squad' | 'tactics'
 
-/** Casca do modo roguelike: cabeçalho + abas (mapa/elenco) + o que o status da corrida exigir. */
+/** Casca do modo roguelike: barra única (clube + abas + fase + status) + o que o status da corrida exigir. */
 export default function RunShell({ api }: { api: RunApi }) {
   const state = api.state!
   const { act } = api
@@ -34,10 +35,44 @@ export default function RunShell({ api }: { api: RunApi }) {
       )}
       <header className="cm-header">
         <div className="cm-header-club">
-          {club && <ClubBadge club={club} size={32} />}
+          {club && <ClubBadge club={club} size={30} />}
           <div>
             <strong>{club?.name ?? state.clubId}</strong>
             <span className="cm-header-sub">Téc. {state.managerName} · Survive the Cup</span>
+          </div>
+        </div>
+        <nav className="cm-nav">
+          <button className={`cm-nav-btn ${tab === 'map' ? 'active' : ''}`} onClick={() => setTab('map')}>
+            <span className="cm-nav-ico">
+              <MapIcon size={18} />
+            </span>
+            <span>Mapa</span>
+          </button>
+          <button className={`cm-nav-btn ${tab === 'squad' ? 'active' : ''}`} onClick={() => setTab('squad')}>
+            <span className="cm-nav-ico">
+              <ShirtIcon size={18} />
+              {benchHasUpgrade(state) && (
+                <span className="cm-nav-dot" title="Você tem reservas melhores que titulares" />
+              )}
+            </span>
+            <span>Meu Time</span>
+          </button>
+          <button className={`cm-nav-btn ${tab === 'tactics' ? 'active' : ''}`} onClick={() => setTab('tactics')}>
+            <span className="cm-nav-ico">
+              <ClipboardIcon size={18} />
+            </span>
+            <span>Tática</span>
+          </button>
+        </nav>
+        <div className="rq-topbar-phase">
+          <span className="rq-topbar-stage">
+            Fase <b>{Math.min(state.stage + 1, STAGE_COUNT + 1)}</b> de {STAGE_COUNT + 1}
+          </span>
+          <div className="rq-map-progress" aria-hidden>
+            <div
+              className="rq-map-progress-fill"
+              style={{ width: `${Math.min(100, (state.stage / (STAGE_COUNT + 1)) * 100)}%` }}
+            />
           </div>
         </div>
         <div className="cm-header-stats">
@@ -60,30 +95,6 @@ export default function RunShell({ api }: { api: RunApi }) {
           </button>
         </div>
       </header>
-
-      <nav className="cm-nav">
-        <button className={`cm-nav-btn ${tab === 'map' ? 'active' : ''}`} onClick={() => setTab('map')}>
-          <span className="cm-nav-ico">
-            <MapIcon size={18} />
-          </span>
-          <span>Mapa</span>
-        </button>
-        <button className={`cm-nav-btn ${tab === 'squad' ? 'active' : ''}`} onClick={() => setTab('squad')}>
-          <span className="cm-nav-ico">
-            <ShirtIcon size={18} />
-            {benchHasUpgrade(state) && (
-              <span className="cm-nav-dot" title="Você tem reservas melhores que titulares" />
-            )}
-          </span>
-          <span>Meu Time</span>
-        </button>
-        <button className={`cm-nav-btn ${tab === 'tactics' ? 'active' : ''}`} onClick={() => setTab('tactics')}>
-          <span className="cm-nav-ico">
-            <ClipboardIcon size={18} />
-          </span>
-          <span>Tática</span>
-        </button>
-      </nav>
 
       <main className="cm-main">
         {tab === 'map' && <MapView state={state} act={act} />}

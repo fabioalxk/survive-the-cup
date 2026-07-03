@@ -61,7 +61,7 @@ const KIND_LABEL: Record<string, string> = {
   gym: 'Treinamento',
   boss: 'CHEFÃO',
 }
-/** Legenda inferior do mapa. */
+/** Legenda do mapa (flutua sobre o canto inferior da área visível). */
 const LEGEND: Array<{ kind: string; Icon: (p: MapIconProps) => JSX.Element; label: string }> = [
   { kind: 'match', Icon: ShieldIcon, label: 'Partida' },
   { kind: 'gym', Icon: GymIcon, label: 'Treinamento' },
@@ -160,19 +160,6 @@ export default function MapView({ state, act }: { state: RunState; act: RunApi['
 
   return (
     <div className="rq-map-wrap">
-      <div className="rq-map-bar">
-        <span className="rq-map-bar-stage">
-          Fase <b>{Math.min(state.stage + 1, STAGE_COUNT + 1)}</b> de {STAGE_COUNT + 1}
-        </span>
-        {/* moedas já ficam no cabeçalho — aqui entra o progresso da jornada */}
-        <div className="rq-map-progress" aria-hidden>
-          <div
-            className="rq-map-progress-fill"
-            style={{ width: `${Math.min(100, (state.stage / (STAGE_COUNT + 1)) * 100)}%` }}
-          />
-        </div>
-      </div>
-
       <div className="rq-map-scroll" ref={scrollRef}>
         <div className="rq-map" style={{ height: MAP_HEIGHT }}>
           <img className="rq-map-bg" src="/assets/surviveTheCup_background.png" alt="" />

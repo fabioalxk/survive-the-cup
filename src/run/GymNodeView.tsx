@@ -173,7 +173,7 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
                   className="cm-btn cm-btn-ghost cm-btn-sm rq-gym-back"
                   onClick={() => setPlayerId(null)}
                 >
-                  ← Campinho
+                  Campinho
                 </button>
                 <PlayerDetailHead
                   player={player}

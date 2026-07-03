@@ -280,7 +280,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 18px 0 36px;
+  /* 50px: não colide com a barra fixa do topo (.rq-title-top), em qualquer largura */
+  padding: 50px 0 36px;
   animation: cm-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 .rq-event-brand {
@@ -404,7 +405,8 @@
   display: block;
 }
 
-/* CTA de largada: banner largo com brilho — o "GO" da cena */
+/* CTA de largada: banner largo com brilho — o "GO" da cena. Reaproveita a
+   mesma placa verde pintada dos botões genéricos (ver .cm-btn-go). */
 .rq-event-go {
   display: block;
   width: 100%;
@@ -414,16 +416,18 @@
   font-weight: 800;
   letter-spacing: 0.02em;
   color: #06210f;
-  background: linear-gradient(180deg, #4ade80, #16a34a);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 14px;
+  border-style: solid;
+  border-width: 10px;
+  border-image: url('/assets/ui/btn_plate_go.webp') 15% fill / 1 / 0 stretch;
+  clip-path: inset(0 round 14px);
   cursor: pointer;
-  box-shadow: 0 10px 28px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  transition: transform 0.14s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.15s;
+  box-shadow: 0 10px 28px rgba(34, 197, 94, 0.3);
+  transition: transform 0.14s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.15s, filter 0.15s;
 }
 .rq-event-go:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 34px rgba(34, 197, 94, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  filter: brightness(1.1);
+  box-shadow: 0 14px 34px rgba(34, 197, 94, 0.42);
 }
 
 /* =====================================================================
@@ -441,7 +445,9 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 24px;
-  padding: 18px 0 28px;
+  /* topo com folga pro cabeçalho FIXO (.rq-title-top) nunca cobrir o botão
+     Voltar — vale em qualquer largura, não só no breakpoint mobile abaixo */
+  padding: 50px 0 28px;
   animation: cm-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
@@ -666,41 +672,37 @@
 
 /* ---------- Mapa ---------- */
 .rq-map-wrap {
+  position: relative; /* âncora da legenda flutuante */
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
-.rq-map-bar {
+/* fase + progresso da jornada, embutidos na barra superior (RunShell) */
+.rq-topbar-phase {
+  flex: 1;
+  min-width: 160px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  background: var(--cm-glass), var(--cm-panel);
-  border: 1px solid var(--cm-line);
-  border-radius: var(--cm-radius);
-  padding: 11px 18px;
+  gap: 10px;
   font-weight: 700;
-  font-size: 14px;
-  box-shadow: var(--cm-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  font-size: 12.5px;
 }
-.rq-map-bar-stage {
+.rq-topbar-stage {
   display: inline-flex;
   align-items: baseline;
   gap: 5px;
   color: var(--cm-muted);
+  white-space: nowrap;
 }
-.rq-map-bar-stage b {
+.rq-topbar-stage b {
   color: var(--cm-gold);
   font-family: var(--cm-font-display);
-  font-size: 17px;
+  font-size: 15px;
 }
-/* progresso da jornada (as moedas já aparecem no cabeçalho) */
 .rq-map-progress {
   flex: 1;
-  max-width: min(560px, 50%);
-  height: 8px;
-  margin-left: 16px;
+  height: 7px;
   border-radius: 999px;
   background: rgba(148, 163, 189, 0.14);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -1164,12 +1166,20 @@
   border-radius: 999px;
 }
 
+/* legenda flutuante: sobrepõe o rodapé do mapa em vez de ocupar uma linha própria */
 .rq-map-legend {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
   font-size: 12px;
+  max-width: calc(100% - 24px);
+  pointer-events: none;
 }
 .rq-legend-item {
   display: inline-flex;
@@ -1178,7 +1188,8 @@
   padding: 4px 12px;
   border-radius: 999px;
   border: 1px solid var(--cm-line);
-  background: var(--cm-glass), var(--cm-panel);
+  background: rgba(9, 14, 24, 0.72);
+  backdrop-filter: blur(6px);
   color: var(--cm-muted);
   font-weight: 600;
 }
@@ -1684,7 +1695,7 @@
   letter-spacing: 0.01em;
   color: #2a1c08;
   text-shadow: 0 1px 0 rgba(255, 245, 215, 0.5);
-  background: url('/assets/cards/ribbon_title.webp') center / 100% auto no-repeat;
+  background: url('/assets/cards/ribbon_title.webp') center / 100% 100% no-repeat;
   filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.55));
 }
 .cm-ribbon-sm {
@@ -1724,7 +1735,7 @@
   width: 100%;
   border: none;
   border-radius: 22px;
-  padding: 20px 27px 34px;
+  padding: 20px 36px 40px;
   cursor: pointer;
   text-align: left;
   color: var(--cm-text);
@@ -1845,7 +1856,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 14px 4px 0;
+  padding: 14px 2px 0;
 }
 .rc-card-name {
   font-family: var(--cm-font-display);
@@ -1865,6 +1876,8 @@
   border-top: 1px solid var(--cm-line);
 }
 .rc-card .ps-attr {
+  grid-template-columns: 1fr 56px 22px;
+  gap: 6px;
   padding: 3px 0;
 }
 
@@ -2241,7 +2254,17 @@
 .rq-gym-back {
   display: none;
   align-self: flex-start;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 10px;
+}
+/* mesmo badge de seta pintado do botão voltar principal (ver .rq-back) */
+.rq-gym-back::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  flex: none;
+  background: url('/assets/ui/btn_round_back.webp') center / contain no-repeat;
 }
 .rq-gym-group {
   margin-bottom: 15px;
@@ -2825,6 +2848,32 @@
 .rq-run-shell {
   position: relative;
   isolation: isolate;
+  padding: 10px clamp(10px, 1.5vw, 22px) 12px;
+}
+/* barra superior única e compacta: clube + abas + fase + status (o mapa domina a tela) */
+.rq-run-shell .cm-header {
+  gap: 8px 18px;
+  padding: 6px 14px;
+  margin-bottom: 10px;
+}
+.rq-run-shell .cm-header-club {
+  gap: 10px;
+}
+.rq-run-shell .cm-header-club strong {
+  font-size: 15px;
+}
+.rq-run-shell .cm-header-sub {
+  font-size: 11px;
+}
+.rq-run-shell .cm-nav {
+  margin: 0;
+  gap: 6px;
+}
+.rq-run-shell .cm-nav-btn {
+  flex: 0 0 auto;
+  padding: 7px 18px;
+  font-size: 13px;
+  border-radius: 10px;
 }
 .rq-shell-bg {
   position: absolute;
@@ -3101,16 +3150,20 @@
     display: none;
   }
 
-  /* ---- Mapa: barra fina e sem legenda — sobra tela pro mapa em si ---- */
-  .rq-map-wrap {
-    gap: 8px;
+  /* ---- Mapa: barra superior quebra em linhas finas e sem legenda — sobra
+     tela pro mapa em si ---- */
+  .rq-run-shell .cm-nav {
+    order: 5;
+    flex-basis: 100%;
   }
-  .rq-map-bar {
-    padding: 7px 12px;
-    font-size: 12.5px;
+  .rq-run-shell .cm-nav-btn {
+    flex: 1;
+    padding: 6px 8px;
   }
-  .rq-map-bar-stage b {
-    font-size: 15px;
+  .rq-topbar-phase {
+    order: 6;
+    flex-basis: 100%;
+    min-width: 0;
   }
   .rq-map-scroll {
     min-height: 0;
@@ -3236,7 +3289,8 @@
   .tv-chip-role {
     font-size: 7.5px;
   }
-
+}
+@media (max-width: 760px) {
   /* ---- Cartas de recompensa: no celular a carta deita (retrato à esquerda) ---- */
   .cm-ribbon {
     font-size: 16px;

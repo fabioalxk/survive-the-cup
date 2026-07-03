@@ -623,11 +623,13 @@ a:focus-visible {
     opacity: 0.75;
   }
 }
+/* aba ativa: mesma placa azul pintada dos botões primários (ver .cm-btn-primary) */
 .cm-nav-btn.active {
-  background: linear-gradient(180deg, #3b82f6, var(--cm-primary-2));
-  border-color: rgba(147, 197, 253, 0.5);
+  border-width: 6px;
+  border-image: url('/assets/ui/btn_plate_primary.webp') 15% fill / 1 / 0 stretch;
+  clip-path: inset(0 round 13px);
   color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 6px 18px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
 }
 
 .cm-main {
@@ -742,21 +744,23 @@ a:focus-visible {
   font-weight: 600;
   margin-bottom: 16px;
 }
+/* mesma placa verde pintada do CTA genérico (ver .cm-btn-go) */
 .cm-play {
   position: relative;
   width: 100%;
-  border: 1px solid rgba(134, 239, 172, 0.5);
-  background: linear-gradient(180deg, #34d399, #16a34a);
+  border-style: solid;
+  border-width: 11px;
+  border-image: url('/assets/ui/btn_plate_go.webp') 15% fill / 1 / 0 stretch;
+  clip-path: inset(0 round 15px);
   color: #052e16;
   font-family: var(--cm-font-display);
   font-size: 22px;
   font-weight: 900;
   letter-spacing: 0.02em;
   padding: 18px;
-  border-radius: 15px;
   cursor: pointer;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 28px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 10px 28px rgba(34, 197, 94, 0.35);
   transition: filter 0.15s, transform 0.1s, box-shadow 0.15s;
   overflow: hidden;
 }
@@ -997,6 +1001,13 @@ a:focus-visible {
   padding: 13px;
   box-shadow: var(--cm-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
+.cm-squad-detail .rq-simple-detail {
+  background: none;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  animation: none;
+}
 .cm-squad-head {
   font-size: 12px;
   font-weight: 600;
@@ -1124,7 +1135,7 @@ a:focus-visible {
   background: var(--card-frame) center / 100% 100% no-repeat, var(--cm-panel);
   border: none;
   border-radius: 14px;
-  padding: 18px 26px 28px;
+  padding: 18px 34px 30px;
   overflow: hidden;
   transition: transform 0.12s, box-shadow 0.15s, filter 0.15s;
 }
