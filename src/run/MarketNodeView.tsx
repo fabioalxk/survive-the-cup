@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { RunState } from '../game/runTypes'
 import { buyPlayer, leaveNode, shopOffers } from '../game/run'
 import { buySfx, startMerchantMusic, stopMerchantMusic } from '../sfx/crowd'
+import { useScrollOverflow } from '../shared/useScrollOverflow'
 import { CoinIcon, HelpIcon } from '../ui/icons'
 import { MarketIcon } from './MapIcons'
 import PlacePlayerBoard, { CandidateCard } from './PlacePlayerBoard'
@@ -24,6 +25,8 @@ export default function MarketNodeView({
   onHelp: () => void
 }) {
   const [armed, setArmed] = useState<number | null>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const hasMore = useScrollOverflow(bodyRef)
   useEffect(() => {
     startMerchantMusic()
     return stopMerchantMusic
@@ -55,7 +58,7 @@ export default function MarketNodeView({
             <h2 className="cm-ribbon cm-ribbon-sm">Mercador de jogadores</h2>
             <p>
               {candidate
-                ? `Toque em quem sai — ${candidate.name} entra no lugar dele (ou use o botão "melhor lugar").`
+                ? `Toque em quem sai — ${candidate.name} entra no lugar dele.`
                 : 'Toque numa oferta pra ver onde ela rende mais no seu time.'}
             </p>
           </div>
@@ -74,7 +77,7 @@ export default function MarketNodeView({
           </div>
         </header>
 
-        <div className="rq-market-body pb-layout">
+        <div className={`rq-market-body pb-layout${hasMore ? ' has-more' : ''}`} ref={bodyRef}>
           {offers.length === 0 ? (
             <p className="cm-empty">O mercador não tem mais ninguém pra oferecer.</p>
           ) : (

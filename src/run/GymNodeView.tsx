@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Attrs } from '../sim/types'
+import type { Attrs, Vec2 } from '../sim/types'
 import type { RunState } from '../game/runTypes'
 import { GYM_GAIN, boostAttribute, leaveNode, moveFormationSlot, setFormation } from '../game/run'
 import { gymTrains } from '../game/ascension'
@@ -16,10 +16,25 @@ import type { RunApi } from './useRun'
 
 const afterTrain = (v: number): number => Math.min(100, v + GYM_GAIN)
 
-/** Primeiro atributo ainda treinável (< 100). */
-const firstTrainable = (attrs: Attrs): keyof Attrs => {
-  const keys = attrGroupsFor().flatMap((g) => g.keys)
-  return (keys.find((k) => attrs[k.key] < 100) ?? keys[0]).key
+/** Atributo treinável com o MAIOR ganho de OVR nesse slot — o padrão ao
+ * selecionar um jogador (ex.: um goleiro treina "Goleiro", não "Velocidade"
+ * só porque vem primeiro na lista de categorias). */
+const bestTrainable = (slotIndex: number, slot: Vec2, attrs: Attrs): keyof Attrs => {
+  const keys = attrGroupsFor()
+    .flatMap((g) => g.keys)
+    .filter((k) => attrs[k.key] < 100)
+  if (!keys.length) return attrGroupsFor()[0].keys[0].key
+  const baseOvr = slotOverallOf(slotIndex, slot, attrs)
+  let best = keys[0].key
+  let bestGain = -Infinity
+  for (const k of keys) {
+    const gain = slotOverallOf(slotIndex, slot, { ...attrs, [k.key]: afterTrain(attrs[k.key]) }) - baseOvr
+    if (gain > bestGain) {
+      bestGain = gain
+      best = k.key
+    }
+  }
+  return best
 }
 
 /** Antes/depois do treino (atributo e nota geral) — vira o snapshot ao confirmar. */
@@ -53,6 +68,10 @@ export default function GymNodeView({
 
   const [selIdx, setSelIdx] = useState<number | null>(null)
   const [attr, setAttr] = useState<keyof Attrs>('pace')
+  // true até o treinador escolher um atributo na mão — enquanto isso, trocar de
+  // jogador sempre recalcula o melhor atributo pro jogador novo (em vez de
+  // manter "Velocidade" só porque é o primeiro da lista de categorias).
+  const [autoAttr, setAutoAttr] = useState(true)
   const [results, setResults] = useState<TrainDelta[]>([])
 
   const player = selIdx !== null ? state.squad[selIdx] : null
@@ -63,10 +82,18 @@ export default function GymNodeView({
   const ovrIfTrained = (key: keyof Attrs): number =>
     slotOverallOf(selIdx!, slots[selIdx!], { ...player!.attrs, [key]: afterTrain(player!.attrs[key]) })
 
-  /** Troca de jogador mantendo o atributo escolhido quando ele segue treinável. */
+  /** Escolha manual de atributo — passa a valer como preferência explícita. */
+  const chooseAttr = (k: keyof Attrs) => {
+    setAttr(k)
+    setAutoAttr(false)
+  }
+
+  /** Troca de jogador: mantém o atributo escolhido À MÃO quando ele segue
+   * treinável; senão (ou sem escolha manual ainda) usa o de maior ganho de OVR. */
   const selectPlayer = (i: number) => {
     setSelIdx(i)
-    if (state.squad[i].attrs[attr] >= 100) setAttr(firstTrainable(state.squad[i].attrs))
+    const attrs = state.squad[i].attrs
+    if (autoAttr || attrs[attr] >= 100) setAttr(bestTrainable(i, slots[i], attrs))
   }
 
   // delta da escolha atual; ao treinar ele é congelado em `results` (o estado muta no act)
@@ -86,8 +113,12 @@ export default function GymNodeView({
     upgradeSfx()
     act((s) => boostAttribute(s, player.id, attr))
     setResults((r) => [...r, preview])
-    // o act muta na hora: se o atributo bateu 100, pula pro próximo treinável
-    if (player.attrs[attr] >= 100) setAttr(firstTrainable(player.attrs))
+    // o act muta na hora: se o atributo bateu 100, pula pro de maior ganho a
+    // seguir — a escolha manual anterior não vale mais (bateu o teto)
+    if (player.attrs[attr] >= 100) {
+      setAttr(bestTrainable(selIdx!, slots[selIdx!], player.attrs))
+      setAutoAttr(true)
+    }
   }
 
   const summary = done ? (results[results.length - 1] ?? null) : preview
@@ -108,7 +139,7 @@ export default function GymNodeView({
           </div>
           <div
             className={`rq-gym-count ${done ? 'is-done' : ''}`}
-            title={`${TRAINS} melhoramentos nesta academia`}
+            title={`${TRAINS} melhoramentos neste treinamento`}
           >
             <strong key={trainsLeft}>{done ? '✓' : trainsLeft}</strong>
             <span>{done ? 'completo' : trainsLeft === 1 ? 'restante' : 'restantes'}</span>
@@ -165,7 +196,7 @@ export default function GymNodeView({
                             key={k.key}
                             className={`rq-chip ${attr === k.key ? 'active' : ''}`}
                             disabled={done || maxed}
-                            onClick={() => setAttr(k.key)}
+                            onClick={() => chooseAttr(k.key)}
                             title={`${k.desc}\n${k.effects.map((e) => `• ${e}`).join('\n')}`}
                           >
                             <span>{k.label}</span>
@@ -244,6 +275,7 @@ export default function GymNodeView({
                 className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block"
                 onClick={train}
                 disabled={summary.before >= 100}
+                title={summary.before >= 100 ? 'Este atributo já está no limite (100)' : undefined}
               >
                 Treinar ({trainsLeft} restante{trainsLeft > 1 ? 's' : ''})
               </button>

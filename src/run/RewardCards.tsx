@@ -41,7 +41,12 @@ export default function RewardCards({
   return (
     <div className="cm-backdrop rq-scene rq-scene-reward">
       <div className="rc-scene">
-        <button className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico rc-scene-help" onClick={onHelp} title="Como jogar">
+        <button
+          className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico rc-scene-help"
+          onClick={onHelp}
+          title="Como jogar"
+          aria-label="Como jogar"
+        >
           <HelpIcon size={15} />
         </button>
         <div className="cm-ribbon cm-ribbon-sm">
@@ -49,7 +54,7 @@ export default function RewardCards({
         </div>
         <p className="rc-sub">
           {candidate
-            ? `Agora toque em quem sai — ${candidate.name} entra no lugar dele (ou use o botão "melhor lugar").`
+            ? `Agora toque em quem sai — ${candidate.name} entra no lugar dele.`
             : 'Toque num reforço pra ver onde ele rende mais no seu time.'}
         </p>
         {state.pendingPotion && (

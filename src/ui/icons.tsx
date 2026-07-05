@@ -145,18 +145,12 @@ export function SkipIcon(p: IconProps) {
   )
 }
 
-/** Setas de troca (⇄) — trocar titular/reserva. */
-export function SwapIcon(p: IconProps) {
+/** Faísca de 4 pontas — organização automática/"num só toque" (distinto do ícone de trocar). */
+export function AutoIcon(p: IconProps) {
   return (
-    <svg {...svgProps(p)}>
-      <path
-        d="M4 8.4h12.2M13.4 4.8l3.6 3.6-3.6 3.6M20 15.6H7.8M10.6 12l-3.6 3.6 3.6 3.6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg {...svgProps(p)} fill="currentColor">
+      <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z" />
+      <path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z" />
     </svg>
   )
 }
@@ -212,6 +206,30 @@ export function HelpIcon(p: IconProps) {
       <circle cx="12" cy="12" r="9" />
       <path d="M9.3 9.6a2.7 2.7 0 1 1 3.9 2.4c-.8.45-1.2.9-1.2 1.7v.4" strokeLinejoin="round" />
       <circle cx="12" cy="17.2" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+/** Alto-falante — liga/desliga música e efeitos (ondas quando ativo, X quando mudo). */
+export function SoundIcon({ muted, ...p }: IconProps & { muted: boolean }) {
+  return (
+    <svg
+      {...svgProps(p)}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 10v4h4l5 4V6L8 10H4z" fill="currentColor" stroke="none" />
+      {muted ? (
+        <path d="M16 9l5 6M21 9l-5 6" />
+      ) : (
+        <>
+          <path d="M15.5 9a3.6 3.6 0 0 1 0 6" />
+          <path d="M18 6.3a7.2 7.2 0 0 1 0 11.4" />
+        </>
+      )}
     </svg>
   )
 }
@@ -280,6 +298,56 @@ export function CompressIcon(p: IconProps) {
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** Velocímetro — botão de velocidade da partida (estilo menu do YouTube). */
+export function SpeedIcon(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <circle cx="12" cy="12.5" r="8.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M12 12.5 16 8.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="12.5" r="1.4" fill="currentColor" />
+      <path d="M8.4 4.4h7.2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/** Seta pra baixo — indica menu suspenso (usado no botão de velocidade). */
+export function ChevronDownIcon(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <path
+        d="m5.5 8.5 6.5 6.5 6.5-6.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** Check — marca a opção ativa num menu (velocidade selecionada). */
+export function CheckIcon(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <path
+        d="m5 12.5 4.5 4.5L19 7.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import type { GenPlayer } from '../game/types'
 import type { RunState } from '../game/runTypes'
 import {
@@ -13,16 +13,17 @@ import {
 import { ALL_CLUBS } from '../game/worldcup'
 import { ClubBadge } from '../ui/ClubBadge'
 import { PlayerDetailPop } from '../ui/PlayerDetail'
-import { HelpIcon, PlayIcon, SkipIcon, SwapIcon } from '../ui/icons'
+import { AutoIcon, HelpIcon, PlayIcon, SkipIcon } from '../ui/icons'
 import FormationEditor from '../ui/FormationEditor'
-import { useScrollOverflow } from '../shared/useScrollOverflow'
 import type { RunApi } from './useRun'
 
 /**
  * Vestiário (pré-jogo): a ÚNICA tela entre o mapa e a bola rolar. Os 11 já
  * estão no campinho — toque em 2 jogadores pra trocar de lugar (vale até o
- * gol), arraste pra remodelar o esquema, ou "Organizar sozinho" pra deixar o
- * time montar a melhor escalação num só toque — e UMA ação primária: Jogar.
+ * gol), arraste pra remodelar o esquema, ou "Organizar" pra deixar o time
+ * montar a melhor escalação num só toque — e UMA ação primária: Jogar.
+ * Cabe inteira na tela sem rolar: cabeçalho e rodapé têm altura fixa, o
+ * campinho é o único elemento flexível e encolhe mantendo a proporção do campo.
  */
 export default function PreMatchView({
   state,
@@ -35,8 +36,6 @@ export default function PreMatchView({
 }) {
   const [selIdx, setSelIdx] = useState<number | null>(null)
   const [undo, setUndo] = useState<GenPlayer[] | null>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const hasMore = useScrollOverflow(scrollRef)
   const node = state.nodes.find((n) => n.id === state.currentNodeId)
   const opp = node?.opponent ? ALL_CLUBS[node.opponent.clubId] : undefined
   const isBoss = node?.kind === 'boss'
@@ -68,35 +67,44 @@ export default function PreMatchView({
 
   return (
     <div className="cm-backdrop rq-scene rq-scene-prematch">
-      <div className="cm-modal rq-prematch" ref={scrollRef}>
+      <div className="cm-modal rq-prematch">
         <header className="rq-prematch-head">
-          {opp && <ClubBadge club={opp} size={44} />}
-          <div>
-            <h2 className="cm-ribbon cm-ribbon-sm">{isBoss ? '👑 CHEFÃO' : 'Próximo jogo'}</h2>
-            <p>
-              vs <strong>{opp?.name ?? node.opponent.clubId}</strong> · toque em 2 jogadores pra
-              trocar de lugar, arraste pra mudar o esquema.
-            </p>
+          <div className="rq-prematch-title">
+            {opp && <ClubBadge club={opp} size={34} />}
+            <div className="rq-prematch-title-text">
+              <span className="rq-prematch-kicker">{isBoss ? '👑 Chefão' : 'Próximo jogo'}</span>
+              <strong>vs {opp?.name ?? node.opponent.clubId}</strong>
+            </div>
           </div>
-          {undo && (
+          <div className="rq-prematch-actions">
+            {undo && (
+              <button
+                className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico"
+                onClick={undoLast}
+                title="Volta o time pra ordem de antes da última troca"
+                aria-label="Desfazer última troca"
+              >
+                ↩
+              </button>
+            )}
             <button
-              className="cm-btn cm-btn-ghost cm-btn-sm"
-              onClick={undoLast}
-              title="Volta o time pra ordem de antes da última troca"
+              className="cm-btn cm-btn-sm rq-prematch-auto"
+              onClick={organize}
+              title="Encaixa cada jogador onde ele mais rende, num só toque"
+              aria-label="Organizar automaticamente"
             >
-              ↩ Desfazer
+              <AutoIcon size={14} className="cm-btn-ico-lead" />
+              <span className="rq-prematch-auto-label">Organizar</span>
             </button>
-          )}
-          <button
-            className="cm-btn cm-btn-sm rq-prematch-auto"
-            onClick={organize}
-            title="Encaixa cada jogador onde ele mais rende, num só toque"
-          >
-            <SwapIcon size={14} className="cm-btn-ico-lead" /> Organizar sozinho
-          </button>
-          <button className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico" onClick={onHelp} title="Como jogar">
-            <HelpIcon size={15} />
-          </button>
+            <button
+              className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico"
+              onClick={onHelp}
+              title="Como jogar"
+              aria-label="Como jogar"
+            >
+              <HelpIcon size={15} />
+            </button>
+          </div>
         </header>
 
         <div className="rq-prematch-board">
@@ -122,23 +130,16 @@ export default function PreMatchView({
         )}
 
         <footer className="rq-prematch-foot">
-          {hasMore && (
-            <span className="rq-prematch-more" aria-hidden>
-              role para ver o time completo ▾
-            </span>
-          )}
-          <div className="rq-prematch-foot-btns">
-            <button className="cm-btn cm-btn-go cm-btn-lg cm-btn-block" onClick={() => act(kickOff)}>
-              <PlayIcon size={18} className="cm-btn-ico-lead" /> Jogar
-            </button>
-            <button
-              className="cm-btn cm-btn-ghost cm-btn-sm"
-              onClick={() => act((s) => quickPlayNode(s))}
-              title="Resolve a partida na hora, sem assistir"
-            >
-              Pular <SkipIcon size={13} className="cm-btn-ico-trail" />
-            </button>
-          </div>
+          <button className="cm-btn cm-btn-go cm-btn-lg cm-btn-block" onClick={() => act(kickOff)}>
+            <PlayIcon size={18} className="cm-btn-ico-lead" /> Jogar
+          </button>
+          <button
+            className="cm-btn cm-btn-ghost cm-btn-sm"
+            onClick={() => act((s) => quickPlayNode(s))}
+            title="Resolve a partida na hora, sem assistir"
+          >
+            Pular <SkipIcon size={13} className="cm-btn-ico-trail" />
+          </button>
         </footer>
       </div>
     </div>

@@ -62,6 +62,11 @@ export const loadRun = (): RunState | null => {
     ensureIdAbove(maxId)
     return state
   } catch {
+    // save corrompido (json inválido, storage falhando no meio da leitura...):
+    // apaga na hora. Sem isto, `hasRunSave()` continuava vendo a chave e a
+    // tela inicial oferecia "Continuar corrida" pra sempre — um loop morto,
+    // já que recarregar cai no mesmo catch de novo.
+    clearRunSave()
     return null
   }
 }

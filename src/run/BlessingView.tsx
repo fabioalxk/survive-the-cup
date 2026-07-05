@@ -44,6 +44,7 @@ export default function BlessingView({
             className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico rq-bless-help"
             onClick={onHelp}
             title="Como jogar"
+            aria-label="Como jogar"
           >
             <HelpIcon size={15} />
           </button>

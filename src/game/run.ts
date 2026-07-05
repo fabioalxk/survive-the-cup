@@ -1,5 +1,5 @@
 import type { Attrs, Vec2 } from '../sim/types'
-import { clampSlot, defaultFormation } from '../sim/formation'
+import { clampSlot, defaultFormation, formationName } from '../sim/formation'
 import type { GenPlayer } from './types'
 import type { BlessingKind, PotionKind, RunNode, RunState } from './runTypes'
 import { ALL_CLUBS } from './worldcup'
@@ -254,9 +254,12 @@ export const pickBlessing = (state: RunState, index: number): void => {
   if (state.status !== 'blessing' || !state.pendingBlessings) return
   const kind = state.pendingBlessings[index]
   if (!kind) return
-  applyBlessing(state, kind, rngForNode(state, 'blessing:' + kind))
   const info = BLESSING_INFO[kind]
+  // loga o rótulo genérico ANTES: craque/capitão/joia logam algo mais específico
+  // (nome, OVR) dentro de applyBlessing — essa é a mensagem que deve ficar por
+  // último (e por isso aparece no toast de confirmação da tela).
   log(state, `${info.emoji} Bênção da largada: ${info.label}.`)
+  applyBlessing(state, kind, rngForNode(state, 'blessing:' + kind))
   state.pendingBlessings = null
   // craque/joia abrem a tela de encaixe (alguém do time dá o lugar)
   state.status = state.pendingReward ? 'reward' : 'map'
@@ -486,6 +489,7 @@ export const swapSlots = (state: RunState, a: number, b: number): void => {
   state.squad[a] = pb
   state.squad[b] = pa
   refreshSquadRatings(state)
+  log(state, `🔁 ${pa.name} e ${pb.name} trocaram de posição.`)
 }
 
 /** Põe `newcomer` no slot escolhido; quem estava lá deixa o time de vez. Retorna quem saiu. */
@@ -518,11 +522,20 @@ export const skipReward = (state: RunState): void => {
 // TÁTICA (formação — presets e arrasto das âncoras no pré-jogo)
 // =====================================================================
 
-/** Aplica um preset de formação (4-4-2, 3-5-2…) — sempre uma CÓPIA das âncoras. */
+/**
+ * Aplica um preset de formação (4-4-2, 3-5-2…) — sempre uma CÓPIA das âncoras.
+ * Também recebe o arrasto de âncoras individuais durante a partida (ver
+ * MatchPlayer's `onMove`/`onPreset`, ambos repassam pra cá via `onFormationChange`)
+ * — só loga quando o NOME do esquema realmente muda, senão um simples ajuste de
+ * uma âncora spammaria o toast a cada solta do dedo.
+ */
 export const setFormation = (state: RunState, slots: Vec2[]): void => {
   if (slots.length !== 11) return
+  const before = formationName(state.formationSlots)
   state.formationSlots = slots.map((s) => ({ ...s }))
   refreshSquadRatings(state) // a faixa do campo mudou → a função (e a nota) mudam junto
+  const after = formationName(state.formationSlots)
+  if (after !== before) log(state, `📋 Esquema ${after}.`)
 }
 
 /** Move uma âncora da formação (arrasto no campinho). O goleiro (slot 0) é fixo. */
@@ -564,6 +577,7 @@ export const autoOrganizeSquad = (state: RunState): void => {
   }
   state.squad = next
   refreshSquadRatings(state)
+  log(state, '🔁 Time reorganizado automaticamente — cada jogador no slot onde mais rende.')
 }
 
 /** Restaura a ordem exata do time nos slots — o "desfazer" de uma troca ou organização automática. */
@@ -571,6 +585,7 @@ export const setSquadOrder = (state: RunState, order: GenPlayer[]): void => {
   if (order.length !== state.squad.length) return
   state.squad = order.slice()
   refreshSquadRatings(state)
+  log(state, '↩️ Troca desfeita — time como estava antes.')
 }
 
 // =====================================================================

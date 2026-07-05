@@ -2,7 +2,6 @@ import type { MatchState, Player, TeamId } from '../sim/types'
 import { AIR, FIELD, GOAL, PHYS } from '../sim/constants'
 import { TEAMS } from '../sim/teams'
 import { len, lerpV, norm, perp } from '../sim/vector'
-import { drawPlayerSprite, setSpriteUpright } from './sprites'
 
 /** As 3 regiões recoloríveis do uniforme (sprite) + cor do número. */
 export interface KitColors {
@@ -32,7 +31,6 @@ const kitInfo = (team: TeamId): KitColors => (kitOverride ? kitOverride[team] : 
 let labelsUpright = false
 export const setLabelsUpright = (v: boolean): void => {
   labelsUpright = v
-  setSpriteUpright(v) // sprites (side view) também são contra-girados pra ficarem em pé na tela
 }
 
 /** Placa de nome abaixo do jogador: some por padrão (poluía a leitura do jogo com muitos jogadores em campo). */
@@ -747,13 +745,6 @@ const drawPlayer = (
   const rx = r * (1 + 0.35 * down)
   const ry = r * (1 - 0.4 * down)
 
-  // Jogador correndo (sprite gerado por IA, ver src/render/sprites.ts) no lugar
-  // do botão — só quando em pé (sem sprite de "caído" ainda) e com a imagem já
-  // carregada; senão cai pro domo de acrílico abaixo, sem quebrar a tela.
-  const useSprite = down < 0.3
-  const spriteDrawn = useSprite && drawPlayerSprite(ctx, p.id, kit, ip, cx, cy, r * 2.15, speed)
-
-  if (!spriteDrawn) {
   // === botão de futebol: domo colorido sobre pedestal metálico ===
   // 1) pedestal/base (disco mais largo, claro/metálico) deslocado p/ baixo —
   //    aparece como uma meia-lua sob o domo: a marca do futebol de botão.
@@ -879,11 +870,9 @@ const drawPlayer = (
     ctx.stroke()
     ctx.restore()
   }
-  } // !spriteDrawn — fim do domo de acrílico (fallback)
 
-  // seta de orientação (heading): o sprite já mostra a direção girando, então a
-  // seta some quando ele está ativo — só aparece no fallback (botão) em pé.
-  if (!spriteDrawn && speed > 0.6 && down < 0.4) {
+  // seta de orientação (heading): indica a direção de movimento do botão.
+  if (speed > 0.6 && down < 0.4) {
     const d = norm(p.vel)
     const pl = perp(d)
     const tip = { x: cx + d.x * r * 1.4, y: cy + d.y * r * 1.4 }
@@ -898,9 +887,7 @@ const drawPlayer = (
     ctx.fill()
   }
 
-  // número — só no botão de fallback: em cima do sprite correndo ele atrapalha
-  // a leitura da animação (poluía o corpo em movimento).
-  if (!spriteDrawn) {
+  // número do jogador
   ctx.globalAlpha = 1 - down * 0.4
   ctx.font = `bold ${Math.round(r * 1.05)}px "Segoe UI", Roboto, sans-serif`
   ctx.textAlign = 'center'
@@ -912,7 +899,6 @@ const drawPlayer = (
     ctx.fillStyle = kit.text
     ctx.fillText(num, cx, cy)
   })
-  } // !spriteDrawn — fim do número (só no fallback)
   ctx.restore()
 
   // marca de "caído" — aparece junto com a transição
@@ -978,7 +964,7 @@ const drawBall = (
   const cyGround = px(ip.y)
   const cy = cyGround - lift
   // perspectiva: quanto mais alta, maior parece a bola (aproxima do "olho")
-  const r = PHYS.ballRadius * 2 * scale * (1 + Math.min(z * 0.05, 0.55))
+  const r = PHYS.ballRadius * 1.2 * scale * (1 + Math.min(z * 0.05, 0.55))
 
   // rastro de velocidade: em chutes/passes fortes, um "cometa" branco atrás da
   // bola vende a potência do lance. Comprimento ∝ deslocamento por passo.

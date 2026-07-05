@@ -219,38 +219,3 @@ export function FlagIcon({ size = 44, className }: MapIconProps) {
     </svg>
   )
 }
-
-/** Partida — escudo com bola (usado na legenda; os nós de partida mostram o escudo do clube). */
-export function ShieldIcon({ size = 44, className }: MapIconProps) {
-  return (
-    <svg viewBox="0 0 64 64" width={size} height={size} className={className} aria-hidden>
-      <defs>
-        <linearGradient id="rqi-shield" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#60a5fa" />
-          <stop offset="1" stopColor="#1e3a8a" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M32 5 L53 13 V30 C53 44 44 52.5 32 57 C20 52.5 11 44 11 30 V13 Z"
-        fill="url(#rqi-shield)"
-        stroke="rgba(251, 191, 36, 0.85)"
-        strokeWidth="2.2"
-      />
-      <path
-        d="M32 9.5 L49 16 V30 C49 41.5 41.5 48.7 32 52.6 C22.5 48.7 15 41.5 15 30 V16 Z"
-        fill="none"
-        stroke="rgba(255, 255, 255, 0.25)"
-        strokeWidth="1.2"
-      />
-      <circle cx="32" cy="30" r="9.5" fill="#f8fafc" stroke="#0f172a" strokeWidth="1.2" />
-      <path d="M32 26 L35.8 28.8 L34.4 33.2 H29.6 L28.2 28.8 Z" fill="#0f172a" />
-      <g stroke="#0f172a" strokeWidth="1.1">
-        <line x1="32" y1="26" x2="32" y2="21.4" />
-        <line x1="35.8" y1="28.8" x2="40" y2="27.2" />
-        <line x1="34.4" y1="33.2" x2="37" y2="37" />
-        <line x1="29.6" y1="33.2" x2="27" y2="37" />
-        <line x1="28.2" y1="28.8" x2="24" y2="27.2" />
-      </g>
-    </svg>
-  )
-}

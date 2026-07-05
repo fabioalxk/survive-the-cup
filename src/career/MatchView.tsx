@@ -1,13 +1,13 @@
 import type { CareerState } from '../game/types'
-import { advanceRound, advanceRoundWithPlayerResult, nextPlayerFixture } from '../game/career'
+import { advanceRoundWithPlayerResult, nextPlayerFixture } from '../game/career'
 import type { CareerApi } from './useCareer'
 import MatchPlayer from '../shared/MatchPlayer'
 
 /**
  * Assiste à partida do jogador com a simulação animada (elenco e cores reais).
- * Ao terminar, grava o placar e simula o resto da rodada. "Pular" usa resultado
- * rápido sem assistir. É um fininho sobre `MatchPlayer` (compartilhado com o
- * modo roguelike) que só resolve QUEM joga e o que fazer com o desfecho.
+ * Ao terminar, grava o placar e simula o resto da rodada. É um fininho sobre
+ * `MatchPlayer` (compartilhado com o modo roguelike) que só resolve QUEM joga
+ * e o que fazer com o desfecho.
  */
 export default function MatchView({
   state,
@@ -28,10 +28,6 @@ export default function MatchView({
       away={awayClub}
       onDone={(homeGoals, awayGoals) => {
         act((s) => advanceRoundWithPlayerResult(s, homeGoals, awayGoals))
-        onDone()
-      }}
-      onSkip={() => {
-        act((s) => advanceRound(s))
         onDone()
       }}
     />

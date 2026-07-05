@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ALL_CLUBS } from '../game/worldcup'
 import { continueAfterDefeat, START_LIVES } from '../game/run'
 import { STAGE_COUNT } from '../game/runGen'
 import { ClubBadge } from '../ui/ClubBadge'
-import { CoinIcon, FlameIcon, HeartIcon, HelpIcon, RestartIcon } from '../ui/icons'
+import { CoinIcon, FlameIcon, HeartIcon, HelpIcon, RestartIcon, SoundIcon } from '../ui/icons'
+import { isMuted, setMuted } from '../sfx/crowd'
+import { useInert } from '../shared/useInert'
 import MapView from './MapView'
 import PreMatchView from './PreMatchView'
 import RunMatchView from './RunMatchView'
@@ -26,6 +28,16 @@ export default function RunShell({ api }: { api: RunApi }) {
   const { act } = api
   const [confirmReset, setConfirmReset] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [muted, setMutedState] = useState(isMuted)
+  const headerRef = useRef<HTMLElement>(null)
+  const mainRef = useRef<HTMLElement>(null)
+  // toda tela de decisão (vestiário, mercado, academia...) é um backdrop cheio
+  // que cobre cabeçalho e mapa por cima — sem isto, dava pra dar Tab e ativar
+  // um nó do mapa (ou o mudo/ajuda/recomeçar do cabeçalho) por baixo do modal,
+  // invisível mas ainda focável pelo teclado.
+  const overlayOpen = state.status !== 'map' || confirmReset || showHelp
+  useInert(headerRef, overlayOpen)
+  useInert(mainRef, overlayOpen)
 
   if (state.status === 'match') return <RunMatchView state={state} act={act} />
 
@@ -33,7 +45,7 @@ export default function RunShell({ api }: { api: RunApi }) {
 
   return (
     <div className="cm-shell rq-run-shell">
-      <header className="cm-header">
+      <header className="cm-header" ref={headerRef}>
         <div className="cm-header-club">
           {club && <ClubBadge club={club} size={30} />}
           <div>
@@ -69,6 +81,17 @@ export default function RunShell({ api }: { api: RunApi }) {
           </span>
           <button
             className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico"
+            onClick={() => {
+              setMuted(!muted)
+              setMutedState(!muted)
+            }}
+            title={muted ? 'Ativar som' : 'Silenciar'}
+            aria-label={muted ? 'Ativar som' : 'Silenciar'}
+          >
+            <SoundIcon size={16} muted={muted} />
+          </button>
+          <button
+            className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico"
             onClick={() => setShowHelp(true)}
             title="Como jogar"
             aria-label="Como jogar"
@@ -87,7 +110,7 @@ export default function RunShell({ api }: { api: RunApi }) {
         <RunToast log={state.log} />
       </header>
 
-      <main className="cm-main">
+      <main className="cm-main" ref={mainRef}>
         <MapView state={state} act={act} />
       </main>
 

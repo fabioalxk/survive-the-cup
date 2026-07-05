@@ -1267,9 +1267,9 @@ var pickBlessing = (state, index) => {
   if (state.status !== "blessing" || !state.pendingBlessings) return;
   const kind = state.pendingBlessings[index];
   if (!kind) return;
-  applyBlessing(state, kind, rngForNode(state, "blessing:" + kind));
   const info = BLESSING_INFO[kind];
   log(state, `${info.emoji} B\xEAn\xE7\xE3o da largada: ${info.label}.`);
+  applyBlessing(state, kind, rngForNode(state, "blessing:" + kind));
   state.pendingBlessings = null;
   state.status = state.pendingReward ? "reward" : "map";
 };
@@ -1414,6 +1414,7 @@ var save = (name, state) => {
   console.log("wrote", name);
 };
 var clubId = Object.keys(ALL_CLUBS)[0];
+save("blessing", newRun("SHOT", clubId, 4242));
 var fresh = () => {
   const s = newRun("SHOT", clubId, 4242);
   pickBlessing(s, 1);
@@ -1430,6 +1431,11 @@ var reach = (kind) => {
   return s;
 };
 save("map", fresh());
+{
+  const s = fresh();
+  s.potions = ["strength", "pace"];
+  save("map-potions", s);
+}
 save("gym", reach("gym"));
 save("market", reach("market"));
 {

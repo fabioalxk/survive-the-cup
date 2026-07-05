@@ -7,10 +7,10 @@ import {
   opponentLevelBonus,
 } from '../game/ascension'
 import { START_LIVES } from '../game/run'
-import { resumeMainTheme, startMainTheme, stopMainTheme } from '../sfx/crowd'
+import { isMuted, resumeMainTheme, setMuted, startMainTheme, stopMainTheme } from '../sfx/crowd'
 import { BackButton } from '../ui/BackButton'
 import { ClubBadge } from '../ui/ClubBadge'
-import { BallIcon, FlameIcon, LockIcon, PlayIcon } from '../ui/icons'
+import { BallIcon, FlameIcon, LockIcon, PlayIcon, SoundIcon } from '../ui/icons'
 import { TrophyIcon } from './MapIcons'
 
 const VERSION = 'v0.1.0'
@@ -39,7 +39,7 @@ const ascensionSummary = (a: number): string => {
     `adversários +${opponentLevelBonus(a)} de nível`,
     `reforços -${offerLevelPenalty(a)} de nível`,
   ]
-  if (gymTrains(a) < gymTrains(0)) parts.push(`academia com só ${gymTrains(a)} melhoramentos`)
+  if (gymTrains(a) < gymTrains(0)) parts.push(`treinamento com só ${gymTrains(a)} melhoramentos`)
   return `Ascension ${a}: ${parts.join(', ')}.`
 }
 
@@ -59,6 +59,7 @@ export default function NewRun({
   const clubId = BRAZIL_ID
   const [ascension, setAscension] = useState(0)
   const [screen, setScreen] = useState<Screen>('menu')
+  const [muted, setMutedState] = useState(isMuted)
 
   useEffect(() => {
     startMainTheme()
@@ -113,7 +114,21 @@ export default function NewRun({
             <small>{hasSave ? 'Corrida em andamento' : 'Nova carreira'}</small>
           </div>
         </div>
-        <span className="rq-version">{VERSION}</span>
+        <div className="rq-title-right">
+          <button
+            className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico"
+            onClick={(e) => {
+              e.stopPropagation()
+              setMuted(!muted)
+              setMutedState(!muted)
+            }}
+            title={muted ? 'Ativar som' : 'Silenciar'}
+            aria-label={muted ? 'Ativar som' : 'Silenciar'}
+          >
+            <SoundIcon size={15} muted={muted} />
+          </button>
+          <span className="rq-version">{VERSION}</span>
+        </div>
       </header>
 
       {screen === 'menu' && (
@@ -243,7 +258,7 @@ export default function NewRun({
           <section className="rq-event-strip">
             <ul className="rq-help-list">
               <li>
-                <b>Mapa:</b> escolha o caminho fase a fase — cada rota mistura partidas, academia,
+                <b>Mapa:</b> escolha o caminho fase a fase — cada rota mistura partidas, treinamento,
                 mercado e bênçãos.
               </li>
               <li>
@@ -251,8 +266,8 @@ export default function NewRun({
                 partida custa 1 vida e a corrida continua; a última vida perdida elimina de vez.
               </li>
               <li>
-                <b>Entre os jogos:</b> treine jogadores na academia, contrate reforços no mercado e
-                use poções nos momentos decisivos.
+                <b>Entre os jogos:</b> melhore atributos no treinamento, contrate reforços no mercado
+                e use poções nos momentos decisivos.
               </li>
               <li>
                 <b>Ascension:</b> venceu o chefão? Suba a dificuldade até o nível {ASCENSION_MAX} e

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { canvasSize, setLabelsUpright, setShowNames } from '../render/renderer'
 import { useMatchLoop, type MatchSetup } from '../useMatchLoop'
 import { primeAudio } from '../sfx/crowd'
@@ -11,13 +12,15 @@ import { ClubBadge, type BadgeClub } from '../ui/ClubBadge'
 import { EventBanner } from '../ui/EventBanner'
 import FormationEditor from '../ui/FormationEditor'
 import {
+  CheckIcon,
+  ChevronDownIcon,
   ClipboardIcon,
   CloseIcon,
   CompressIcon,
   ExpandIcon,
   PauseIcon,
   PlayIcon,
-  SkipIcon,
+  SpeedIcon,
   WhistleIcon,
 } from '../ui/icons'
 import { MatchHistory } from './MatchHistory'
@@ -65,15 +68,12 @@ export default function MatchPlayer({
   home,
   away,
   onDone,
-  onSkip,
   onFormationChange,
   extraControls,
 }: {
   home: MatchSide
   away: MatchSide
   onDone: (homeGoals: number, awayGoals: number) => void
-  /** se fornecido, mostra um botão "pular" que resolve a partida sem animação. */
-  onSkip?: () => void
   /**
    * se fornecido, mostra o botão "Tática": pausa o jogo e abre o campinho para
    * remodelar o esquema DURANTE a partida. A mudança vale na hora no motor e é
@@ -87,7 +87,10 @@ export default function MatchPlayer({
   const rootRef = useRef<HTMLDivElement>(null)
   const [tactics, setTactics] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
-  const [showNames, setShowNamesState] = useState(false)
+  const [speedMenu, setSpeedMenu] = useState(false)
+  const speedBtnRef = useRef<HTMLButtonElement>(null)
+  const speedMenuRef = useRef<HTMLDivElement>(null)
+  const [speedMenuPos, setSpeedMenuPos] = useState({ left: 0, bottom: 0 })
   // âncoras vigentes da partida — a fonte local enquanto o jogo roda
   const [slots, setSlots] = useState<Vec2[]>(() => (home.formation ?? defaultFormation()).map((s) => ({ ...s })))
   const wasRunning = useRef(true)
@@ -128,12 +131,11 @@ export default function MatchPlayer({
     }
   }, [])
 
-  // nomes dos jogadores acima do campo: desligado por padrão (com todo mundo em
-  // campo, a placa de nome mais atrapalha do que ajuda a acompanhar a jogada)
+  // nomes dos jogadores sempre visíveis acima do campo
   useEffect(() => {
-    setShowNames(showNames)
-  }, [showNames])
-  useEffect(() => () => setShowNames(false), [])
+    setShowNames(true)
+    return () => setShowNames(false)
+  }, [])
 
   const { hud, running, setRunning, speed, setSpeed, setFormation } = useMatchLoop(canvasRef, SCALE, setup)
   const size = canvasSize(SCALE)
@@ -160,6 +162,30 @@ export default function MatchPlayer({
   }
 
   useEscapeKey(closeTactics, tactics)
+  useEscapeKey(() => setSpeedMenu(false), speedMenu)
+
+  // menu de velocidade (estilo YouTube): fecha ao clicar fora. O menu é
+  // portalado pra dentro de `rootRef` (não `.cm-match-controls`) porque a barra
+  // tem `overflow-x: auto` — isso força o eixo Y a cortar também (regra do
+  // CSS), então um popover posicionado ali dentro nunca apareceria.
+  const toggleSpeedMenu = () => {
+    if (!speedMenu && speedBtnRef.current) {
+      const r = speedBtnRef.current.getBoundingClientRect()
+      setSpeedMenuPos({ left: r.left, bottom: window.innerHeight - r.top + 8 })
+    }
+    setSpeedMenu((v) => !v)
+  }
+  useEffect(() => {
+    if (!speedMenu) return
+    const onClick = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (speedBtnRef.current?.contains(t) || speedMenuRef.current?.contains(t)) return
+      setSpeedMenu(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [speedMenu])
+  const speedLabel = SPEEDS.find(([, s]) => s === speed)?.[0] ?? SPEEDS[0][0]
 
   // acompanha entrar/sair da tela cheia (inclusive via Esc, que o navegador trata)
   useEffect(() => {
@@ -279,25 +305,45 @@ export default function MatchPlayer({
           >
             {running ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
           </button>
-          <div className="cm-speed">
-            {SPEEDS.map(([label, s]) => (
-              <button
-                key={s}
-                className={`cm-btn cm-btn-sm ${speed === s ? 'active' : ''}`}
-                onClick={() => setSpeed(s)}
+          <button
+            ref={speedBtnRef}
+            className="cm-btn cm-btn-sm cm-speed-btn"
+            onClick={toggleSpeedMenu}
+            title="Velocidade da partida"
+            aria-haspopup="menu"
+            aria-expanded={speedMenu}
+          >
+            <SpeedIcon size={14} className="cm-btn-ico-lead" />
+            {speedLabel}
+            <ChevronDownIcon size={12} className={`cm-speed-caret${speedMenu ? ' open' : ''}`} />
+          </button>
+          {speedMenu &&
+            rootRef.current &&
+            createPortal(
+              <div
+                className="cm-speed-menu"
+                role="menu"
+                ref={speedMenuRef}
+                style={{ left: speedMenuPos.left, bottom: speedMenuPos.bottom }}
               >
-                {label}
-              </button>
-            ))}
-          </div>
-          <label className="cm-checkbox">
-            <input
-              type="checkbox"
-              checked={showNames}
-              onChange={(e) => setShowNamesState(e.target.checked)}
-            />
-            Nomes
-          </label>
+                {SPEEDS.map(([label, s]) => (
+                  <button
+                    key={s}
+                    className={`cm-speed-opt${speed === s ? ' active' : ''}`}
+                    role="menuitemradio"
+                    aria-checked={speed === s}
+                    onClick={() => {
+                      setSpeed(s)
+                      setSpeedMenu(false)
+                    }}
+                  >
+                    <span>{label}</span>
+                    {speed === s && <CheckIcon size={14} />}
+                  </button>
+                ))}
+              </div>,
+              rootRef.current,
+            )}
           {onFormationChange && (
             <button className="cm-btn cm-btn-sm" onClick={openTactics} title="Trocar a tática">
               <ClipboardIcon size={13} className="cm-btn-ico-lead" /> Tática
@@ -311,15 +357,6 @@ export default function MatchPlayer({
           >
             {fullscreen ? <CompressIcon size={14} /> : <ExpandIcon size={14} />}
           </button>
-          {onSkip && (
-            <button
-              className="cm-btn cm-btn-ghost cm-btn-sm"
-              onClick={onSkip}
-              title="Resolve o resto da partida na hora, sem assistir"
-            >
-              Pular <SkipIcon size={13} className="cm-btn-ico-trail" />
-            </button>
-          )}
         </div>
       )}
       </div>

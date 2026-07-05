@@ -49,8 +49,8 @@ export function LifeLostModal({ state, onContinue }: { state: RunState; onContin
         <h2>VOCÊ PERDEU 1 VIDA</h2>
         <p className="cm-modal-sub">{lastMatchLine(state)}</p>
         <p className="cm-modal-sub">
-          Resta {state.lives} vida: a próxima derrota elimina. O confronto continua no mapa — tente a
-          revanche ou reforce o time antes.
+          {state.lives === 1 ? 'Resta 1 vida' : `Restam ${state.lives} vidas`}: a próxima derrota
+          elimina. O confronto continua no mapa — tente a revanche ou reforce o time antes.
         </p>
         <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onContinue}>
           Continuar a corrida
@@ -115,7 +115,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
         <h2>Como jogar</h2>
         <ul className="rq-help-list">
           <li>
-            <b>Mapa:</b> escolha o caminho fase a fase — cada rota mistura partidas, academia,
+            <b>Mapa:</b> escolha o caminho fase a fase — cada rota mistura partidas, treinamento,
             mercado e bênçãos.
           </li>
           <li>
@@ -124,16 +124,15 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             escolher você mesmo? Toque direto no jogador do campinho que dá o lugar.
           </li>
           <li>
-            <b>Substituir posição (vestiário):</b> toque em <b>"Organizar sozinho"</b> pra montar a
-            melhor escalação num só toque, ou toque em 2 jogadores do campinho pra trocar os dois
-            de lugar.
+            <b>Substituir posição (vestiário):</b> toque em <b>"Organizar"</b> pra montar a melhor
+            escalação num só toque, ou toque em 2 jogadores do campinho pra trocar os dois de lugar.
           </li>
           <li>
             <b>Vidas:</b> você começa com {START_LIVES} (ícones de coração no topo). Perder uma
             partida custa 1 vida e a corrida continua; a última vida perdida elimina de vez.
           </li>
           <li>
-            <b>Entre os jogos:</b> treine jogadores na academia e use poções nos momentos
+            <b>Entre os jogos:</b> melhore atributos no treinamento e use poções nos momentos
             decisivos.
           </li>
           <li>
@@ -169,7 +168,7 @@ export function VictoryModal({ state, onNewRun }: { state: RunState; onNewRun: (
           <span>{state.coins} moedas guardadas</span>
         </div>
         <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onNewRun}>
-          Nova corrida
+          <RestartIcon size={15} className="cm-btn-ico-lead" /> Nova corrida
         </button>
       </ModalPanel>
     </Backdrop>

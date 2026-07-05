@@ -24,6 +24,9 @@ const save = (name: string, state: unknown) => {
 
 const clubId = Object.keys(ALL_CLUBS)[0]
 
+// tela da bênção da largada, ANTES de escolher (as 3 cartas juntas: safe/power/cursed)
+save('blessing', newRun('SHOT', clubId, 4242))
+
 const fresh = () => {
   const s = newRun('SHOT', clubId, 4242)
   pickBlessing(s, 1)
@@ -53,6 +56,13 @@ const reach = (kind: 'gym' | 'market') => {
 
 // mapa (estado base, status deveria ser 'map' depois da bênção)
 save('map', fresh())
+
+// mapa com poções no inventário (testar o HUD de poções no cabeçalho)
+{
+  const s = fresh()
+  s.potions = ['strength', 'pace']
+  save('map-potions', s)
+}
 
 // gym: navega até achar um nó de academia de verdade
 save('gym', reach('gym'))

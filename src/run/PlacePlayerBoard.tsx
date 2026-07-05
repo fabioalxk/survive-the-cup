@@ -41,7 +41,7 @@ export function CandidateCard({
 
   return (
     <button
-      className={`rc-card pb-card ${armed ? 'is-armed' : ''}`}
+      className={`rc-card pb-card cm-role-${p.role.toLowerCase()} ${armed ? 'is-armed' : ''}`}
       disabled={disabled}
       title={disabled ? 'Moedas insuficientes' : undefined}
       onPointerDown={(e) => {
@@ -99,19 +99,19 @@ export function CandidateCard({
   )
 }
 
-/** Slot onde o reforço mais eleva a nota do time — a sugestão de "um clique". */
-const bestSlotFor = (state: RunState, candidate: GenPlayer): number => {
+/** Slot onde o reforço mais eleva a nota do time (e o quanto) — sugestão de "um clique". */
+const bestSlotFor = (state: RunState, candidate: GenPlayer): { slot: number; gain: number } => {
   const slots = state.formationSlots
-  let best = 0
-  let bestGain = -Infinity
+  let slot = 0
+  let gain = -Infinity
   state.squad.forEach((p, i) => {
-    const gain = slotOverallOf(i, slots[i], candidate.attrs) - p.overall
-    if (gain > bestGain) {
-      bestGain = gain
-      best = i
+    const g = slotOverallOf(i, slots[i], candidate.attrs) - p.overall
+    if (g > gain) {
+      gain = g
+      slot = i
     }
   })
-  return best
+  return { slot, gain }
 }
 
 /**
@@ -131,13 +131,19 @@ export default function PlacePlayerBoard({
   onPlace: (slotIndex: number) => void
 }) {
   const slots = state.formationSlots
-  const best = candidate ? bestSlotFor(state, candidate) : null
+  const bestPick = candidate ? bestSlotFor(state, candidate) : null
+  // só chama de "melhor lugar" quando encaixar de fato SOBE a nota de algum slot —
+  // senão o botão soaria como recomendação mesmo entregando uma troca pior.
+  const best = bestPick && bestPick.gain > 0 ? bestPick.slot : null
   return (
     <div className={`pb-board ${candidate ? 'is-armed' : ''}`}>
       {candidate && best !== null && (
         <button className="cm-btn cm-btn-primary cm-btn-block pb-auto" onClick={() => onPlace(best)}>
           ★ Encaixar no melhor lugar — sai {state.squad[best].name}
         </button>
+      )}
+      {candidate && bestPick && best === null && (
+        <p className="pb-no-gain">Nenhum encaixe melhora o time agora — toque num jogador pra trocar mesmo assim.</p>
       )}
       <FormationEditor
         slots={slots}

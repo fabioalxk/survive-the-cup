@@ -12,6 +12,8 @@ import {
   pickReward,
   skipReward,
   swapSlots,
+  autoOrganizeSquad,
+  setSquadOrder,
   shopOffers,
   buyPlayer,
   boostAttribute,
@@ -72,6 +74,23 @@ assert(state.squad[0].id === striker.id, 'qualquer jogador pode assumir o gol (s
 assert(roleForSlot(0, state.formationSlots[0]) === 'GK', 'o slot 0 é sempre o gol')
 swapSlots(state, 0, 10)
 assert(state.squad[0].id === gk.id, 'desfazer a troca devolve o goleiro original')
+
+// 2b) "Organizar sozinho": reorganiza os 11 nos slots (mesmo elenco, só a ordem
+// muda) — e "Desfazer" (setSquadOrder) devolve a ordem exata de antes.
+const beforeOrganize = state.squad.slice()
+const idsBeforeOrganize = new Set(beforeOrganize.map((p) => p.id))
+autoOrganizeSquad(state)
+assert(state.squad.length === 11, 'organizar sozinho deve manter 11 jogadores')
+assert(
+  new Set(state.squad.map((p) => p.id)).size === 11 &&
+    state.squad.every((p) => idsBeforeOrganize.has(p.id)),
+  'organizar sozinho só reordena o elenco, nunca troca quem está no time',
+)
+setSquadOrder(state, beforeOrganize)
+assert(
+  state.squad.every((p, i) => p.id === beforeOrganize[i].id),
+  'desfazer (setSquadOrder) devolve a ordem exata de antes da organização automática',
+)
 
 // 3) mercado: compra SUBSTITUI alguém do time — o elenco nunca sai de 11
 let node = state.nodes.find((n) => state.availableNodeIds.includes(n.id) && n.kind === 'market')

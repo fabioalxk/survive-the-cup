@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { RunState } from '../game/runTypes'
 import { POTION_ATTR_CAP, POTION_BOOST, POTION_INFO, usePotion } from '../game/run'
 import { slotOverallOf } from '../game/overall'
 import { potionSfx } from '../sfx/crowd'
 import { useEscapeKey } from '../shared/useEscapeKey'
+import { useScrollOverflow } from '../shared/useScrollOverflow'
 import { attrColor, attrLabel } from '../ui/attrDisplay'
 import { PotionIcon } from '../ui/icons'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
@@ -32,6 +33,8 @@ export default function PotionsHud({
   onClosePicker?: () => void
 }) {
   const [picking, setPicking] = useState<number | null>(null)
+  const playersRef = useRef<HTMLDivElement>(null)
+  const hasMore = useScrollOverflow(playersRef)
   const kind = picking !== null ? state.potions[picking] : undefined
   const inMatch = state.status === 'match'
   const usable = state.status === 'map' || state.status === 'prematch' || inMatch
@@ -96,7 +99,11 @@ export default function PotionsHud({
               </div>
             </header>
 
-            <div className="rq-potion-players" aria-label="Escolha quem toma a poção">
+            <div
+              className={`rq-potion-players${hasMore ? ' has-more' : ''}`}
+              aria-label="Escolha quem toma a poção"
+              ref={playersRef}
+            >
               {state.squad
                 .map((p, slot) => ({ p, slot }))
                 .sort((a, b) => b.p.overall - a.p.overall)

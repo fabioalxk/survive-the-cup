@@ -484,6 +484,22 @@ a:focus-visible {
 .cm-btn-ico-trail {
   vertical-align: -2px;
 }
+/* separa visualmente os chips de estado (moedas/vidas/poções) dos botões
+   utilitários (som/ajuda/reset) — agrupamento por espaço, como o YouTube faz
+   entre os controles de reprodução e o de configurações. */
+.cm-header-stats .cm-coin-chip + .cm-btn-ico {
+  position: relative;
+}
+.cm-header-stats .cm-coin-chip + .cm-btn-ico::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 50%;
+  width: 1px;
+  height: 16px;
+  background: var(--cm-line);
+  transform: translateY(-50%);
+}
 .cm-btn-ico-lead {
   margin-right: 6px;
 }
@@ -1438,28 +1454,56 @@ a:focus-visible {
 .cm-btn-play-pause svg {
   display: block;
 }
-.cm-speed {
-  display: flex;
-  gap: 6px;
-}
-.cm-match-controls .cm-btn-ghost {
-  margin-left: auto;
-}
-.cm-checkbox {
+.cm-speed-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 5px;
+}
+.cm-speed-caret {
+  transition: transform 0.15s ease;
+}
+.cm-speed-caret.open {
+  transform: rotate(180deg);
+}
+/* menu estilo YouTube: `position: fixed` (left/bottom vêm inline, calculados a
+   partir do botão) — portalado pra fora de `.cm-match-controls`, cujo
+   `overflow-x: auto` cortaria um popover posicionado ali dentro. */
+.cm-speed-menu {
+  position: fixed;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  background: var(--cm-glass), var(--cm-panel);
+  border: 1px solid var(--cm-line);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: var(--cm-shadow);
+}
+.cm-speed-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--cm-text);
+  font-size: 13px;
   font-weight: 700;
-  color: var(--cm-muted);
-  cursor: pointer;
-  user-select: none;
-}
-.cm-checkbox input {
-  accent-color: #22c55e;
+  text-align: left;
   cursor: pointer;
 }
-
+.cm-speed-opt:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.cm-speed-opt.active {
+  color: var(--cm-gold);
+}
+.cm-speed-opt svg {
+  flex: none;
+}
 /* Histórico da partida: quem marcou, em qual minuto, faltas, cartões... —
    principalmente útil no desktop, onde sobra espaço abaixo do campo. */
 .cm-history {
@@ -1527,12 +1571,17 @@ a:focus-visible {
 @media (orientation: landscape) {
   .cm-match {
     padding: 12px;
+    /* elipse mais larga e com transição mais lenta: em telas bem largas o canvas
+       cobre o miolo mais "aceso" do degradê, sobrando só a cauda escura na
+       faixa lateral — alargar/desacelerar mantém um pouco de verde visível
+       ali em vez de virar preto chapado rápido demais */
     background:
       radial-gradient(
-        120% 130% at 50% 40%,
-        rgba(20, 83, 45, 0.5) 0%,
-        rgba(12, 58, 31, 0.35) 45%,
-        rgba(4, 8, 16, 0.92) 100%
+        190% 170% at 50% 42%,
+        rgba(22, 89, 48, 0.55) 0%,
+        rgba(15, 64, 35, 0.42) 35%,
+        rgba(9, 34, 22, 0.5) 65%,
+        rgba(4, 8, 16, 0.85) 100%
       ),
       #04070f;
   }
@@ -1574,9 +1623,6 @@ a:focus-visible {
     justify-content: center;
     padding: 6px 12px;
     gap: 6px;
-  }
-  .cm-match-controls .cm-btn-ghost {
-    margin-left: 0;
   }
   .cm-history {
     width: min(100%, calc((100vh - 24px) * 113 / 76));
@@ -1658,11 +1704,15 @@ a:focus-visible {
     transform: rotate(90deg);
   }
   /* controles enxutos numa linha só — a prioridade da tela é o jogo; rola de
-     lado em vez de quebrar linha (quebrar roubaria altura do campo) */
+     lado em vez de quebrar linha (quebrar roubaria altura do campo). O
+     esmaecimento na borda direita avisa que dá pra rolar pra ver o resto
+     (Pular ficava com cara de cortado/quebrado sem isso). */
   .cm-match-controls {
     gap: 5px;
     flex-wrap: nowrap;
     overflow-x: auto;
+    mask-image: linear-gradient(to right, black calc(100% - 20px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 20px), transparent 100%);
   }
   .cm-match-controls .cm-btn-sm {
     padding: 5px 8px;
@@ -2006,6 +2056,15 @@ a:focus-visible {
   .cm-header-stats {
     gap: 6px;
     font-size: 13px;
+    /* com várias poções no inventário essa fileira pode passar da largura da
+       tela — sem quebrar linha, os últimos ícones (ajuda/recomeçar) saíam
+       cortados fora da tela, inalcançáveis. */
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 4px;
+  }
+  .cm-header-stats .cm-coin-chip + .cm-btn-ico::before {
+    left: -3px;
   }
   .cm-coin-chip,
   .cm-lives-chip {

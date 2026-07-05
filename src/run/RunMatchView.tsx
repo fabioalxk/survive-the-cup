@@ -1,5 +1,5 @@
 import type { RunState } from '../game/runTypes'
-import { finishMatch, quickPlayNode, setFormation } from '../game/run'
+import { finishMatch, setFormation } from '../game/run'
 import { ALL_CLUBS } from '../game/worldcup'
 import MatchPlayer from '../shared/MatchPlayer'
 import PotionsHud from './PotionsHud'
@@ -24,7 +24,6 @@ export default function RunMatchView({ state, act }: { state: RunState; act: Run
       home={home}
       away={away}
       onDone={(homeGoals, awayGoals) => act((s) => finishMatch(s, homeGoals, awayGoals))}
-      onSkip={() => act((s) => quickPlayNode(s))}
       onFormationChange={(slots) => act((s) => setFormation(s, slots))}
       extraControls={(m) => (
         <PotionsHud state={state} act={act} onOpenPicker={m.pause} onClosePicker={m.resume} />

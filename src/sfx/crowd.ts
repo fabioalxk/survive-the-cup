@@ -8,6 +8,18 @@
  */
 
 let ctx: AudioContext | null = null
+/** Nó único por onde passam TODOS os efeitos sintetizados — silencia tudo de uma vez. */
+let master: GainNode | null = null
+
+const MUTE_KEY = 'cm-audio-muted'
+let muted = (() => {
+  if (typeof window === 'undefined') return false
+  try {
+    return localStorage.getItem(MUTE_KEY) === '1'
+  } catch {
+    return false
+  }
+})()
 
 const getCtx = (): AudioContext | null => {
   if (typeof window === 'undefined') return null
@@ -15,14 +27,35 @@ const getCtx = (): AudioContext | null => {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     if (!AC) return null
     ctx = new AC()
+    master = ctx.createGain()
+    master.gain.value = muted ? 0 : 1
+    master.connect(ctx.destination)
   }
   return ctx
 }
+
+/** Saída de qualquer efeito sintetizado — usar no lugar de `c.destination` direto. */
+const dest = (c: AudioContext): AudioNode => master ?? c.destination
 
 /** Destrava/retoma o áudio dentro de um gesto do usuário. */
 export const primeAudio = (): void => {
   const c = getCtx()
   if (c && c.state === 'suspended') void c.resume()
+}
+
+/** Está mudo agora? (preferência persistida entre sessões) */
+export const isMuted = (): boolean => muted
+
+/** Muda/desmuta TODO o áudio do jogo — efeitos sintetizados e músicas em loop. */
+export const setMuted = (v: boolean): void => {
+  muted = v
+  try {
+    localStorage.setItem(MUTE_KEY, v ? '1' : '0')
+  } catch {
+    /* armazenamento indisponível — ignora silenciosamente */
+  }
+  if (master) master.gain.value = v ? 0 : 1
+  for (const [src, audio] of loopingTracks) audio.volume = v ? 0 : (trackVolume.get(src) ?? 1)
 }
 
 /** Toca um rugido de torcida ao sair o gol. */
@@ -61,7 +94,7 @@ export const goalRoar = (): void => {
   noise.connect(bp)
   bp.connect(peak)
   peak.connect(gain)
-  gain.connect(c.destination)
+  gain.connect(dest(c))
   noise.start(now)
   noise.stop(now + dur)
 }
@@ -77,7 +110,7 @@ const glug = (c: AudioContext, at: number, pitch: number) => {
   gain.gain.exponentialRampToValueAtTime(0.16, at + 0.015)
   gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.11)
   osc.connect(gain)
-  gain.connect(c.destination)
+  gain.connect(dest(c))
   osc.start(at)
   osc.stop(at + 0.12)
 }
@@ -105,7 +138,7 @@ export const potionSfx = (): void => {
   gain.gain.exponentialRampToValueAtTime(0.07, now + 0.4)
   gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.72)
   osc.connect(gain)
-  gain.connect(c.destination)
+  gain.connect(dest(c))
   osc.start(now + 0.36)
   osc.stop(now + 0.75)
 }
@@ -141,7 +174,7 @@ const whistleBlast = (c: AudioContext, at: number, dur: number) => {
 
   osc.connect(bp)
   bp.connect(gain)
-  gain.connect(c.destination)
+  gain.connect(dest(c))
   osc.start(at)
   osc.stop(at + dur)
   trill.start(at)
@@ -152,24 +185,27 @@ let wonRewardAudio: HTMLAudioElement | null = null
 
 /** Toca o efeito de recompensa conquistada (arquivo de áudio, ex.: cartas de reforço). */
 export const wonRewardSfx = (): void => {
-  if (typeof window === 'undefined') return
+  if (typeof window === 'undefined' || muted) return
   if (!wonRewardAudio) wonRewardAudio = new Audio('/sounds/sfx-won-reward.mp3')
   wonRewardAudio.currentTime = 0
   void wonRewardAudio.play()
 }
 
 const loopingTracks = new Map<string, HTMLAudioElement>()
+/** Volume "de verdade" de cada faixa — usado para restaurar ao desmutar. */
+const trackVolume = new Map<string, number>()
 
 /** Inicia (ou retoma do início) uma trilha em loop, cacheando o elemento por src. */
 const startLoop = (src: string, volume: number): void => {
   if (typeof window === 'undefined') return
+  trackVolume.set(src, volume)
   let audio = loopingTracks.get(src)
   if (!audio) {
     audio = new Audio(src)
     audio.loop = true
-    audio.volume = volume
     loopingTracks.set(src, audio)
   }
+  audio.volume = muted ? 0 : volume
   audio.currentTime = 0
   void audio.play()
 }
@@ -216,7 +252,7 @@ export const uiClick = (): void => {
   gain.gain.exponentialRampToValueAtTime(0.05, now + 0.008)
   gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05)
   osc.connect(gain)
-  gain.connect(c.destination)
+  gain.connect(dest(c))
   osc.start(now)
   osc.stop(now + 0.06)
 }
@@ -237,7 +273,7 @@ export const chooseSfx = (): void => {
     gain.gain.exponentialRampToValueAtTime(0.13, now + at + 0.015)
     gain.gain.exponentialRampToValueAtTime(0.0001, now + at + 0.16)
     osc.connect(gain)
-    gain.connect(c.destination)
+    gain.connect(dest(c))
     osc.start(now + at)
     osc.stop(now + at + 0.18)
   })
@@ -261,7 +297,7 @@ export const upgradeSfx = (): void => {
     gain.gain.exponentialRampToValueAtTime(0.08, at + 0.015)
     gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.16)
     osc.connect(gain)
-    gain.connect(c.destination)
+    gain.connect(dest(c))
     osc.start(at)
     osc.stop(at + 0.18)
   })
@@ -276,7 +312,7 @@ export const upgradeSfx = (): void => {
   sGain.gain.exponentialRampToValueAtTime(0.06, now + 0.24)
   sGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45)
   sparkle.connect(sGain)
-  sGain.connect(c.destination)
+  sGain.connect(dest(c))
   sparkle.start(now + 0.21)
   sparkle.stop(now + 0.46)
 }
@@ -297,7 +333,7 @@ const coinClink = (c: AudioContext, at: number, pitch: number, gainPeak: number)
   gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.18)
   osc.connect(bp)
   bp.connect(gain)
-  gain.connect(c.destination)
+  gain.connect(dest(c))
   osc.start(at)
   osc.stop(at + 0.2)
 }
@@ -339,7 +375,7 @@ export const victorySfx = (): void => {
     gain.gain.exponentialRampToValueAtTime(0.1, at + 0.02)
     gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.28)
     osc.connect(gain)
-    gain.connect(c.destination)
+    gain.connect(dest(c))
     osc.start(at)
     osc.stop(at + 0.3)
   })
@@ -366,7 +402,7 @@ export const defeatSfx = (): void => {
     gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.35)
     osc.connect(lp)
     lp.connect(gain)
-    gain.connect(c.destination)
+    gain.connect(dest(c))
     osc.start(at)
     osc.stop(at + 0.38)
   })

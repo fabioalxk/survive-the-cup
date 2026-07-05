@@ -12,6 +12,7 @@ import Standings from './Standings'
 import SquadView from './SquadView'
 import { ClubBadge } from '../ui/ClubBadge'
 import { ArtIcon } from '../ui/ArtIcon'
+import { PlayIcon, RestartIcon } from '../ui/icons'
 import MarketView from './MarketView'
 import MatchView from './MatchView'
 import { OffersModal, SeasonEndModal, WonModal } from './Modals'
@@ -102,8 +103,13 @@ function Header({ state, onReset }: { state: CareerState; onReset: () => void })
         <span title="Dinheiro disponível">
           <ArtIcon name="coin" /> {fmtMoney(state.money)}
         </span>
-        <button className="cm-btn cm-btn-ghost cm-btn-sm" onClick={onReset} title="Começar de novo">
-          ⟳
+        <button
+          className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico"
+          onClick={onReset}
+          title="Começar de novo"
+          aria-label="Começar de novo"
+        >
+          <RestartIcon size={14} />
         </button>
       </div>
     </header>
@@ -182,7 +188,7 @@ function Dashboard({
         <div className="cm-hero-venue">{venue}</div>
 
         <button className="cm-play" onClick={onWatch}>
-          ▶ Jogar partida
+          <PlayIcon size={18} className="cm-btn-ico-lead" /> Jogar partida
         </button>
         <button className="cm-skip" onClick={() => act((s) => advanceRound(s))}>
           ou pule e veja só o placar

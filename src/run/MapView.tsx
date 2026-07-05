@@ -5,7 +5,7 @@ import { MAP_WIDTH, STAGE_COUNT } from '../game/runGen'
 import { ALL_CLUBS } from '../game/worldcup'
 import { ClubBadge } from '../ui/ClubBadge'
 import { LockIcon } from '../ui/icons'
-import { CrownIcon, FlagIcon, GymIcon, MarketIcon, ShieldIcon, TrophyIcon } from './MapIcons'
+import { CrownIcon, FlagIcon, GymIcon, MarketIcon, TrophyIcon } from './MapIcons'
 import type { MapIconProps } from './MapIcons'
 import type { RunApi } from './useRun'
 
@@ -43,11 +43,18 @@ const isBossStage = (stage: number): boolean => stage > STAGE_COUNT
  */
 const yOf = (stage: number): number => START_Y - stage * ROW_GAP
 
-/** Coluna → % da largura (as fases ocupam de ~14% a ~86%; o chefão fica centralizado). */
+/**
+ * Coluna → % da largura (as fases ocupam de ~20% a ~80%; o chefão fica centralizado).
+ * As 3 rotas iniciais sempre tocam as colunas extremas de propósito (ver `spread` em
+ * buildGraph, runGen.ts) — a faixa ocupada é sempre a mesma, então o jeito de não
+ * colar nas bordas é dar mais respiro aqui, e não tentar "encolher" por render.
+ */
+const LANE_MIN_X = 20
+const LANE_MAX_X = 80
 const xOf = (node: RunNode): number => {
   if (isBossStage(node.stage)) return 50
   const frac = MAP_WIDTH > 1 ? node.lane / (MAP_WIDTH - 1) : 0.5
-  return 14 + frac * 72 + jitter(node.id)
+  return LANE_MIN_X + frac * (LANE_MAX_X - LANE_MIN_X) + jitter(node.id)
 }
 
 /** Emblema SVG de cada tipo de nó de evento (desenhados em MapIcons.tsx). */
@@ -62,13 +69,6 @@ const KIND_LABEL: Record<string, string> = {
   gym: 'Treinamento',
   boss: 'CHEFÃO',
 }
-/** Legenda do mapa (flutua sobre o canto inferior da área visível). */
-const LEGEND: Array<{ kind: string; Icon: (p: MapIconProps) => JSX.Element; label: string }> = [
-  { kind: 'match', Icon: ShieldIcon, label: 'Partida' },
-  { kind: 'gym', Icon: GymIcon, label: 'Treinamento' },
-  { kind: 'market', Icon: MarketIcon, label: 'Mercado' },
-  { kind: 'boss', Icon: TrophyIcon, label: 'Chefão' },
-]
 
 type NodeStatus = 'cleared' | 'available' | 'locked'
 
@@ -148,6 +148,11 @@ export default function MapView({ state, act }: { state: RunState; act: RunApi['
 
   const atStart = state.stage === 0
   const firstNodes = state.nodes.filter((n) => n.stage === 1)
+  // "você está aqui": nó recém-concluído (o topo da trilha percorrida) — ou o
+  // próprio início, enquanto o jogador ainda não deu o primeiro passo.
+  const currentNode = atStart ? undefined : state.nodes.find((n) => n.cleared && n.stage === state.stage)
+  const hereX = currentNode ? xOf(currentNode) : START_X
+  const hereY = currentNode ? yOf(currentNode.stage) : START_Y
 
   // rola o mapa (vertical) para centralizar os nós disponíveis agora — na largada
   // fica no início (embaixo) e vai subindo junto com o jogador a cada escolha.
@@ -180,7 +185,7 @@ export default function MapView({ state, act }: { state: RunState; act: RunApi['
             return (
               <path
                 key={`start-${f.id}`}
-                className={atStart ? 'rq-line rq-line-open' : 'rq-line'}
+                className="rq-line"
                 d={`M ${START_X} ${START_Y} C ${START_X} ${my}, ${x2} ${my}, ${x2} ${y2}`}
                 fill="none"
               />
@@ -195,13 +200,12 @@ export default function MapView({ state, act }: { state: RunState; act: RunApi['
               const x2 = xOf(to)
               const y2 = yOf(to.stage)
               const my = (y1 + y2) / 2
-              // trilha já percorrida acende dourada; a atual (a partir de um nó
-              // liberado) fica destacada; as demais ficam pontilhadas ao fundo.
-              const cls = n.cleared
-                ? 'rq-line rq-line-done'
-                : state.availableNodeIds.includes(n.id)
-                  ? 'rq-line rq-line-open'
-                  : 'rq-line'
+              // trilha já percorrida acende dourada (histórico); as demais ficam
+              // pontilhadas neutras — quem indica os próximos passos agora é a
+              // seta "você está aqui" e o pulso nos nós disponíveis. Trilhas que
+              // levam a fases distantes esmaecem junto com os nós (mesma névoa).
+              const far = to.stage > state.stage + 1 && to.kind !== 'boss'
+              const cls = `rq-line${n.cleared ? ' rq-line-done' : ''}${far ? ' rq-line-far' : ''}`
               return (
                 <path
                   key={`${n.id}-${toId}`}
@@ -224,26 +228,19 @@ export default function MapView({ state, act }: { state: RunState; act: RunApi['
           />
         ))}
 
-        {/* ponto de partida: origem dos 3 caminhos (destacado enquanto não se anda) */}
-        <div
-          className={`rq-start-node${atStart ? ' rq-start-here' : ''}`}
-          style={{ left: `${START_X}%`, top: `${START_Y}%` }}
-        >
+        {/* ponto de partida: origem dos 3 caminhos */}
+        <div className="rq-start-node" style={{ left: `${START_X}%`, top: `${START_Y}%` }}>
           <span className="rq-start-cap">Início</span>
           <span className="rq-start-badge">
             <FlagIcon size={42} />
           </span>
         </div>
-        </div>
-      </div>
 
-      <div className="rq-map-legend">
-        {LEGEND.map((l) => (
-          <span key={l.kind} className={`rq-legend-item rq-legend-${l.kind}`}>
-            <l.Icon size={16} className="rq-legend-ico" />
-            {l.label}
-          </span>
-        ))}
+        {/* "você está aqui": seta vermelha apontando pra baixo, sobre a posição atual */}
+        <div className="rq-here-arrow" style={{ left: `${hereX}%`, top: `${hereY}%` }} aria-hidden>
+          ▼
+        </div>
+        </div>
       </div>
     </div>
   )
