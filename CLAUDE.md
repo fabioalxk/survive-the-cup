@@ -17,6 +17,7 @@
 4. **No workarounds, no fallbacks.** Fallbacks hide bugs. Data must be correct at
    the source. If you cannot do it cleanly, stop and ask for more logs or data
    instead of patching around the problem.
+5. Garanta que o app ainda passa no build com yarn build
 
 ---
 

@@ -4,6 +4,7 @@ import { enterNode } from '../game/run'
 import { MAP_WIDTH, STAGE_COUNT } from '../game/runGen'
 import { ALL_CLUBS } from '../game/worldcup'
 import { ClubBadge } from '../ui/ClubBadge'
+import { LockIcon } from '../ui/icons'
 import { CrownIcon, FlagIcon, GymIcon, MarketIcon, ShieldIcon, TrophyIcon } from './MapIcons'
 import type { MapIconProps } from './MapIcons'
 import type { RunApi } from './useRun'
@@ -122,6 +123,11 @@ function NodeButton({
         </>
       )}
       {status === 'cleared' && <span className="rq-node-check">✓</span>}
+      {status === 'locked' && (
+        <span className="rq-node-lock" aria-hidden>
+          <LockIcon size={11} />
+        </span>
+      )}
       <span className={`rq-node-cap${isBoss ? ' rq-node-cap-boss' : ''}`}>
         {isBoss && <TrophyIcon size={11} className="rq-cap-ico" />}
         {cap}

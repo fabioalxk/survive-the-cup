@@ -23,12 +23,13 @@ export const PREMIUM_STYLE =
   'clean silhouette edge, high production value, the quality of a modern mobile game asset.'
 
 export const CAMERA_LOCK =
-  'The camera is a static drone/satellite view locked at a strict 90° top-down angle for EVERY SINGLE ' +
-  'cell. This is NOT a side-view animation reference sheet and the character is NEVER shown in profile ' +
-  'or 3/4 view — you must always be looking straight down at the top of the head and the top of the ' +
-  'shoulders, like looking down at someone from a drone directly above them. Never show the side of the ' +
-  'face, never show the character\'s side silhouette. When in doubt, show MORE of the top of the ' +
-  'head/shoulders and LESS of the front of the face.'
+  'The camera is locked at a strict SIDE VIEW at the character\'s chest height for EVERY SINGLE cell, ' +
+  'like a classic 2D side-scrolling video game sprite. This is NOT a top-down or bird\'s-eye reference ' +
+  'sheet and the character is NEVER seen from above — the full standing body is always visible with the ' +
+  'feet at the bottom of the cell and the head at the top, upright, obeying gravity. The character ' +
+  'ALWAYS faces the RIGHT side of the frame in clean side profile in every cell, never facing the ' +
+  'camera, never facing left, never tilted. When in doubt, show a cleaner right-facing side profile ' +
+  'silhouette.'
 
 /** Trecho de prompt que descreve as 3 cores-chave do uniforme (reusar em toda pose/ação). */
 export const KIT_KEY_PROMPT =

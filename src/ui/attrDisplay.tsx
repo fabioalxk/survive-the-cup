@@ -156,9 +156,10 @@ export const ROLE_ORDER: Record<Role, number> = { GK: 0, DEF: 1, MID: 2, FWD: 3 
 export const byRole = <T extends { role: Role; overall: number }>(a: T, b: T): number =>
   ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || b.overall - a.overall
 
-/** Grupos de atributos visíveis para a função (o bloco Goleiro só aparece para GK). */
-export const attrGroupsFor = (role: Role) =>
-  ATTR_GROUPS.filter((g) => g.title !== 'Goleiro' || role === 'GK')
+/** Grupos de atributos visíveis para a função. Sem função (modo run, onde a
+ *  posição vem do slot e qualquer um pode ir pro gol), TODOS os grupos aparecem. */
+export const attrGroupsFor = (role?: Role) =>
+  ATTR_GROUPS.filter((g) => g.title !== 'Goleiro' || role === undefined || role === 'GK')
 
 /** Rótulo de posição com a cor da função (mesma paleta dos chips do campinho tático). */
 export function RoleTag({ role }: { role: Role }) {
@@ -167,7 +168,7 @@ export function RoleTag({ role }: { role: Role }) {
 
 /** Cor conforme a faixa do atributo/nota (0..100). Fonte única de escala visual. */
 export const attrColor = (v: number): string =>
-  v >= 85 ? '#22c55e' : v >= 70 ? '#84cc16' : v >= 50 ? '#facc15' : '#f97316'
+  v >= 85 ? 'var(--cm-green)' : v >= 70 ? '#84cc16' : v >= 50 ? '#facc15' : '#f97316'
 
 /** Média geral simples (todos os atributos) — usada na tela de elenco da demo. */
 export const overallOfAll = (a: Attrs): number => {
@@ -266,23 +267,45 @@ export function AttrBar({
 /**
  * Lista compacta de TODOS os atributos (sem títulos de grupo) — usada nos cards
  * de mercado e de recompensa, onde o espaço é curto mas nada pode ficar oculto.
- * Atributos exclusivos de goleiro só aparecem para o GK.
+ * Com `role`, atributos exclusivos de goleiro só aparecem para o GK; sem `role`
+ * (modo run) tudo aparece — qualquer jogador pode ser posto no gol.
  */
-export function AttrList({ role, attrs }: { role: Role; attrs: Attrs }) {
+export function AttrList({ role, attrs }: { role?: Role; attrs: Attrs }) {
   const keys = ATTR_GROUPS.flatMap((g) => g.keys).filter(
-    (k) => k.key !== 'goalkeeping' || role === 'GK',
+    (k) => k.key !== 'goalkeeping' || role === undefined || role === 'GK',
   )
   return (
     <div className="mk-attrs">
       {keys.map((k) => (
-        <AttrBar key={k.key} label={k.label} value={attrs[k.key]} />
+        <AttrBar key={k.key} label={k.label} value={attrs[k.key]} desc={k.desc} effects={k.effects} />
+      ))}
+    </div>
+  )
+}
+
+/** Legenda compacta da escala de cores dos atributos/nota (mesmos limiares de `attrColor`). */
+function AttrColorLegend() {
+  return (
+    <div className="ps-legend">
+      {(
+        [
+          [30, 'Fraco'],
+          [55, 'Razoável'],
+          [75, 'Bom'],
+          [90, 'Ótimo'],
+        ] as const
+      ).map(([sample, word]) => (
+        <span key={word} className="ps-legend-item">
+          <span className="ps-legend-dot" style={{ background: attrColor(sample) }} aria-hidden />
+          {word}
+        </span>
       ))}
     </div>
   )
 }
 
 /** Painel de grupos de atributos de um jogador (reutilizado em telas diferentes). */
-export function AttrGroups({ role, attrs }: { role: Role; attrs: Attrs }) {
+export function AttrGroups({ role, attrs }: { role?: Role; attrs: Attrs }) {
   const groups = attrGroupsFor(role)
   return (
     <div className="ps-groups">
@@ -294,6 +317,7 @@ export function AttrGroups({ role, attrs }: { role: Role; attrs: Attrs }) {
           ))}
         </div>
       ))}
+      <AttrColorLegend />
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { useMatchLoop, type MatchSetup } from '../useMatchLoop'
 import { primeAudio } from '../sfx/crowd'
 import type { Vec2 } from '../sim/types'
 import type { GenPlayer } from '../game/types'
-import { lineupFor } from '../game/lineup'
+import { lineupFor, lineupFromSlots } from '../game/lineup'
 import { resolveKits, withKitDefaults } from '../game/kits'
 import { defaultFormation, formationName } from '../sim/formation'
 import { ClubBadge, type BadgeClub } from '../ui/ClubBadge'
@@ -21,6 +21,7 @@ import {
   WhistleIcon,
 } from '../ui/icons'
 import { MatchHistory } from './MatchHistory'
+import { useEscapeKey } from './useEscapeKey'
 
 /* px por metro do canvas: 12 → 1356×912 nativo, nítido mesmo em tela cheia no desktop */
 const SCALE = 12
@@ -43,6 +44,11 @@ export interface MatchSide extends BadgeClub {
   squad: GenPlayer[]
   /** Âncoras da formação tática; ausente → 4-3-3 padrão. */
   formation?: Vec2[]
+  /**
+   * true (modo run): `squad[i]` entra EXATAMENTE no slot `i` da formação, sem
+   * re-agrupar por função — a escalação do campinho vale ao pé da letra.
+   */
+  slotOrdered?: boolean
   /** Cor de shorts/meião (seleções reais têm; clubes fictícios não — ver `withKitDefaults`). */
   shorts?: string
   socks?: string
@@ -93,14 +99,17 @@ export default function MatchPlayer({
   )
 
   // elencos, cores e nomes reais — memoizados p/ não recriar a partida a cada render
-  const setup = useMemo<MatchSetup>(
-    () => ({
-      rosters: { home: lineupFor(home.squad, home.formation), away: lineupFor(away.squad, away.formation) },
+  const setup = useMemo<MatchSetup>(() => {
+    const lineup = (side: MatchSide) =>
+      side.slotOrdered
+        ? lineupFromSlots(side.squad, side.formation ?? defaultFormation())
+        : lineupFor(side.squad, side.formation)
+    return {
+      rosters: { home: lineup(home), away: lineup(away) },
       kits,
       names: { home: home.name, away: away.name },
-    }),
-    [home, away, kits],
-  )
+    }
+  }, [home, away, kits])
 
   // titulares que entraram em campo, na ordem dos slots — congelados na criação
   // da partida (o motor não re-escala no meio do jogo, o campinho tático também não)
@@ -150,14 +159,7 @@ export default function MatchPlayer({
     unfreeze()
   }
 
-  useEffect(() => {
-    if (!tactics) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeTactics()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [tactics])
+  useEscapeKey(closeTactics, tactics)
 
   // acompanha entrar/sair da tela cheia (inclusive via Esc, que o navegador trata)
   useEffect(() => {
@@ -215,7 +217,13 @@ export default function MatchPlayer({
         )}
         {tactics && !over && (
           <div className="cm-match-over cm-tactics-over" onClick={closeTactics}>
-            <div className="cm-tactics-panel" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="cm-tactics-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Táticas"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="cm-tactics-head">
                 <span className="tv-name">Esquema: {formationName(slots)}</span>
                 <button className="cm-tactics-close" onClick={closeTactics} title="Voltar ao jogo">
@@ -304,7 +312,11 @@ export default function MatchPlayer({
             {fullscreen ? <CompressIcon size={14} /> : <ExpandIcon size={14} />}
           </button>
           {onSkip && (
-            <button className="cm-btn cm-btn-ghost cm-btn-sm" onClick={onSkip}>
+            <button
+              className="cm-btn cm-btn-ghost cm-btn-sm"
+              onClick={onSkip}
+              title="Resolve o resto da partida na hora, sem assistir"
+            >
               Pular <SkipIcon size={13} className="cm-btn-ico-trail" />
             </button>
           )}

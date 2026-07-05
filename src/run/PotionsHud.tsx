@@ -1,21 +1,22 @@
 import { useState } from 'react'
 import type { RunState } from '../game/runTypes'
-import { POTION_ATTR_CAP, POTION_BOOST, POTION_INFO, startingXI, usePotion } from '../game/run'
-import { overallOf } from '../game/overall'
+import { POTION_ATTR_CAP, POTION_BOOST, POTION_INFO, usePotion } from '../game/run'
+import { slotOverallOf } from '../game/overall'
 import { potionSfx } from '../sfx/crowd'
-import { RoleTag, attrColor, attrLabel } from '../ui/attrDisplay'
+import { useEscapeKey } from '../shared/useEscapeKey'
+import { attrColor, attrLabel } from '../ui/attrDisplay'
 import { PotionIcon } from '../ui/icons'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
 import type { RunApi } from './useRun'
 
 /** Valor bufado pode passar de 100 — ganha destaque visual próprio. */
-const deltaColor = (v: number): string => (v > 100 ? '#4ade80' : attrColor(v))
+const deltaColor = (v: number): string => (v > 100 ? 'var(--cm-green-super)' : attrColor(v))
 
 /**
  * Inventário de poções da run (cabeçalho no mapa, barra de controles na partida):
- * cada frasco é um botão (pulsa quando usável — no mapa ou no meio do jogo) que
- * abre um pop-up para escolher o titular que vai tomá-la — com o antes → depois
- * do atributo e o ganho real de OVR por jogador.
+ * cada frasco é um botão (pulsa quando usável — no mapa, no vestiário ou no meio
+ * do jogo) que abre um pop-up para escolher quem vai tomá-la — com o antes →
+ * depois do atributo e o ganho real de OVR (no slot atual) por jogador.
  * Enquanto o efeito dura (até o fim da próxima partida), um chip na cor da poção
  * mostra quem está bufado e o valor turbinado.
  */
@@ -33,12 +34,13 @@ export default function PotionsHud({
   const [picking, setPicking] = useState<number | null>(null)
   const kind = picking !== null ? state.potions[picking] : undefined
   const inMatch = state.status === 'match'
-  const usable = state.status === 'map' || inMatch
+  const usable = state.status === 'map' || state.status === 'prematch' || inMatch
   const horizon = inMatch ? 'desta partida' : 'da próxima partida'
   const closePicker = () => {
     setPicking(null)
     onClosePicker?.()
   }
+  useEscapeKey(closePicker, picking !== null)
 
   return (
     <>
@@ -65,7 +67,7 @@ export default function PotionsHud({
             setPicking(i)
             onOpenPicker?.()
           }}
-          title={`${POTION_INFO[k].label}: +${POTION_BOOST} de ${attrLabel(k)} num titular (pode passar de 100, teto ${POTION_ATTR_CAP}) até o fim ${horizon}${usable ? '' : ' — disponível no mapa ou durante a partida'}`}
+          title={`${POTION_INFO[k].label}: +${POTION_BOOST} de ${attrLabel(k)} num jogador (pode passar de 100, teto ${POTION_ATTR_CAP}) até o fim ${horizon}${usable ? '' : ' — disponível no mapa ou durante a partida'}`}
         >
           <PotionIcon kind={k} size={21} />
         </button>
@@ -75,6 +77,9 @@ export default function PotionsHud({
         <div className="cm-backdrop" onClick={closePicker}>
           <div
             className={`cm-modal rq-potion-modal rq-potion-${kind}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label={POTION_INFO[kind].label}
             onClick={(e) => e.stopPropagation()}
           >
             <header className="rq-potion-head">
@@ -85,22 +90,24 @@ export default function PotionsHud({
                 <h2>{POTION_INFO[kind].label}</h2>
                 <p>
                   <strong>+{POTION_BOOST}</strong> de <strong>{attrLabel(kind)}</strong> para 1
-                  titular, valendo até o fim <strong>{horizon}</strong> — pode passar de 100
+                  jogador, valendo até o fim <strong>{horizon}</strong> — pode passar de 100
                   (teto {POTION_ATTR_CAP}).
                 </p>
               </div>
             </header>
 
             <div className="rq-potion-players" aria-label="Escolha quem toma a poção">
-              {[...startingXI(state)]
-                .sort((a, b) => b.overall - a.overall)
-                .map((p) => {
+              {state.squad
+                .map((p, slot) => ({ p, slot }))
+                .sort((a, b) => b.p.overall - a.p.overall)
+                .map(({ p, slot }) => {
                   const before = p.attrs[kind]
                   const after = Math.min(POTION_ATTR_CAP, before + POTION_BOOST)
                   const maxed = after <= before
                   const gain = maxed
                     ? 0
-                    : overallOf(p.role, { ...p.attrs, [kind]: after }) - p.overall
+                    : slotOverallOf(slot, state.formationSlots[slot], { ...p.attrs, [kind]: after }) -
+                      p.overall
                   return (
                     <button
                       key={p.id}
@@ -116,7 +123,7 @@ export default function PotionsHud({
                       <span className="rq-potion-p-id">
                         <strong>{p.name}</strong>
                         <small>
-                          #{p.number} · <RoleTag role={p.role} /> · OVR {p.overall}
+                          #{p.number} · OVR {p.overall}
                         </small>
                       </span>
                       {maxed ? (

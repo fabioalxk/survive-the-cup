@@ -205,6 +205,17 @@ export function CloseIcon(p: IconProps) {
   )
 }
 
+/** Ponto de interrogação em círculo — abre a ajuda/regras do jogo. */
+export function HelpIcon(p: IconProps) {
+  return (
+    <svg {...svgProps(p)} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.3 9.6a2.7 2.7 0 1 1 3.9 2.4c-.8.45-1.2.9-1.2 1.7v.4" strokeLinejoin="round" />
+      <circle cx="12" cy="17.2" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
 /** Chama — chip de Ascension (dificuldade aumentada). */
 export function FlameIcon(p: IconProps) {
   return <ArtIcon name="fire" size={p.size ?? 18} className={p.className} />

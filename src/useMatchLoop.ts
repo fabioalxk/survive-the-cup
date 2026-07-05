@@ -37,11 +37,7 @@ const triggerActionsFromNewEvents = (m: MatchState, fromIdx: number): number => 
       if (gk) {
         // goleiro sempre de frente pro campo (guarda o próprio gol)
         const facing = gk.team === 'home' ? 0 : Math.PI
-        // espelha a pose (gerada mergulhando pra "direita" de quem está de
-        // frente pro campo) conforme o lado real da bola em relação ao goleiro
-        const perpRight = gk.team === 'home' ? -1 : 1
-        const mirror = (m.ball.pos.y - gk.pos.y) * perpRight < 0
-        triggerAction(gk.id, 'save', facing, mirror)
+        triggerAction(gk.id, 'save', facing)
       }
     }
   }

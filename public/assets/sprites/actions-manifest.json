@@ -6,8 +6,7 @@
       "rows": 2
     },
     "frames": 6,
-    "durationMs": 380,
-    "mirrorable": false
+    "durationMs": 380
   },
   "header": {
     "src": "/assets/sprites/action_header.png",
@@ -16,8 +15,7 @@
       "rows": 2
     },
     "frames": 4,
-    "durationMs": 480,
-    "mirrorable": false
+    "durationMs": 480
   },
   "throwin": {
     "src": "/assets/sprites/action_throwin.png",
@@ -26,8 +24,7 @@
       "rows": 2
     },
     "frames": 4,
-    "durationMs": 550,
-    "mirrorable": false
+    "durationMs": 550
   },
   "save": {
     "src": "/assets/sprites/action_save.png",
@@ -36,7 +33,6 @@
       "rows": 2
     },
     "frames": 4,
-    "durationMs": 480,
-    "mirrorable": true
+    "durationMs": 480
   }
 }

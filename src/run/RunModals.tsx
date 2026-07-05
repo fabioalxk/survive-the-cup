@@ -1,12 +1,32 @@
 import { useEffect } from 'react'
 import type { RunState } from '../game/runTypes'
+import { START_LIVES } from '../game/run'
+import { ASCENSION_MAX } from '../game/ascension'
 import { ALL_CLUBS } from '../game/worldcup'
 import { defeatSfx, victorySfx } from '../sfx/crowd'
+import { useEscapeKey } from '../shared/useEscapeKey'
 import { HeartbreakIcon, RestartIcon, SkullIcon } from '../ui/icons'
 import { TrophyIcon } from './MapIcons'
 
 function Backdrop({ children }: { children: React.ReactNode }) {
   return <div className="cm-backdrop">{children}</div>
+}
+
+/** Painel do modal com semântica de dialog para leitores de tela. */
+function ModalPanel({
+  className,
+  label,
+  children,
+}: {
+  className: string
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className={className} role="dialog" aria-modal="true" aria-label={label}>
+      {children}
+    </div>
+  )
 }
 
 const lastMatchLine = (state: RunState) =>
@@ -22,7 +42,7 @@ export function LifeLostModal({ state, onContinue }: { state: RunState; onContin
   useEffect(() => { defeatSfx() }, [])
   return (
     <Backdrop>
-      <div className="cm-modal cm-modal-over">
+      <ModalPanel className="cm-modal cm-modal-over" label="Você perdeu 1 vida">
         <div className="rq-over-emoji rq-over-red">
           <HeartbreakIcon size={56} />
         </div>
@@ -35,7 +55,7 @@ export function LifeLostModal({ state, onContinue }: { state: RunState; onContin
         <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onContinue}>
           Continuar a corrida
         </button>
-      </div>
+      </ModalPanel>
     </Backdrop>
   )
 }
@@ -45,7 +65,7 @@ export function GameOverModal({ state, onNewRun }: { state: RunState; onNewRun: 
   useEffect(() => { defeatSfx() }, [])
   return (
     <Backdrop>
-      <div className="cm-modal cm-modal-over">
+      <ModalPanel className="cm-modal cm-modal-over" label="Eliminado">
         <div className="rq-over-emoji rq-over-bone">
           <SkullIcon size={56} />
         </div>
@@ -55,7 +75,76 @@ export function GameOverModal({ state, onNewRun }: { state: RunState; onNewRun: 
         <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onNewRun}>
           <RestartIcon size={15} className="cm-btn-ico-lead" /> Nova corrida
         </button>
-      </div>
+      </ModalPanel>
+    </Backdrop>
+  )
+}
+
+/** Confirmação antes de descartar a corrida atual (botão de reiniciar do cabeçalho). */
+export function ConfirmResetModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
+  useEscapeKey(onCancel, true)
+  return (
+    <Backdrop>
+      <ModalPanel className="cm-modal cm-modal-confirm" label="Recomeçar do zero?">
+        <div className="rq-over-emoji rq-over-red">
+          <RestartIcon size={40} />
+        </div>
+        <h2>Recomeçar do zero?</h2>
+        <p className="cm-modal-sub">
+          Isso apaga o progresso da corrida atual (elenco, moedas, mapa). Não tem como desfazer.
+        </p>
+        <div className="cm-modal-actions">
+          <button className="cm-btn cm-btn-ghost cm-btn-lg" onClick={onCancel}>
+            Cancelar
+          </button>
+          <button className="cm-btn cm-btn-danger cm-btn-lg" onClick={onConfirm}>
+            <RestartIcon size={15} className="cm-btn-ico-lead" /> Recomeçar
+          </button>
+        </div>
+      </ModalPanel>
+    </Backdrop>
+  )
+}
+
+/** Regras da jornada, acessível a qualquer momento pelo botão de ajuda do cabeçalho. */
+export function HelpModal({ onClose }: { onClose: () => void }) {
+  useEscapeKey(onClose, true)
+  return (
+    <Backdrop>
+      <ModalPanel className="cm-modal rq-help-modal" label="Como jogar">
+        <h2>Como jogar</h2>
+        <ul className="rq-help-list">
+          <li>
+            <b>Mapa:</b> escolha o caminho fase a fase — cada rota mistura partidas, academia,
+            mercado e bênçãos.
+          </li>
+          <li>
+            <b>Contratar (mercado/recompensa):</b> toque numa carta pra escolher o reforço, depois
+            toque em <b>"★ Encaixar no melhor lugar"</b> — o jogo já sugere quem sai. Prefere
+            escolher você mesmo? Toque direto no jogador do campinho que dá o lugar.
+          </li>
+          <li>
+            <b>Substituir posição (vestiário):</b> toque em <b>"Organizar sozinho"</b> pra montar a
+            melhor escalação num só toque, ou toque em 2 jogadores do campinho pra trocar os dois
+            de lugar.
+          </li>
+          <li>
+            <b>Vidas:</b> você começa com {START_LIVES} (ícones de coração no topo). Perder uma
+            partida custa 1 vida e a corrida continua; a última vida perdida elimina de vez.
+          </li>
+          <li>
+            <b>Entre os jogos:</b> treine jogadores na academia e use poções nos momentos
+            decisivos.
+          </li>
+          <li>
+            <b>Ascension:</b> venceu o chefão? Suba a dificuldade até o nível {ASCENSION_MAX} e
+            prove que não foi sorte.
+          </li>
+        </ul>
+        <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onClose}>
+          Entendi
+        </button>
+      </ModalPanel>
     </Backdrop>
   )
 }
@@ -66,7 +155,7 @@ export function VictoryModal({ state, onNewRun }: { state: RunState; onNewRun: (
   const club = ALL_CLUBS[state.clubId]
   return (
     <Backdrop>
-      <div className="cm-modal cm-modal-won">
+      <ModalPanel className="cm-modal cm-modal-won" label="Você venceu o chefão!">
         <div className="cm-won-trophy">
           <TrophyIcon size={78} />
         </div>
@@ -82,7 +171,7 @@ export function VictoryModal({ state, onNewRun }: { state: RunState; onNewRun: (
         <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onNewRun}>
           Nova corrida
         </button>
-      </div>
+      </ModalPanel>
     </Backdrop>
   )
 }

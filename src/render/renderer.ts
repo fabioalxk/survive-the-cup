@@ -2,7 +2,7 @@ import type { MatchState, Player, TeamId } from '../sim/types'
 import { AIR, FIELD, GOAL, PHYS } from '../sim/constants'
 import { TEAMS } from '../sim/teams'
 import { len, lerpV, norm, perp } from '../sim/vector'
-import { drawPlayerSprite } from './sprites'
+import { drawPlayerSprite, setSpriteUpright } from './sprites'
 
 /** As 3 regiões recoloríveis do uniforme (sprite) + cor do número. */
 export interface KitColors {
@@ -32,6 +32,7 @@ const kitInfo = (team: TeamId): KitColors => (kitOverride ? kitOverride[team] : 
 let labelsUpright = false
 export const setLabelsUpright = (v: boolean): void => {
   labelsUpright = v
+  setSpriteUpright(v) // sprites (side view) também são contra-girados pra ficarem em pé na tela
 }
 
 /** Placa de nome abaixo do jogador: some por padrão (poluía a leitura do jogo com muitos jogadores em campo). */
@@ -151,25 +152,6 @@ const isLight = (hex: string): boolean => {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6
 }
 
-/** Retângulo de cantos arredondados como caminho (não preenche/traça). */
-const roundedRectPath = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  rad: number,
-) => {
-  const k = Math.min(rad, w / 2, h / 2)
-  ctx.beginPath()
-  ctx.moveTo(x + k, y)
-  ctx.arcTo(x + w, y, x + w, y + h, k)
-  ctx.arcTo(x + w, y + h, x, y + h, k)
-  ctx.arcTo(x, y + h, x, y, k)
-  ctx.arcTo(x, y, x + w, y, k)
-  ctx.closePath()
-}
-
 export const drawMatch = (
   ctx: CanvasRenderingContext2D,
   state: MatchState,
@@ -204,6 +186,8 @@ export const drawMatch = (
   }
 
   drawPitch(ctx, px, scale)
+  // nomes primeiro: jogadores desenhados depois ficam sempre por cima deles
+  if (showNames) for (const p of state.players) drawPlayerName(ctx, p, px, scale, alpha)
   for (const p of state.players) drawPlayer(ctx, p, px, scale, alpha, cel)
   drawBall(ctx, state, px, scale, alpha)
   if (cel) drawCelebration(ctx, state, px, scale)
@@ -943,44 +927,36 @@ const drawPlayer = (
     ctx.restore()
   }
 
-  // placa de nome abaixo do botão (estilo transmissão): pílula escura com um
-  // ponto na cor do time e o nome em branco — legível sobre qualquer fundo.
-  if (!showNames) return
+}
+
+// Nome abaixo do jogador — desenhado num passe separado ANTES dos jogadores no
+// render, para os sprites ficarem sempre por cima dos nomes. Texto branco
+// simples, sem fundo.
+const drawPlayerName = (
+  ctx: CanvasRenderingContext2D,
+  p: Player,
+  px: Px,
+  scale: number,
+  alpha: number,
+) => {
+  const ip = lerpV(p.prevPos, p.pos, alpha)
+  const cx = px(ip.x)
+  const cy = px(ip.y)
+  const r = PHYS.playerRadius * 1.55 * scale
   ctx.save()
-  ctx.globalAlpha = 1 - down * 0.5
+  ctx.globalAlpha = 1 - p.downAmt * 0.5
   ctx.font = `600 ${Math.round(scale * 1.12)}px "Segoe UI", Roboto, sans-serif`
   ctx.textBaseline = 'middle'
+  ctx.textAlign = 'center'
+  // Posição do nome. No desktop fica abaixo do botão (canvas +y). No celular o
+  // canvas é girado +90° no CSS, então "abaixo na tela" corresponde a canvas +x.
   const gap = r + scale * 1.9
-  const dot = scale * 0.5
-  const padX = scale * 0.55
-  const tw = ctx.measureText(p.name).width
-  const ph2 = scale * 1.7
-  const pw2 = tw + padX * 2 + dot + scale * 0.3
-  // Centro da pílula. No desktop fica abaixo do botão (canvas +y). No celular o
-  // canvas é girado +90° no CSS, então "abaixo na tela" corresponde a canvas +x:
-  // posicionar à direita aqui faz a placa cair logo abaixo do botão na tela,
-  // igual ao landscape, sem subir por cima do jogador.
   const lcx = labelsUpright ? cx + gap : cx
   const lcy = labelsUpright ? cy : cy + gap
-  const plx = lcx - pw2 / 2
-  // gira a pílula inteira (fundo, ponto e nome) p/ ficar legível no celular
+  // gira o nome p/ ficar legível no celular
   uprightLabel(ctx, lcx, lcy, () => {
-    // fundo da pílula
-    roundedRectPath(ctx, plx, lcy - ph2 / 2, pw2, ph2, ph2 / 2)
-    ctx.fillStyle = 'rgba(8,12,22,0.66)'
-    ctx.fill()
-    ctx.lineWidth = 1
-    ctx.strokeStyle = 'rgba(255,255,255,0.14)'
-    ctx.stroke()
-    // ponto da cor do time
-    ctx.beginPath()
-    ctx.arc(plx + padX + dot / 2, lcy, dot / 2, 0, Math.PI * 2)
-    ctx.fillStyle = kit.shirt
-    ctx.fill()
-    // nome
-    ctx.textAlign = 'left'
-    ctx.fillStyle = '#f1f5f9'
-    ctx.fillText(p.name, plx + padX + dot + scale * 0.3, lcy + scale * 0.05)
+    ctx.fillStyle = '#fff'
+    ctx.fillText(p.name, lcx, lcy)
   })
   ctx.restore()
 }

@@ -1,6 +1,6 @@
 import type { Role, Vec2 } from '../sim/types'
 import { FORMATION_433, type SeedPlayer } from '../sim/teams'
-import { rolesFor } from '../sim/formation'
+import { roleForSlot, rolesFor } from '../sim/formation'
 import type { GenPlayer } from './types'
 
 /**
@@ -37,3 +37,18 @@ export const lineupFor = (squad: GenPlayer[], slots: Vec2[] = FORMATION_433): Se
     }
   })
 }
+
+/**
+ * Escalação POR SLOT (modo run): `squad[i]` joga na âncora `slots[i]`, sem
+ * re-agrupar por função — a função de cada um é derivada da posição da âncora.
+ * É o que garante que o time montado no campinho entre em campo exatamente igual.
+ */
+export const lineupFromSlots = (squad: GenPlayer[], slots: Vec2[]): SeedPlayer[] =>
+  slots.map((slot, i) => ({
+    id: squad[i].id,
+    number: squad[i].number,
+    name: squad[i].name,
+    role: roleForSlot(i, slot),
+    attrs: squad[i].attrs,
+    formationPos: { ...slot },
+  }))

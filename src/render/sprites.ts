@@ -1,16 +1,17 @@
 /**
- * Sprites de jogador (visto de cima), gerados por IA — ver tools/generate-
- * sprites.mjs (corrida) e tools/generate-action-sprites.mjs (chute, cabeceio,
- * lateral, defesa). Substituem o domo de acrílico do "botão" quando a imagem
- * já carregou; a câmera do jogo é ortogonal de cima, então uma única pose
- * cobre as 360° de direção via rotação do canvas — não existe sprite por
- * direção (exceto a defesa do goleiro, que espelha horizontalmente).
+ * Sprites de jogador (vistos de LADO, perfil olhando pra direita), gerados por
+ * IA — ver tools/generate-sprites.mjs (corrida) e tools/generate-action-
+ * sprites.mjs (chute, cabeceio, lateral, defesa). Substituem o domo de
+ * acrílico do "botão" quando a imagem já carregou; o sprite fica sempre EM PÉ
+ * na tela (nunca gira com a direção do movimento — jogador não desafia a
+ * gravidade) e só espelha horizontalmente quando se move pra esquerda.
  *
  * O uniforme é pintado em 3 cores-chave bem separadas (camisa/short/meião —
  * ver KIT_KEYS/tools/_spriteStyle.mjs) e recolorido em runtime, cada peça
  * independente, pra qualquer combinação real de clube/seleção.
  */
 import type { Vec2 } from '../sim/types'
+import { FIELD } from '../sim/constants'
 import type { KitColors } from './renderer'
 
 const BODY_POOL_SIZE = 6
@@ -39,6 +40,22 @@ const loadImg = (src: string): HTMLImageElement | null => {
 
 const isReady = (img: HTMLImageElement | null): img is HTMLImageElement =>
   !!img && img.complete && img.naturalWidth > 0
+
+// =====================================================================
+// Orientação na TELA: em retrato (celular) o canvas é girado +90° no CSS
+// (ver MatchPlayer/setLabelsUpright) — o sprite é contra-girado pra ficar
+// em pé na tela do aparelho, e "esquerda/direita" do espelhamento é o da
+// tela, não o do canvas.
+// =====================================================================
+
+let cssRotation = 0
+export const setSpriteUpright = (rotated: boolean): void => {
+  cssRotation = rotated ? Math.PI / 2 : 0
+}
+
+/** Componente horizontal NA TELA (pós-rotação CSS) de um vetor do canvas. */
+const screenX = (dx: number, dy: number): number =>
+  dx * Math.cos(cssRotation) - dy * Math.sin(cssRotation)
 
 const bodyImages: (HTMLImageElement | null)[] = Array.from({ length: BODY_POOL_SIZE }, (_, i) =>
   loadImg(`/assets/sprites/body_${String(i).padStart(2, '0')}.png`),
@@ -153,7 +170,7 @@ function getTinted(img: HTMLImageElement | null, cacheId: string, colors: KitCol
   return canvas
 }
 
-/** Desenha um quadro (col/row de uma grade) girado e centrado em (cx,cy). */
+/** Desenha um quadro (col/row de uma grade) em pé e centrado em (cx,cy). */
 function drawCell(
   ctx: CanvasRenderingContext2D,
   src: HTMLCanvasElement,
@@ -163,9 +180,8 @@ function drawCell(
   cx: number,
   cy: number,
   sizePx: number,
-  angle: number,
+  facingLeft: boolean,
   alpha: number,
-  mirror: boolean,
 ): void {
   const cellW = src.width / cols
   const cellH = src.height / rows
@@ -173,8 +189,8 @@ function drawCell(
   const row = Math.floor(frame / cols)
   ctx.save()
   ctx.translate(cx, cy)
-  ctx.rotate(angle + Math.PI / 2) // sprite "olha" pra cima (norte) no frame de origem
-  if (mirror) ctx.scale(-1, 1) // espelha esquerda↔direita (defesa do goleiro pro lado oposto)
+  ctx.rotate(-cssRotation) // contra-gira o giro CSS do canvas (celular) — sprite sempre em pé na tela
+  if (facingLeft) ctx.scale(-1, 1) // sprite base "olha" pra direita; espelha pra olhar pra esquerda
   ctx.globalAlpha = alpha
   ctx.drawImage(src, col * cellW, row * cellH, cellW, cellH, -sizePx / 2, -sizePx / 2, sizePx, sizePx)
   ctx.globalAlpha = 1
@@ -193,7 +209,7 @@ const IDLE_SPEED_MPS = 0.6 // abaixo disso mostra o quadro parado
 interface RunState {
   frameFloat: number
   lastPos: Vec2
-  angle: number
+  facingLeft: boolean
 }
 const runState = new Map<number, RunState>()
 
@@ -218,7 +234,8 @@ function drawRunning(
 
   let st = runState.get(playerId)
   if (!st) {
-    st = { frameFloat: 0, lastPos: ip, angle: -Math.PI / 2 }
+    // sem movimento ainda: de frente pro centro do campo (metade direita olha pra esquerda)
+    st = { frameFloat: 0, lastPos: ip, facingLeft: ip.x > FIELD.w / 2 }
     runState.set(playerId, st)
   }
   const dx = ip.x - st.lastPos.x
@@ -227,19 +244,22 @@ function drawRunning(
   st.lastPos = ip
   const idle = speedMps < IDLE_SPEED_MPS
   if (!idle) {
-    st.angle = Math.atan2(dy, dx)
+    // só vira quando o movimento tem componente horizontal relevante (na tela);
+    // correndo quase na vertical, mantém o lado atual em vez de tremer
+    const sx = screenX(dx, dy)
+    if (Math.abs(sx) > dist * 0.2) st.facingLeft = sx < 0
     st.frameFloat += (dist / METERS_PER_STRIDE) * RUN_FRAMES.length
   }
 
   if (idle) {
-    drawCell(ctx, tinted, GRID_COLS, GRID_ROWS, IDLE_FRAME, cx, cy, sizePx, st.angle, 1, false)
+    drawCell(ctx, tinted, GRID_COLS, GRID_ROWS, IDLE_FRAME, cx, cy, sizePx, st.facingLeft, 1)
   } else {
     const n = RUN_FRAMES.length
     const f = ((st.frameFloat % n) + n) % n
     const i0 = Math.floor(f)
     const t = f - i0
-    drawCell(ctx, tinted, GRID_COLS, GRID_ROWS, RUN_FRAMES[i0], cx, cy, sizePx, st.angle, 1, false)
-    if (t > 0.001) drawCell(ctx, tinted, GRID_COLS, GRID_ROWS, RUN_FRAMES[(i0 + 1) % n], cx, cy, sizePx, st.angle, t, false)
+    drawCell(ctx, tinted, GRID_COLS, GRID_ROWS, RUN_FRAMES[i0], cx, cy, sizePx, st.facingLeft, 1)
+    if (t > 0.001) drawCell(ctx, tinted, GRID_COLS, GRID_ROWS, RUN_FRAMES[(i0 + 1) % n], cx, cy, sizePx, st.facingLeft, t)
   }
   return true
 }
@@ -259,14 +279,13 @@ interface ActionDef {
   rows: number
   frames: number
   durationMs: number
-  mirrorable?: boolean
 }
 
 const ACTIONS: Record<ActionKind, ActionDef> = {
   kick: { src: '/assets/sprites/action_kick.png', cols: 3, rows: 2, frames: 6, durationMs: 380 },
   header: { src: '/assets/sprites/action_header.png', cols: 2, rows: 2, frames: 4, durationMs: 480 },
   throwin: { src: '/assets/sprites/action_throwin.png', cols: 2, rows: 2, frames: 4, durationMs: 550 },
-  save: { src: '/assets/sprites/action_save.png', cols: 2, rows: 2, frames: 4, durationMs: 480, mirrorable: true },
+  save: { src: '/assets/sprites/action_save.png', cols: 2, rows: 2, frames: 4, durationMs: 480 },
 }
 
 const actionImages: Record<ActionKind, HTMLImageElement | null> = {
@@ -279,8 +298,7 @@ const actionImages: Record<ActionKind, HTMLImageElement | null> = {
 interface ActiveAction {
   kind: ActionKind
   startedAt: number
-  angle: number
-  mirror: boolean
+  facingLeft: boolean
 }
 const activeActions = new Map<number, ActiveAction>()
 
@@ -288,10 +306,13 @@ const activeActions = new Map<number, ActiveAction>()
  * Dispara uma ação de um só tiro pro jogador (chamar quando a simulação
  * emite o evento correspondente — ver useMatchLoop.ts). `angle` é a direção
  * pra onde o jogador deve ficar de frente (radianos, mesma convenção de
- * `Math.atan2`); `mirror` espelha a pose (usado na defesa pro lado oposto).
+ * `Math.atan2`) — reduzida aqui a esquerda/direita na tela; se a direção for
+ * quase vertical, mantém o lado pra onde o jogador já estava olhando.
  */
-export function triggerAction(playerId: number, kind: ActionKind, angle: number, mirror = false): void {
-  activeActions.set(playerId, { kind, startedAt: performance.now(), angle, mirror })
+export function triggerAction(playerId: number, kind: ActionKind, angle: number): void {
+  const sx = screenX(Math.cos(angle), Math.sin(angle))
+  const facingLeft = Math.abs(sx) > 0.2 ? sx < 0 : (runState.get(playerId)?.facingLeft ?? false)
+  activeActions.set(playerId, { kind, startedAt: performance.now(), facingLeft })
 }
 
 /**
@@ -321,9 +342,9 @@ function drawActionIfActive(
   const frameFloat = t * def.frames
   const i0 = Math.min(def.frames - 1, Math.floor(frameFloat))
   const frac = Math.min(1, frameFloat - i0)
-  drawCell(ctx, tinted, def.cols, def.rows, i0, cx, cy, sizePx, active.angle, 1, active.mirror)
+  drawCell(ctx, tinted, def.cols, def.rows, i0, cx, cy, sizePx, active.facingLeft, 1)
   if (frac > 0.001 && i0 + 1 < def.frames) {
-    drawCell(ctx, tinted, def.cols, def.rows, i0 + 1, cx, cy, sizePx, active.angle, frac, active.mirror)
+    drawCell(ctx, tinted, def.cols, def.rows, i0 + 1, cx, cy, sizePx, active.facingLeft, frac)
   }
   return true
 }

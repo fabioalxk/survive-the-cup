@@ -6,6 +6,7 @@ import {
   offerLevelPenalty,
   opponentLevelBonus,
 } from '../game/ascension'
+import { START_LIVES } from '../game/run'
 import { resumeMainTheme, startMainTheme, stopMainTheme } from '../sfx/crowd'
 import { BackButton } from '../ui/BackButton'
 import { ClubBadge } from '../ui/ClubBadge'
@@ -128,9 +129,6 @@ export default function NewRun({
           <button className="rq-menu-item" onClick={() => setScreen('help')}>
             Como jogar
           </button>
-          <button className="rq-menu-item" onClick={() => window.close()}>
-            Sair
-          </button>
         </nav>
       )}
 
@@ -233,12 +231,12 @@ export default function NewRun({
             <div className="rq-title-tags">
               <span className="rq-title-tag rq-tag-red">Roguelike</span>
               <span className="rq-title-tag rq-tag-blue">Copa do Mundo</span>
-              <span className="rq-title-tag rq-tag-gold">Perdeu, acabou</span>
+              <span className="rq-title-tag rq-tag-gold">{START_LIVES} vidas</span>
             </div>
             <p className="cm-subtitle">
               Escolha uma seleção da Copa do Mundo e suba o mapa enfrentando um adversário por fase
-              até o chefão final. Perdeu uma vez? Eliminado — recomeça do zero. Vença para ser
-              campeão.
+              até o chefão final. Você tem {START_LIVES} vidas: a 2ª derrota elimina e recomeça do
+              zero. Vença o chefão para ser campeão.
             </p>
           </section>
 
@@ -249,7 +247,8 @@ export default function NewRun({
                 mercado e bênçãos.
               </li>
               <li>
-                <b>Partidas:</b> uma derrota encerra a corrida. Não existe replay.
+                <b>Vidas:</b> começa com {START_LIVES} (ícones de coração no topo). Perder uma
+                partida custa 1 vida e a corrida continua; a última vida perdida elimina de vez.
               </li>
               <li>
                 <b>Entre os jogos:</b> treine jogadores na academia, contrate reforços no mercado e

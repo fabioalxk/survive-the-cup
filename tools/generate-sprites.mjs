@@ -1,11 +1,12 @@
-// Gera sprites de jogador correndo (visto de cima) para substituir o botão do
-// futebol de botão, com a API de imagens da OpenAI (gpt-image-1).
+// Gera sprites de jogador correndo (visto de LADO, perfil olhando pra direita)
+// para substituir o botão do futebol de botão, com a API de imagens da OpenAI
+// (gpt-image-1).
 //
-// Ideia central: como a câmera do jogo é ortogonal de cima, UMA única pose
-// (sempre "de frente para cima") cobre as 360° de direção — o jogo gira o
-// sprite em runtime com base no vetor de velocidade (ctx.rotate), não precisa
-// de sprite por direção. O que muda por combinação é a aparência do jogador
-// (pele/cabelo), reaproveitando as mesmas paletas do pool de retratos.
+// Ideia central: o sprite fica sempre EM PÉ na tela (nunca gira com a direção
+// do movimento — jogador não desafia a gravidade); o jogo só espelha
+// horizontalmente (ctx.scale(-1,1)) quando o jogador se move pra esquerda.
+// O que muda por combinação é a aparência do jogador (pele/cabelo),
+// reaproveitando as mesmas paletas do pool de retratos.
 //
 // Cada imagem é uma grade 3x3 (9 quadros): os 8 primeiros são um ciclo de
 // corrida completo, o 9º é o jogador parado (idle).
@@ -54,15 +55,15 @@ const GRID_STYLE =
   'radial gradient, no blurry halo, no drop shadow, no colored background of any kind, pure transparent ' +
   'PNG. ' +
   'The SAME male football player appears in every cell, always the exact same size and the exact same ' +
-  'scale, hips always at the same height in the cell, centered horizontally, always facing straight up ' +
-  '(north), camera angle never changes. Even lighting from directly above, no directional cast shadow ' +
-  `on the character. ${KIT_KEY_PROMPT} This is a proper running gait cycle broken into 8 ` +
+  'scale, hips always at the same height in the cell, centered horizontally, always facing the right ' +
+  'side of the frame in side profile, camera angle never changes. Even soft lighting, no directional ' +
+  `cast shadow on the character. ${KIT_KEY_PROMPT} This is a proper running gait cycle broken into 8 ` +
   'biomechanically distinct keyframes, reading left to right then top to bottom, each cell CLEARLY ' +
-  'different from the others in leg and arm position (camera strictly top-down in every cell, never ' +
-  'side-view):\n' +
-  RUN_POSES.map((pose, i) => `Cell ${i + 1} (top-down view): ${pose}.`).join('\n') +
+  'different from the others in leg and arm position (camera strictly side-view in every cell, never ' +
+  'top-down):\n' +
+  RUN_POSES.map((pose, i) => `Cell ${i + 1} (side view, running to the right): ${pose}.`).join('\n') +
   '\nCell 9 (bottom-right): the player standing fully still in a relaxed idle pose, both feet flat on ' +
-  'the ground shoulder-width apart, arms relaxed at the sides, facing up.\n' +
+  'the ground, arms relaxed at the sides, still in side profile facing right.\n' +
   'No text, no numbers, no watermark, no outer border, only the thin cell divider guide lines.'
 
 const bodyPrompt = (i) =>

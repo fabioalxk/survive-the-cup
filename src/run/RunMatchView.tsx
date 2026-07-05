@@ -1,5 +1,5 @@
 import type { RunState } from '../game/runTypes'
-import { finishMatch, quickPlayNode, setFormation, startingXI } from '../game/run'
+import { finishMatch, quickPlayNode, setFormation } from '../game/run'
 import { ALL_CLUBS } from '../game/worldcup'
 import MatchPlayer from '../shared/MatchPlayer'
 import PotionsHud from './PotionsHud'
@@ -10,7 +10,13 @@ export default function RunMatchView({ state, act }: { state: RunState; act: Run
   const node = state.nodes.find((n) => n.id === state.currentNodeId)
   if (!node || !node.opponent) return null
 
-  const home = { ...ALL_CLUBS[state.clubId], squad: startingXI(state), formation: state.formationSlots }
+  // slotOrdered: squad[i] entra EXATAMENTE no slot i — a escalação é a do campinho
+  const home = {
+    ...ALL_CLUBS[state.clubId],
+    squad: state.squad,
+    formation: state.formationSlots,
+    slotOrdered: true,
+  }
   const away = { ...ALL_CLUBS[node.opponent.clubId], squad: node.opponent.squad }
 
   return (

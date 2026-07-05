@@ -224,6 +224,7 @@
   font-size: 14px;
   line-height: 1.6;
   color: var(--cm-muted);
+  text-align: left;
 }
 .rq-help-list b {
   color: var(--cm-text);
@@ -331,6 +332,9 @@
   gap: 10px;
   overflow-x: auto;
   padding: 6px 2px 8px;
+  /* esmaece a borda direita — sinaliza que a fileira continua pro lado */
+  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
 }
 .rq-flag {
   flex: none;
@@ -756,12 +760,15 @@
   height: 100%;
   overflow: visible;
 }
-/* pontilhado clássico e limpo (traços curtos, sem animação) */
+/* pontilhado clássico e limpo (traços curtos, sem animação) — um pouco mais
+   grosso/opaco e com leve sombra (em vez de brilho, que é só do trecho aberto)
+   pra não ficar "wireframe" perto do resto do mapa, que é bem pintado */
 .rq-line {
-  stroke: rgba(230, 237, 247, 0.28);
-  stroke-width: 0.6;
+  stroke: rgba(230, 237, 247, 0.4);
+  stroke-width: 0.85;
   stroke-dasharray: 2 2;
   stroke-linecap: round;
+  filter: drop-shadow(0 0.5px 1px rgba(0, 0, 0, 0.5));
 }
 /* caminho a partir do nó liberado agora, e trilha já percorrida: dourado */
 .rq-line-open,
@@ -975,7 +982,7 @@
   padding: 1.5px 7px;
   border-radius: 999px;
   pointer-events: none;
-  max-width: 92px;
+  max-width: 142px;
   overflow: hidden;
   text-overflow: ellipsis;
   backdrop-filter: blur(3px);
@@ -988,7 +995,7 @@
   border-color: var(--cm-gold);
   color: var(--cm-gold);
   font-size: 9.5px;
-  max-width: 120px;
+  max-width: 162px;
   box-shadow: 0 0 12px rgba(251, 191, 36, 0.25);
 }
 .rq-cap-ico {
@@ -1130,6 +1137,22 @@
   z-index: 4;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
 }
+/* cadeado visível (sem precisar de hover) nos nós ainda bloqueados */
+.rq-node-lock {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: rgba(6, 10, 18, 0.9);
+  color: var(--cm-muted);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--cm-bg);
+  z-index: 4;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
 /* ---- ponto de partida (origem dos 3 caminhos) ---- */
 .rq-start-node {
   position: absolute;
@@ -1207,179 +1230,6 @@
   border-color: rgba(220, 38, 38, 0.5);
 }
 
-/* ---------- Escalação (titulares/banco) — 2 colunas, clique-clique-trocou ---------- */
-.rq-squad-simple {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.rq-simple-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.rq-simple-hint {
-  margin: 0;
-  font-size: 13px;
-  color: var(--cm-muted);
-}
-/* estado vazio ilustrado (banco de reservas): centralizado, moldura tracejada */
-.rq-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 200px;
-  margin: 0;
-  padding: 24px 18px;
-  border: 1.5px dashed var(--cm-line-strong);
-  border-radius: 12px;
-  text-align: center;
-  color: var(--cm-muted);
-}
-.rq-empty-ico {
-  color: rgba(148, 163, 189, 0.5);
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
-}
-.rq-empty strong {
-  font-family: var(--cm-font-display);
-  font-size: 15px;
-  color: var(--cm-text);
-}
-.rq-empty p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  max-width: 260px;
-}
-
-.rq-simple-cols {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-.rq-simple-swap-ico {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, var(--cm-panel-3), var(--cm-panel-2));
-  border: 1px solid var(--cm-line-strong);
-  color: var(--cm-muted);
-  font-size: 16px;
-  pointer-events: none;
-  z-index: 1;
-  box-shadow: var(--cm-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-.rq-simple-col {
-  background: var(--cm-glass), var(--cm-panel);
-  border: 1px solid var(--cm-line);
-  border-radius: var(--cm-radius);
-  padding: 12px;
-  min-width: 0;
-  box-shadow: var(--cm-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-.rq-simple-col h3 {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin: 0 0 10px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--cm-muted);
-}
-.rq-simple-col h3 span {
-  font-weight: 800;
-  color: var(--cm-text);
-  font-variant-numeric: tabular-nums;
-}
-.rq-simple-col ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: max(520px, calc(100dvh - 360px));
-  overflow-y: auto;
-}
-
-/* carta de jogador: uma única regra sempre igual — clique num de cada lado pra trocar */
-.rq-card {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
-  border-radius: 11px;
-  border: 1px solid transparent;
-  background: var(--cm-panel-2);
-  color: var(--cm-text);
-  font-family: var(--cm-font);
-  cursor: pointer;
-  text-align: left;
-  transition: transform 0.1s ease, border-color 0.15s, background 0.15s, box-shadow 0.15s;
-}
-.rq-card:hover {
-  transform: translateY(-1px);
-  border-color: var(--cm-line-strong);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-.rq-card-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.rq-card-info strong {
-  font-size: 13.5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rq-card-sub {
-  font-size: 11.5px;
-  color: var(--cm-muted);
-}
-/* nota geral como medalha: fundo tingido pela própria cor da faixa (attrColor) */
-.rq-card-ovr {
-  font-family: var(--cm-font-display);
-  font-weight: 800;
-  font-size: 14.5px;
-  font-variant-numeric: tabular-nums;
-  min-width: 34px;
-  padding: 3px 0;
-  text-align: center;
-  border-radius: 9px;
-  background: color-mix(in srgb, currentColor 13%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 32%, transparent);
-}
-.rq-card.is-sel {
-  border-color: var(--cm-gold);
-  background: linear-gradient(180deg, rgba(251, 191, 36, 0.2), rgba(251, 191, 36, 0.08));
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.35), 0 4px 14px rgba(251, 191, 36, 0.12);
-}
-.rq-card.is-swap-target {
-  border-color: rgba(74, 222, 128, 0.5);
-  background: rgba(34, 197, 94, 0.1);
-}
-.rq-card.is-swap-target:hover {
-  border-color: #4ade80;
-  background: rgba(34, 197, 94, 0.2);
-  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.3), 0 4px 14px rgba(34, 197, 94, 0.14);
-}
-
 .rq-simple-detail {
   background: var(--cm-glass), var(--cm-panel);
   border: 1px solid var(--cm-line);
@@ -1388,70 +1238,21 @@
   box-shadow: var(--cm-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   animation: cm-rise 0.25s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
-
-/* confirmação flutuante após a troca */
-.rq-toast {
-  position: fixed;
-  left: 50%;
-  bottom: 84px;
-  transform: translateX(-50%);
-  background: rgba(10, 26, 15, 0.95);
-  border: 1px solid rgba(34, 197, 94, 0.55);
-  color: #bbf7d0;
-  padding: 11px 18px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 197, 94, 0.12);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  animation: rq-toast-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
-  z-index: 20;
-}
-.rq-toast-warn {
-  background: rgba(36, 16, 16, 0.95);
-  border-color: rgba(239, 68, 68, 0.6);
-  color: #fca5a5;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.12);
-}
-@keyframes rq-toast-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 10px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1);
-  }
-}
-
-/* ---------- Tática (arraste os jogadores no campinho) ---------- */
-.tv {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-/* campinho + painel lateral de atributos: aproveita o vazio dos lados no desktop */
-.tv-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  gap: 14px;
-  align-items: start;
-}
-.tv-board {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-.tv-side {
-  min-width: 0;
-}
-/* painel estreito: os grupos de atributos em 1 coluna (2 ficam espremidas) */
-.tv-side .ps-groups {
+/* no vestiário (único lugar onde isso renderiza hoje) o painel do jogador é uma
+   cartela estreita (~330px no desktop, cheia de padding no mobile) — 2 colunas
+   de atributos (`.ps-groups`, pensado pra telas largas) sobrava tão pouca
+   largura pro rótulo que "Drible"/"Domínio"/"Defesa" viravam todos "D" sem
+   nem reticências. Uma coluna só dá espaço de sobra pros nomes inteiros. */
+.rq-simple-detail .ps-groups {
   grid-template-columns: 1fr;
 }
+
+/* ---------- Campinho tático compartilhado ---------- */
+/* sem moldura tracejada (lia como "placeholder vazio" quando a coluna toda vira
+   essa caixa, ex. academia sem jogador selecionado) — só um halo suave atrás do
+   ícone, no mesmo idioma visual dos halos dos nós do mapa (.rq-node-halo) */
 .tv-side-empty {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1459,10 +1260,21 @@
   gap: 10px;
   min-height: 220px;
   padding: 24px 18px;
-  border: 1.5px dashed var(--cm-line-strong);
   border-radius: var(--cm-radius);
   text-align: center;
   color: var(--cm-muted);
+}
+.tv-side-empty::before {
+  content: '';
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.14), transparent 70%);
+  pointer-events: none;
+}
+.tv-side-empty > * {
+  position: relative;
 }
 .tv-side-empty-ico {
   color: rgba(148, 163, 189, 0.45);
@@ -1474,9 +1286,6 @@
   max-width: 240px;
 }
 @media (max-width: 900px) {
-  .tv-cols {
-    grid-template-columns: 1fr;
-  }
   /* sem espaço lateral: o convite "toque num jogador" vira ruído — some */
   .tv-side-empty {
     display: none;
@@ -1507,7 +1316,10 @@
     repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0 9.5%, rgba(0, 0, 0, 0.06) 9.5% 19%),
     linear-gradient(180deg, #14532d, #166534);
   box-shadow: var(--cm-shadow), inset 0 0 0 6px rgba(255, 255, 255, 0.06);
-  overflow: hidden;
+  /* visível (não hidden): o goleiro fica bem perto da linha de fundo (x=5) e o
+     chip (foto + nome + nota) é mais alto que a folga até a borda — cortava
+     a metade de baixo do emblema. */
+  overflow: visible;
   touch-action: none;
 }
 .tv-half-line {
@@ -1567,12 +1379,34 @@
 .tv-role-gk {
   cursor: default;
 }
+.tv-chip:focus-visible {
+  outline: none;
+}
+.tv-chip:focus-visible .tv-chip-photo {
+  box-shadow: var(--cm-ring), 0 4px 10px rgba(0, 0, 0, 0.45);
+}
+.tv-chip-photo-wrap {
+  position: relative;
+}
 .tv-chip-photo {
   width: 36px;
   height: 36px;
   border: 2px solid rgba(255, 255, 255, 0.75);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
   transition: transform 0.12s ease, border-color 0.12s;
+}
+.tv-chip-lock {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--cm-gold);
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 .tv-role-gk .tv-chip-photo {
   border-color: #b45309;
@@ -1599,12 +1433,15 @@
   border-radius: 999px;
   padding: 1px 7px;
 }
-.tv-chip-role {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.7);
+/* nota geral do slot no chip — número no lugar do antigo rótulo de posição */
+.tv-chip-ovr {
+  font-family: var(--cm-font-display);
+  font-weight: 800;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 999px;
+  padding: 0 7px;
 }
 
 /* tática no meio da partida: o campinho abre por cima do campo, com o jogo pausado */
@@ -1670,12 +1507,21 @@
    painel de fundo: as cartas flutuam direto sobre o cenário pintado.
    ===================================================================== */
 .rc-scene {
+  position: relative;
   width: 100%;
   max-width: min(1180px, 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
   animation: cm-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+/* atalho de ajuda no canto — o cabeçalho do mapa (com o "?" principal) fica
+   atrás do backdrop desta cena, então ela precisa do próprio atalho */
+.rc-scene-help {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
 }
 /* faixa de pergaminho pintada (tools/generate-art.mjs cards), como o
    "Choose a Card" dos deck-builders — o texto senta no miolo vazio da arte.
@@ -1812,32 +1658,6 @@
   mix-blend-mode: screen;
   pointer-events: none;
 }
-.rc-card-role {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 2;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  /* a cor vem da classe cm-role-* (posição), herdada do .rc-card pai */
-  font-weight: 800;
-  background: color-mix(in srgb, currentColor 18%, rgba(8, 14, 26, 0.75));
-  border: 1px solid color-mix(in srgb, currentColor 40%, transparent);
-  border-radius: 999px;
-  padding: 4px 10px;
-}
-.rc-card-ovr {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  z-index: 2;
-  font-family: var(--cm-font-display);
-  font-size: 30px;
-  font-weight: 900;
-  line-height: 1;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.65));
-}
 /* retrato: bolo transparente que "estoura" a borda de cima da carta */
 .rc-card-portrait .rc-card-face {
   position: relative;
@@ -1880,7 +1700,7 @@
 .rc-card .ps-attr {
   /* rótulo fixo + barra flexível (mesmo padrão do .mk-attrs do mercado): as
      barras se alinham e preenchem a largura sem vão morto até o número */
-  grid-template-columns: 82px minmax(0, 1fr) 24px;
+  grid-template-columns: 100px minmax(0, 1fr) 24px;
   gap: 8px;
   padding: 3px 0;
 }
@@ -1955,11 +1775,6 @@
   border: 1px solid rgba(251, 191, 36, 0.35);
   border-radius: 999px;
 }
-.rq-market-count {
-  font-size: 11.5px;
-  color: var(--cm-muted);
-  white-space: nowrap;
-}
 .rq-market-body {
   flex: 1;
   min-height: 0;
@@ -1968,6 +1783,10 @@
   flex-direction: column;
   gap: 20px;
   padding: 16px 22px;
+  /* esmaece a borda de baixo — sinaliza que dá pra rolar pra ver mais ofertas
+     (mesmo truque da fileira de bandeiras da seleção) */
+  mask-image: linear-gradient(to bottom, black calc(100% - 44px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 44px), transparent 100%);
 }
 .rq-market-body h4 {
   display: flex;
@@ -2101,7 +1920,7 @@
   overflow-y: auto;
 }
 
-/* coluna esquerda: campinho tático (titulares) + faixa do banco */
+/* coluna esquerda: campinho tático com os 11 do time */
 .rq-gym-field {
   display: flex;
   flex-direction: column;
@@ -2114,7 +1933,7 @@
     radial-gradient(70% 55% at 50% 42%, rgba(34, 197, 94, 0.08), transparent 70%),
     rgba(7, 11, 20, 0.35);
 }
-/* barra "Titulares · esquema atual" no topo do campinho */
+/* barra "Seu time · esquema atual" no topo do campinho */
 .rq-gym-field-head {
   width: 100%;
   display: flex;
@@ -2122,8 +1941,7 @@
   justify-content: space-between;
   gap: 10px;
 }
-.rq-gym-field-head h4,
-.rq-gym-bench h4 {
+.rq-gym-field-head h4 {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2139,79 +1957,9 @@
 .rq-gym-field .tv-presets {
   justify-content: center;
 }
-/* o campinho cede espaço pro cabeçalho, rodapé e banco do modal */
+/* o campinho cede espaço pro cabeçalho e rodapé do modal */
 .rq-gym-field .tv-pitch {
   width: min(100%, max(300px, calc((100dvh - 440px) * 68 / 105)));
-}
-/* prateleira do banco: painel próprio, colado na base do campo */
-.rq-gym-bench {
-  width: 100%;
-  padding: 9px 12px 8px;
-  background: var(--cm-glass), var(--cm-panel-2);
-  border: 1px solid var(--cm-line);
-  border-radius: var(--cm-radius);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-.rq-gym-bench h4 {
-  margin-bottom: 7px;
-}
-.rq-gym-bench h4 span {
-  color: var(--cm-text);
-}
-.rq-gym-bench-empty {
-  margin: 0;
-  font-size: 12px;
-  color: var(--cm-muted);
-}
-.rq-gym-bench-row {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-.rq-bench-card {
-  flex: none;
-  width: 96px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 6px 7px;
-  background: var(--cm-panel-2);
-  border: 1px solid var(--cm-line);
-  border-radius: 11px;
-  color: var(--cm-text);
-  font-family: var(--cm-font);
-  cursor: pointer;
-  text-align: center;
-  transition: background 0.12s, border-color 0.12s, transform 0.1s;
-}
-.rq-bench-card:hover {
-  border-color: rgba(148, 163, 189, 0.55);
-  transform: translateY(-1px);
-}
-.rq-bench-card.active {
-  border-color: var(--cm-gold);
-  background: linear-gradient(180deg, rgba(251, 191, 36, 0.18), rgba(251, 191, 36, 0.06));
-}
-/* a moldura da foto segue a cor da função (mesma paleta dos chips do campinho) */
-.rq-bench-card .tv-chip-photo {
-  width: 40px;
-  height: 40px;
-}
-.rq-bench-card strong {
-  max-width: 100%;
-  font-size: 12px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rq-bench-ovr {
-  font-family: var(--cm-font-display);
-  font-weight: 800;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
 }
 
 /* chip do campinho destacado como selecionado (jogador aberto no painel de treino) */
@@ -2464,6 +2212,24 @@
   filter: drop-shadow(0 6px 18px rgba(148, 163, 189, 0.3));
 }
 
+/* modal de confirmação (ex.: recomeçar do zero) — dois botões lado a lado */
+.cm-modal-confirm .rq-over-emoji {
+  font-size: 40px;
+}
+.cm-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.cm-modal-actions .cm-btn {
+  flex: 1;
+}
+/* rede de segurança de erro (RunErrorBoundary) — dois botões empilhados */
+.rq-crash-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 @media (max-width: 760px) {
   .rq-market-head {
     flex-wrap: wrap;
@@ -2481,9 +2247,9 @@
 
 }
 
-/* Academia em tela estreita: UMA coluna que alterna — campinho + banco pra
-   escolher o jogador; com um jogador aberto, o painel de treino toma a tela e
-   o botão "← Campinho" volta pra escolha. */
+/* Academia em tela estreita: UMA coluna que alterna — campinho pra escolher o
+   jogador; com um jogador aberto, o painel de treino toma a tela e o botão
+   "← Campinho" volta pra escolha. */
 @media (max-width: 920px) {
   .cm-backdrop:has(.cm-modal.rq-gym) {
     padding: 8px;
@@ -2668,7 +2434,7 @@
   box-shadow: 0 2px 8px rgba(var(--potion), 0.35);
 }
 
-/* ---- pop-up de uso: cabeçalho luminoso na cor da poção + lista de titulares ---- */
+/* ---- pop-up de uso: cabeçalho luminoso na cor da poção + lista dos 11 ---- */
 .rq-potion-modal {
   max-width: 460px;
   padding: 0;
@@ -2785,7 +2551,7 @@
 }
 /* valor acima de 100: só a poção chega lá — brilha para marcar o "super" */
 .rq-potion-super {
-  text-shadow: 0 0 9px rgba(74, 222, 128, 0.85);
+  text-shadow: 0 0 9px color-mix(in srgb, var(--cm-green-super) 85%, transparent);
 }
 .rq-potion-foot {
   padding: 10px 14px 14px;
@@ -2833,11 +2599,8 @@
 .rq-scene-reward {
   --scene: url('/assets/bg/bg_reward.webp');
 }
-.rq-scene-tactics {
+.rq-scene-prematch {
   --scene: url('/assets/bg/bg_tactics.webp');
-}
-.rq-scene-squad {
-  --scene: url('/assets/bg/bg_squad.webp');
 }
 /* backdrop de modal com cenário atrás do painel */
 .cm-backdrop.rq-scene {
@@ -2848,13 +2611,12 @@
   background-size: cover;
   background-position: center;
 }
-/* camada de cenário das abas (Meu Time / Tática) — atrás de todo o shell */
 .rq-run-shell {
   position: relative;
   isolation: isolate;
   padding: 10px clamp(10px, 1.5vw, 22px) 12px;
 }
-/* barra superior única e compacta: clube + abas + fase + status (o mapa domina a tela) */
+/* barra superior única e compacta: clube + fase + status (o mapa domina a tela) */
 .rq-run-shell .cm-header {
   gap: 8px 18px;
   padding: 6px 14px;
@@ -2868,35 +2630,6 @@
 }
 .rq-run-shell .cm-header-sub {
   font-size: 11px;
-}
-.rq-run-shell .cm-nav {
-  margin: 0;
-  gap: 6px;
-}
-.rq-run-shell .cm-nav-btn {
-  flex: 0 0 auto;
-  padding: 7px 18px;
-  font-size: 13px;
-  border-radius: 10px;
-}
-.rq-shell-bg {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-color: #04070e;
-  background-image:
-    linear-gradient(
-      180deg,
-      rgba(4, 7, 14, 0.78),
-      rgba(4, 7, 14, 0.42) 30%,
-      rgba(4, 7, 14, 0.42) 68%,
-      rgba(4, 7, 14, 0.8)
-    ),
-    var(--scene);
-  background-size: cover;
-  background-position: center;
-  animation: cm-fade 0.3s ease both;
 }
 
 /* =====================================================================
@@ -2932,6 +2665,10 @@
 .rq-bless-bubble strong {
   color: var(--cm-gold);
   font-weight: 800;
+}
+.rq-bless-help {
+  flex: none;
+  margin-left: auto;
 }
 /* 3 CARTAS verticais lado a lado (estilo Slay the Spire) — o tom (segura/poder/
    amaldiçoada) tinge borda, medalhão e CTA via a variável --tone. */
@@ -3156,14 +2893,6 @@
 
   /* ---- Mapa: barra superior quebra em linhas finas e sem legenda — sobra
      tela pro mapa em si ---- */
-  .rq-run-shell .cm-nav {
-    order: 5;
-    flex-basis: 100%;
-  }
-  .rq-run-shell .cm-nav-btn {
-    flex: 1;
-    padding: 6px 8px;
-  }
   .rq-topbar-phase {
     order: 6;
     flex-basis: 100%;
@@ -3181,84 +2910,9 @@
     font-size: 8px;
   }
 
-  /* ---- Elenco: as 2 colunas CONTINUAM lado a lado (a troca é toque-toque
-     entre elas), com cartas compactas e scroll interno nas listas ---- */
-  .rq-squad-simple {
-    flex: 1;
-    min-height: 0;
-    gap: 8px;
-  }
-  .rq-simple-top {
-    gap: 8px;
-  }
-  .rq-simple-hint {
-    font-size: 11.5px;
-    line-height: 1.35;
-  }
-  .rq-simple-cols {
-    flex: 1;
-    min-height: 0;
-    gap: 8px;
-  }
-  .rq-simple-swap-ico {
-    width: 28px;
-    height: 28px;
-    font-size: 13px;
-  }
-  .rq-simple-col {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    padding: 8px;
-  }
-  .rq-simple-col h3 {
-    margin-bottom: 7px;
-    font-size: 11px;
-  }
-  .rq-simple-col ul {
-    flex: 1;
-    min-height: 0;
-    max-height: none;
-  }
-  .rq-card {
-    gap: 7px;
-    padding: 5px 7px;
-    border-radius: 9px;
-  }
-  .rq-card-info strong {
-    font-size: 12px;
-  }
-  .rq-card-sub {
-    font-size: 10.5px;
-  }
-  .rq-card-ovr {
-    font-size: 13px;
-    min-width: 27px;
-  }
-
-  /* ---- Tática: o campinho fica com a altura que sobra — sem rolagem ---- */
-  .tv {
-    flex: 1;
-    min-height: 0;
-    gap: 8px;
-  }
-  .tv .rq-simple-hint {
-    font-size: 11px;
-  }
+  /* ---- Campinho tático em tela estreita ---- */
   .tv-name {
     font-size: 16px;
-  }
-  .tv-cols {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-  .tv-board {
-    flex: 1;
-    min-height: 0;
-    gap: 8px;
   }
   .tv-presets {
     flex-wrap: nowrap;
@@ -3271,15 +2925,6 @@
     padding: 5px 10px;
     font-size: 12px;
   }
-  /* altura vem do flex; a largura segue a proporção do campo (68/105) */
-  .tv .tv-pitch {
-    flex: 1;
-    min-height: 0;
-    width: auto;
-    max-width: 100%;
-    align-self: center;
-    aspect-ratio: 68 / 105;
-  }
   /* campo estreito: 3 jogadores por linha (4-3-3 etc.) colidem se o chip
      ficar largo — encolhe foto/rótulo pra caber sem sobrepor o vizinho */
   .tv-chip-photo {
@@ -3290,8 +2935,9 @@
     font-size: 9px;
     padding: 1px 5px;
   }
-  .tv-chip-role {
-    font-size: 7.5px;
+  .tv-chip-ovr {
+    font-size: 9px;
+    padding: 0 5px;
   }
 }
 @media (max-width: 760px) {
@@ -3325,17 +2971,6 @@
     width: 78px !important;
     height: 78px !important;
     transform: translateY(6%);
-  }
-  .rc-card-role {
-    top: 4px;
-    left: 4px;
-    font-size: 8.5px;
-    padding: 2px 7px;
-  }
-  .rc-card-ovr {
-    top: 2px;
-    right: 4px;
-    font-size: 20px;
   }
   .rc-card-body {
     padding: 0 4px;
@@ -3421,5 +3056,366 @@
   .cm-tactics-panel .tv-pitch {
     width: min(100%, calc((100dvh - 320px) * 68 / 105)); /* fallback sem cq */
     width: min(100%, calc((100cqh - 210px) * 68 / 105));
+  }
+}
+
+/* =====================================================================
+   VESTIÁRIO (pré-jogo) — os 11 no campinho + UMA ação: Jogar
+   ===================================================================== */
+.rq-prematch {
+  width: min(600px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: calc(100dvh - 20px);
+  overflow-y: auto;
+}
+.rq-prematch-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+.rq-prematch-head p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--cm-muted);
+}
+.rq-prematch-auto {
+  flex-shrink: 0;
+  margin-left: auto;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .rq-prematch-auto {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+.rq-prematch-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.rq-prematch-board .tv-presets {
+  justify-content: center;
+}
+.rq-prematch-board .tv-pitch {
+  width: min(100%, max(320px, calc((100dvh - 330px) * 68 / 105)));
+}
+/* fixo no rodapé do vestiário (que rola internamente em telas baixas) — o CTA
+   "Jogar" nunca fica cortado fora da vista; o degradê disfarça o conteúdo
+   que passa por baixo dele durante o scroll. */
+.rq-prematch-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: sticky;
+  bottom: -28px;
+  z-index: 3;
+  margin: 4px -28px -28px;
+  padding: 14px 28px 28px;
+  background: linear-gradient(180deg, rgba(14, 22, 38, 0) 0%, rgba(14, 22, 38, 0.92) 32%, rgba(14, 22, 38, 0.98) 100%);
+}
+.rq-prematch-foot-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* pisca sutilmente para chamar atenção de que o campinho continua abaixo */
+.rq-prematch-more {
+  align-self: center;
+  font-size: 12px;
+  color: var(--cm-muted);
+  animation: rq-more-pulse 1.8s ease-in-out infinite;
+}
+@keyframes rq-more-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.rq-prematch-foot .cm-btn-go {
+  flex: 1;
+}
+
+/* =====================================================================
+   ENCAIXE DE REFORÇO (recompensa e mercado): arraste a carta pra cima
+   do jogador que dá o lugar — ou toque na carta e depois nele.
+   ===================================================================== */
+/* cartas à esquerda, campinho-alvo à direita; empilha em tela estreita */
+.pb-layout {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+  gap: 18px;
+  align-items: start;
+  margin-top: 8px;
+}
+.pb-layout .rc-grid {
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 0;
+  align-content: start;
+}
+/* carta compacta (deitada): retrato à esquerda, dados à direita — moldura
+   única dourada (não há mais rótulo/moldura de posição) */
+.pb-card {
+  --card-frame: url('/assets/cards/card_frame_gk.webp');
+  --tone: 252, 211, 77;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  /* respiro em % da largura: a moldura pintada estica junto com o card */
+  padding: 14px 9% 14px 6%;
+  border-radius: 14px;
+  touch-action: none; /* o arrasto da carta não pode rolar a página */
+}
+.pb-card .rc-card-portrait {
+  flex: none;
+  width: 86px;
+  height: 86px;
+  border-radius: 14px;
+}
+.pb-card .rc-card-portrait .rc-card-face {
+  width: 86px !important;
+  height: 86px !important;
+  transform: translateY(6%);
+}
+.pb-card .rc-card-body {
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px;
+  gap: 2px;
+}
+.pb-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: saturate(0.4);
+}
+.pb-card.is-armed {
+  transform: translateY(-2px) scale(1.02);
+  z-index: 1;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.65), 0 18px 40px rgba(0, 0, 0, 0.5);
+}
+.pb-card-price {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  margin: 2px 0;
+  padding: 3px 10px;
+  font-size: 13.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--cm-gold);
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 999px;
+}
+/* selo "isto é clicável" no card ainda não armado — ensina sem precisar ler o texto de cima */
+.pb-card-tap {
+  width: fit-content;
+  margin-top: 2px;
+  padding: 2px 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  animation: rq-tap-pulse 1.8s ease-in-out infinite;
+}
+@keyframes rq-tap-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+/* fantasma que segue o dedo durante o arrasto da carta */
+.pb-ghost {
+  position: fixed;
+  z-index: 1000;
+  transform: translate(-50%, -110%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(10, 18, 32, 0.95);
+  border: 1px solid var(--cm-gold);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55);
+}
+/* campinho-alvo do encaixe */
+.pb-board {
+  width: 100%;
+  min-width: 0;
+}
+.pb-board .tv-pitch {
+  width: min(100%, max(300px, calc((100dvh - 380px) * 68 / 105)));
+}
+.pb-board.is-armed .tv-chip {
+  cursor: pointer;
+}
+/* antes → depois da nota se o reforço entrar naquele slot */
+.pb-preview {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: rgba(0, 0, 0, 0.62);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+.pb-preview .pb-arrow {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 8px;
+}
+.pb-preview.pb-up {
+  box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.55);
+}
+.pb-preview.pb-down {
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.45);
+  opacity: 0.85;
+}
+.pb-skip {
+  margin-top: 14px;
+}
+/* botão de um toque: encaixa o reforço direto no slot que mais ganha nota */
+.pb-auto {
+  margin-bottom: 10px;
+}
+/* chip sugerido como melhor encaixe pro reforço armado */
+.tv-chip.is-best .tv-chip-photo {
+  border-color: #4ade80;
+  animation: rq-best-ring 1.6s ease-in-out infinite;
+}
+@keyframes rq-best-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.35), 0 4px 10px rgba(0, 0, 0, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.12), 0 4px 10px rgba(0, 0, 0, 0.45);
+  }
+}
+.tv-chip-best {
+  position: absolute;
+  top: -16px;
+  white-space: nowrap;
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #052e16;
+  background: #4ade80;
+  border-radius: 999px;
+  padding: 1px 6px;
+  z-index: 4;
+}
+@media (max-width: 900px) {
+  .pb-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Desktop sem scroll: tudo de cada tela cabe numa página só ---- */
+/* atributos da carta em 2 colunas: metade da altura, cabem 3-5 cartas na tela */
+.pb-card .mk-attrs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 14px;
+  justify-content: stretch;
+  padding: 6px 0 0;
+}
+.pb-card .ps-attr {
+  /* rótulo com espaço pra "Finalização"/"Aceleração"/"QI de jogo" (+ ícone "i")
+     sem truncar — 62px cortava até os nomes mais curtos */
+  grid-template-columns: 92px minmax(0, 1fr) 20px;
+  gap: 6px;
+  font-size: 10.5px;
+  padding: 2px 0;
+}
+/* cena da recompensa amarrada à altura da tela */
+.rq-scene-reward .rc-scene {
+  max-height: calc(100dvh - 16px);
+}
+.rq-scene-reward .rc-sub {
+  margin: 6px 0 10px;
+}
+.rq-scene-reward .rq-potion-earned {
+  margin-bottom: 8px;
+}
+/* mercado largo: ofertas em 2 colunas pra caber sem rolar */
+@media (min-width: 1100px) {
+  .rq-market .pb-layout .rc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* vestiário: o detalhe do jogador flutua ao lado — nunca empurra o botão Jogar */
+@media (min-width: 761px) {
+  .rq-prematch .rq-detail-pop {
+    display: block;
+    position: fixed;
+    right: max(16px, calc(50vw - 640px));
+    top: 50%;
+    transform: translateY(-50%);
+    width: min(330px, 30vw);
+    z-index: 60;
+  }
+  .rq-prematch .rq-detail-close {
+    display: flex;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 1;
+  }
+}
+
+/* confirmação em texto da última decisão (compra, troca, treino…) — some sozinha.
+   Ancorada na base do cabeçalho (não num "top" fixo em px): assim nunca cobre o
+   "Fase X de Y" mesmo quando o cabeçalho cresce (cabeçalho quebra linha no
+   celular e fica mais alto que no desktop). */
+.rq-toast {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  margin-top: 8px;
+  transform: translateX(-50%);
+  /* abaixo de qualquer tela cheia (.cm-backdrop, z-index 50): some por trás dela
+     em vez de vazar por cima do vestiário/mercado/recompensa etc. */
+  z-index: 40;
+  max-width: min(92vw, 460px);
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: rgba(10, 18, 32, 0.94);
+  border: 1px solid var(--cm-gold);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  animation: rq-toast-in 0.25s ease-out;
+}
+@keyframes rq-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 }

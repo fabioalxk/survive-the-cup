@@ -55,9 +55,10 @@ export type BlessingKind =
 export type RunStatus =
   | 'blessing' // escolhendo a bênção da largada (antes do 1º nó)
   | 'map' // escolhendo o próximo nó
+  | 'prematch' // vestiário: os 11 no campinho + botão Jogar
   | 'match' // partida em andamento
-  | 'reward' // pop-up dos 3 jogadores após vencer
-  | 'market' // evento de mercado (comprar/vender)
+  | 'reward' // pop-up dos jogadores oferecidos após vencer
+  | 'market' // evento de mercado (comprar substituindo alguém do time)
   | 'gym' // evento de academia (bufar atributo)
   | 'lifelost' // perdeu uma partida mas ainda tem vida — pode continuar
   | 'gameover' // eliminado (acabaram as vidas)
@@ -71,10 +72,9 @@ export interface RunState {
   clubId: string
   /** Nível de dificuldade da corrida (0 a 10, como no Slay the Spire). */
   ascension: number
+  /** o time inteiro: EXATAMENTE 11 jogadores — o índice é o slot da formação (0 = gol). */
   squad: GenPlayer[]
-  /** ids dos 11 titulares — subconjunto de `squad`. */
-  startingIds: number[]
-  /** Âncoras da formação tática (11 slots, "atacando para a direita") — editáveis na aba Tática. */
+  /** Âncoras da formação tática (11 slots, "atacando para a direita") — editáveis no pré-jogo. */
   formationSlots: Vec2[]
   coins: number
   /** Vidas restantes (começa com 2: pode perder 1 partida; a 2ª derrota elimina). */

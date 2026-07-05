@@ -4,16 +4,19 @@ import { AttrGroups, RoleTag, attrColor } from './attrDisplay'
 import { CloseIcon } from './icons'
 import { PlayerAvatar } from './PlayerAvatar'
 
-/** Cabeçalho de identidade do jogador (número, foto, nome, função, OVR). */
+/** Cabeçalho de identidade do jogador (número, foto, nome, OVR). */
 export function PlayerDetailHead({
   player,
   teamId,
   extra,
+  showRole = true,
 }: {
   player: GenPlayer
   teamId?: string
   /** complemento da linha de identidade (ex.: "· Titular") */
   extra?: ReactNode
+  /** false no modo run: a posição vem do slot, não de um rótulo do jogador */
+  showRole?: boolean
 }) {
   return (
     <div className="cm-squad-detail-head">
@@ -22,7 +25,12 @@ export function PlayerDetailHead({
       <div className="cm-squad-detail-id">
         <strong>{player.name}</strong>
         <span>
-          <RoleTag role={player.role} /> · {player.age} anos
+          {showRole && (
+            <>
+              <RoleTag role={player.role} /> ·{' '}
+            </>
+          )}
+          {player.age} anos
           {extra}
         </span>
       </div>
@@ -35,13 +43,14 @@ export function PlayerDetailHead({
 
 /**
  * Painel de detalhe de um jogador (cabeçalho de identidade + grupos de
- * atributos) — compartilhado pelas telas de elenco e de tática.
+ * atributos) — compartilhado pelas telas de elenco e de tática. Com
+ * `showRole: false` some o rótulo de posição e TODOS os atributos aparecem.
  */
 export function PlayerDetail(props: ComponentProps<typeof PlayerDetailHead>) {
   return (
     <div className="rq-simple-detail">
       <PlayerDetailHead {...props} />
-      <AttrGroups role={props.player.role} attrs={props.player.attrs} />
+      <AttrGroups role={props.showRole === false ? undefined : props.player.role} attrs={props.player.attrs} />
     </div>
   )
 }

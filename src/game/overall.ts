@@ -1,5 +1,6 @@
-import type { Attrs, Role } from '../sim/types'
+import type { Attrs, Role, Vec2 } from '../sim/types'
 import { gkRating, nrm } from '../sim/ratings'
+import { roleForSlot } from '../sim/formation'
 
 /**
  * Atributos que definem a nota geral por posição (pesos somam ~1). Reaproveita a
@@ -24,3 +25,11 @@ export const overallOf = (role: Role, attrs: Attrs): number => {
   }
   return Math.round((sum / total) * 100)
 }
+
+/**
+ * Nota geral pelo SLOT ocupado: a função vem da posição da âncora no campo
+ * (`roleForSlot`), não de um rótulo fixo do jogador — quem está no gol é
+ * avaliado como goleiro, quem está na frente como atacante.
+ */
+export const slotOverallOf = (index: number, slot: Vec2, attrs: Attrs): number =>
+  overallOf(roleForSlot(index, slot), attrs)

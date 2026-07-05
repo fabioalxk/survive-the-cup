@@ -1,7 +1,8 @@
 import type { RunState } from './runTypes'
 import { defaultFormation } from '../sim/formation'
 import { ensureIdAbove } from './generate'
-import { START_LIVES } from './run'
+import { lineupFor } from './lineup'
+import { refreshSquadRatings, START_LIVES } from './run'
 
 const KEY = 'cm-run-save-v1'
 
@@ -41,6 +42,19 @@ export const loadRun = (): RunState | null => {
     if (state.pendingPotion === undefined) state.pendingPotion = null
     // migração v4 → v5: saves antigos não tinham a bênção da largada (já em jornada: nada a oferecer)
     if (state.pendingBlessings === undefined) state.pendingBlessings = null
+    // migração: saves antigos não tinham o histórico de decisões (toast de confirmação)
+    if (!state.log) state.log = []
+    // migração v5 → v6: o banco acabou — o elenco vira exatamente os 11 titulares,
+    // na ordem dos slots da formação (índice = slot; quem estava no banco sai).
+    const legacy = state as RunState & { startingIds?: number[] }
+    if (legacy.startingIds) {
+      const starters = state.squad.filter((p) => legacy.startingIds!.includes(p.id))
+      const ordered = lineupFor(starters, state.formationSlots)
+      state.squad = ordered.map((sp) => starters.find((p) => p.id === sp.id)!)
+      delete legacy.startingIds
+      refreshSquadRatings(state)
+      state.version = 6
+    }
     let maxId = 0
     for (const p of state.squad) maxId = Math.max(maxId, p.id)
     for (const n of state.nodes) for (const p of n.opponent?.squad ?? []) maxId = Math.max(maxId, p.id)

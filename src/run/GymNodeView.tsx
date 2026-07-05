@@ -1,29 +1,24 @@
 import { useState } from 'react'
-import type { Attrs, Role } from '../sim/types'
+import type { Attrs } from '../sim/types'
 import type { RunState } from '../game/runTypes'
-import { GYM_GAIN, boostAttribute, leaveNode, moveFormationSlot, setFormation, startingXI } from '../game/run'
+import { GYM_GAIN, boostAttribute, leaveNode, moveFormationSlot, setFormation } from '../game/run'
 import { gymTrains } from '../game/ascension'
-import { lineupFor } from '../game/lineup'
-import { overallOf } from '../game/overall'
+import { slotOverallOf } from '../game/overall'
 import { upgradeSfx } from '../sfx/crowd'
 import { formationName } from '../sim/formation'
-import { attrColor, attrGroupsFor, attrLabel, byRole } from '../ui/attrDisplay'
+import { attrColor, attrGroupsFor, attrLabel } from '../ui/attrDisplay'
 import FormationEditor from '../ui/FormationEditor'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
 import { PlayerDetailHead } from '../ui/PlayerDetail'
-import { BenchIcon, ClipboardIcon } from '../ui/icons'
+import { ClipboardIcon, HelpIcon } from '../ui/icons'
 import { GymIcon } from './MapIcons'
 import type { RunApi } from './useRun'
 
 const afterTrain = (v: number): number => Math.min(100, v + GYM_GAIN)
 
-/** Nota geral que o jogador teria se treinasse `key` agora — mostra o impacto real do treino. */
-const ovrIfTrained = (role: Role, attrs: Attrs, key: keyof Attrs): number =>
-  overallOf(role, { ...attrs, [key]: afterTrain(attrs[key]) })
-
-/** Primeiro atributo ainda treinável (< 100) dentre os visíveis para a posição. */
-const firstTrainable = (role: Role, attrs: Attrs): keyof Attrs => {
-  const keys = attrGroupsFor(role).flatMap((g) => g.keys)
+/** Primeiro atributo ainda treinável (< 100). */
+const firstTrainable = (attrs: Attrs): keyof Attrs => {
+  const keys = attrGroupsFor().flatMap((g) => g.keys)
   return (keys.find((k) => attrs[k.key] < 100) ?? keys[0]).key
 }
 
@@ -38,37 +33,40 @@ interface TrainDelta {
 }
 
 /**
- * Evento de ACADEMIA no mapa, integrado com a tática: o campinho compartilhado
- * (`FormationEditor`) mostra os titulares na posição REAL da partida — dá pra
- * mudar o esquema ali mesmo — e o banco fica numa faixa separada embaixo.
- * Tocar em qualquer jogador (campo ou banco) abre os atributos treináveis ao
- * lado: melhoramentos de +20 (teto 100), quantidade cai com a ascension
- * (`gymTrains`). No celular o painel de treino substitui o campinho, com o
- * botão de voltar.
+ * Evento de ACADEMIA no mapa: o campinho compartilhado (`FormationEditor`)
+ * mostra os 11 do time nas posições reais da partida — dá pra mudar o esquema
+ * ali mesmo. Tocar num jogador abre os atributos treináveis ao lado:
+ * melhoramentos de +20 (teto 100), quantidade cai com a ascension
+ * (`gymTrains`). O ganho de OVR mostrado é o do SLOT que o jogador ocupa.
  */
-export default function GymNodeView({ state, act }: { state: RunState; act: RunApi['act'] }) {
+export default function GymNodeView({
+  state,
+  act,
+  onHelp,
+}: {
+  state: RunState
+  act: RunApi['act']
+  onHelp: () => void
+}) {
   const TRAINS = gymTrains(state.ascension)
   const slots = state.formationSlots
-  const xi = lineupFor(startingXI(state), slots)
-  const bench = state.squad.filter((p) => !state.startingIds.includes(p.id)).sort(byRole)
 
-  const [playerId, setPlayerId] = useState<number | null>(null)
+  const [selIdx, setSelIdx] = useState<number | null>(null)
   const [attr, setAttr] = useState<keyof Attrs>('pace')
   const [results, setResults] = useState<TrainDelta[]>([])
 
-  const player = playerId !== null ? (state.squad.find((p) => p.id === playerId) ?? null) : null
-  const isStarter = player !== null && state.startingIds.includes(player.id)
-  const selSlot = player ? xi.findIndex((sp) => sp.id === player.id) : -1
+  const player = selIdx !== null ? state.squad[selIdx] : null
   const trainsLeft = TRAINS - results.length
   const done = trainsLeft <= 0
 
-  /** Troca de jogador mantendo o atributo escolhido quando ele segue válido e treinável. */
-  const selectPlayer = (id: number) => {
-    const p = state.squad.find((pl) => pl.id === id)
-    if (!p) return
-    setPlayerId(id)
-    const visible = attrGroupsFor(p.role).some((g) => g.keys.some((k) => k.key === attr))
-    if (!visible || p.attrs[attr] >= 100) setAttr(firstTrainable(p.role, p.attrs))
+  /** Nota que o jogador teria NO SLOT DELE se treinasse `key` agora. */
+  const ovrIfTrained = (key: keyof Attrs): number =>
+    slotOverallOf(selIdx!, slots[selIdx!], { ...player!.attrs, [key]: afterTrain(player!.attrs[key]) })
+
+  /** Troca de jogador mantendo o atributo escolhido quando ele segue treinável. */
+  const selectPlayer = (i: number) => {
+    setSelIdx(i)
+    if (state.squad[i].attrs[attr] >= 100) setAttr(firstTrainable(state.squad[i].attrs))
   }
 
   // delta da escolha atual; ao treinar ele é congelado em `results` (o estado muta no act)
@@ -79,7 +77,7 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
         before: player.attrs[attr],
         after: afterTrain(player.attrs[attr]),
         ovrBefore: player.overall,
-        ovrAfter: ovrIfTrained(player.role, player.attrs, attr),
+        ovrAfter: ovrIfTrained(attr),
       }
     : null
 
@@ -89,7 +87,7 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
     act((s) => boostAttribute(s, player.id, attr))
     setResults((r) => [...r, preview])
     // o act muta na hora: se o atributo bateu 100, pula pro próximo treinável
-    if (player.attrs[attr] >= 100) setAttr(firstTrainable(player.role, player.attrs))
+    if (player.attrs[attr] >= 100) setAttr(firstTrainable(player.attrs))
   }
 
   const summary = done ? (results[results.length - 1] ?? null) : preview
@@ -104,8 +102,8 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
           <div className="rq-gym-title">
             <h2 className="cm-ribbon cm-ribbon-sm">Treinamento</h2>
             <p>
-              Melhoramentos de <strong>+{GYM_GAIN} pontos</strong> (teto 100). Toque num jogador —
-              do campo ou do banco — pra treinar; arraste no campinho pra mudar a tática.
+              Melhoramentos de <strong>+{GYM_GAIN} pontos</strong> (teto 100). Toque num jogador
+              pra treinar; arraste no campinho pra mudar a tática.
             </p>
           </div>
           <div
@@ -115,55 +113,33 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
             <strong key={trainsLeft}>{done ? '✓' : trainsLeft}</strong>
             <span>{done ? 'completo' : trainsLeft === 1 ? 'restante' : 'restantes'}</span>
           </div>
+          <button
+            className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico"
+            onClick={onHelp}
+            title="Como jogar"
+            aria-label="Como jogar"
+          >
+            <HelpIcon size={15} />
+          </button>
         </header>
 
         <div className="rq-gym-body">
-          <div className="rq-gym-field" aria-label="Tática e elenco">
+          <div className="rq-gym-field" aria-label="Tática e time">
             <div className="rq-gym-field-head">
               <h4>
-                <ClipboardIcon size={14} /> Titulares
+                <ClipboardIcon size={14} /> Seu time
               </h4>
               <span className="tv-name">{formationName(slots)}</span>
             </div>
             <FormationEditor
               slots={slots}
-              xi={xi}
+              xi={state.squad.map((p) => ({ id: p.id, number: p.number, name: p.name, ovr: p.overall }))}
               teamId={state.clubId}
-              selected={selSlot >= 0 ? selSlot : null}
+              selected={selIdx}
               onPreset={(presetSlots) => act((s) => setFormation(s, presetSlots))}
               onMove={(index, pos) => act((s) => moveFormationSlot(s, index, pos))}
-              onSelect={(i) => selectPlayer(xi[i].id)}
+              onSelect={selectPlayer}
             />
-            <div className="rq-gym-bench">
-              <h4>
-                <BenchIcon size={14} /> Banco <span>{bench.length}</span>
-              </h4>
-              {bench.length === 0 ? (
-                <p className="rq-gym-bench-empty">Banco vazio — os 11 do campinho são todo o elenco.</p>
-              ) : (
-                <div className="rq-gym-bench-row">
-                  {bench.map((p) => (
-                    <button
-                      key={p.id}
-                      className={`rq-bench-card tv-role-${p.role.toLowerCase()} ${p.id === playerId ? 'active' : ''}`}
-                      onClick={() => selectPlayer(p.id)}
-                    >
-                      <PlayerAvatar
-                        teamId={state.clubId}
-                        name={p.name}
-                        id={p.id}
-                        size={34}
-                        className="tv-chip-photo"
-                      />
-                      <strong>{p.name}</strong>
-                      <span className="rq-bench-ovr" style={{ color: attrColor(p.overall) }}>
-                        {p.overall}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
           <section className="rq-gym-attrs" aria-label="Atributos">
@@ -171,23 +147,19 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
               <>
                 <button
                   className="cm-btn cm-btn-ghost cm-btn-sm rq-gym-back"
-                  onClick={() => setPlayerId(null)}
+                  onClick={() => setSelIdx(null)}
                 >
                   Campinho
                 </button>
-                <PlayerDetailHead
-                  player={player}
-                  teamId={state.clubId}
-                  extra={<> · {isStarter ? 'Titular' : 'Reserva'}</>}
-                />
-                {attrGroupsFor(player.role).map((g) => (
+                <PlayerDetailHead player={player} teamId={state.clubId} showRole={false} />
+                {attrGroupsFor().map((g) => (
                   <div key={g.title} className="rq-gym-group">
                     <h4>{g.title}</h4>
                     <div className="rq-gym-chips">
                       {g.keys.map((k) => {
                         const val = player.attrs[k.key]
                         const maxed = val >= 100
-                        const ovrGain = ovrIfTrained(player.role, player.attrs, k.key) - player.overall
+                        const ovrGain = ovrIfTrained(k.key) - player.overall
                         return (
                           <button
                             key={k.key}
@@ -215,7 +187,7 @@ export default function GymNodeView({ state, act }: { state: RunState; act: RunA
             ) : (
               <div className="tv-side-empty">
                 <GymIcon size={40} />
-                <p>Toque num jogador do campinho ou do banco pra ver os atributos e treinar.</p>
+                <p>Toque num jogador do campinho pra ver os atributos e treinar.</p>
               </div>
             )}
           </section>

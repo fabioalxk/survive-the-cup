@@ -3,6 +3,7 @@ import { useRun } from './useRun'
 import { hasRunSave } from '../game/runSave'
 import { uiClick } from '../sfx/crowd'
 import NewRun from './NewRun'
+import { RunErrorBoundary } from './RunErrorBoundary'
 import RunShell from './RunShell'
 import '../career/career.css'
 import './run.css'
@@ -21,8 +22,13 @@ export default function RunApp() {
     return () => document.removeEventListener('click', onClick)
   }, [])
 
-  if (!api.state) {
-    return <NewRun onStart={api.start} hasSave={hasRunSave()} onContinue={() => window.location.reload()} />
-  }
-  return <RunShell api={api} />
+  return (
+    <RunErrorBoundary>
+      {!api.state ? (
+        <NewRun onStart={api.start} hasSave={hasRunSave()} onContinue={() => window.location.reload()} />
+      ) : (
+        <RunShell api={api} />
+      )}
+    </RunErrorBoundary>
+  )
 }

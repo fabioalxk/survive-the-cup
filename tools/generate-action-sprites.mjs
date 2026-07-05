@@ -37,10 +37,10 @@ const ACTIONS = {
     durationMs: 380,
     prompt:
       `${sheetPreamble('Exactly a 3x2 grid of 6 equal square cells separated by thin faint gray guide lines.')} ` +
-      `${APPEARANCE} The player is facing straight up (north) and about to strike a stationary ball placed ` +
-      'just in front of the right foot (the ball itself is NOT drawn, only the player). This is a shooting ' +
-      'kick motion broken into 6 keyframes, reading left to right then top to bottom, camera strictly ' +
-      'top-down in every cell:\n' +
+      `${APPEARANCE} The player is shown in side view facing right and about to strike a stationary ball ` +
+      'placed just in front of the right foot (the ball itself is NOT drawn, only the player). This is a ' +
+      'shooting kick motion broken into 6 keyframes, reading left to right then top to bottom, camera ' +
+      'strictly side-view in every cell:\n' +
       'Cell 1: standing balanced, right leg cocking back at the start of the backswing, arms starting to counter-balance.\n' +
       'Cell 2: right leg swung further back, knee bent, torso leaning back slightly, left arm forward for balance.\n' +
       'Cell 3: right leg at the peak of the backswing, fully cocked, torso coiled.\n' +
@@ -55,12 +55,12 @@ const ACTIONS = {
     durationMs: 480,
     prompt:
       `${sheetPreamble('Exactly a 2x2 grid of 4 equal square cells separated by thin faint gray guide lines.')} ` +
-      `${APPEARANCE} The player is facing straight up (north) and jumping to head an incoming ball (the ball ` +
-      'itself is NOT drawn, only the player). This is a jump-header motion broken into 4 keyframes, reading ' +
-      'left to right then top to bottom, camera strictly top-down in every cell:\n' +
+      `${APPEARANCE} The player is shown in side view facing right and jumping to head an incoming ball (the ` +
+      'ball itself is NOT drawn, only the player). This is a jump-header motion broken into 4 keyframes, ' +
+      'reading left to right then top to bottom, camera strictly side-view in every cell:\n' +
       'Cell 1: crouching down, knees bent, arms swinging back, about to jump.\n' +
-      'Cell 2: mid-jump rising, legs tucked slightly, arms swinging up and out for lift, body slightly bigger/closer to camera to sell the jump.\n' +
-      'Cell 3: peak of the jump, torso arched back and neck snapping forward as the head makes contact, arms out wide, body at its largest/closest to camera.\n' +
+      'Cell 2: mid-jump rising, feet clearly off the ground, legs tucked slightly, arms swinging up and out for lift.\n' +
+      'Cell 3: peak of the jump, high off the ground, torso arched back and neck snapping forward as the head makes contact, arms out wide.\n' +
       'Cell 4: landing back down, knees bent to absorb impact, arms coming back down.',
   },
   throwin: {
@@ -70,10 +70,10 @@ const ACTIONS = {
     durationMs: 550,
     prompt:
       `${sheetPreamble('Exactly a 2x2 grid of 4 equal square cells separated by thin faint gray guide lines.')} ` +
-      `${APPEARANCE} The player is facing straight up (north) and taking a two-handed soccer throw-in, holding ` +
-      'a football overhead with both hands (the ball IS drawn here, held in the player\'s hands above/behind ' +
-      'the head). This is a throw-in motion broken into 4 keyframes, reading left to right then top to ' +
-      'bottom, camera strictly top-down in every cell:\n' +
+      `${APPEARANCE} The player is shown in side view facing right and taking a two-handed soccer throw-in, ` +
+      'holding a football overhead with both hands (the ball IS drawn here, held in the player\'s hands ' +
+      'above/behind the head). This is a throw-in motion broken into 4 keyframes, reading left to right ' +
+      'then top to bottom, camera strictly side-view in every cell:\n' +
       'Cell 1: starting stance, both arms raised holding the ball above the head, leaning back slightly to wind up.\n' +
       'Cell 2: arms fully arched back behind the head, back arched further, deep wind-up.\n' +
       'Cell 3: release moment — arms whipping forward over the top of the head, ball just leaving the hands in front of the player.\n' +
@@ -84,13 +84,12 @@ const ACTIONS = {
     grid: grid(2, 2),
     frames: 4,
     durationMs: 480,
-    mirrorable: true,
     prompt:
       `${sheetPreamble('Exactly a 2x2 grid of 4 equal square cells separated by thin faint gray guide lines.')} ` +
-      'The player is a GOALKEEPER wearing goalkeeping gloves, facing straight up (north) at the start, diving ' +
-      'to THEIR OWN RIGHT (to the right side of the frame) to save a shot. This is a diving-save motion broken ' +
-      'into 4 keyframes, reading left to right then top to bottom, camera strictly top-down in every cell:\n' +
-      'Cell 1: athletic ready crouch stance, weight balanced, gloved hands out front, facing up.\n' +
+      'The player is a GOALKEEPER wearing goalkeeping gloves, shown in side view facing right, diving ' +
+      'forward to the right side of the frame to save a shot. This is a diving-save motion broken ' +
+      'into 4 keyframes, reading left to right then top to bottom, camera strictly side-view in every cell:\n' +
+      'Cell 1: athletic ready crouch stance, weight balanced, gloved hands out front, facing right.\n' +
       'Cell 2: pushing off explosively to the right, body leaning hard to the right, legs driving off the ground.\n' +
       'Cell 3: fully stretched out horizontally in the air diving to the right, body almost horizontal, arms extended reaching to the right.\n' +
       'Cell 4: sprawled on the ground after landing the dive, still stretched out to the right side.',
@@ -128,7 +127,7 @@ const run = async () => {
   const manifest = Object.fromEntries(
     Object.entries(ACTIONS).map(([name, def]) => [
       name,
-      { src: `/assets/sprites/${def.dest}`, grid: def.grid, frames: def.frames, durationMs: def.durationMs, mirrorable: !!def.mirrorable },
+      { src: `/assets/sprites/${def.dest}`, grid: def.grid, frames: def.frames, durationMs: def.durationMs },
     ]),
   )
   await writeFile(join(outDir, 'actions-manifest.json'), JSON.stringify(manifest, null, 2))

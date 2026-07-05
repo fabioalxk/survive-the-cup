@@ -11,18 +11,16 @@ import {
   generateWonderkid,
 } from './runGen'
 import { generatePlayer, valueOf } from './generate'
-import { overallOf } from './overall'
+import { slotOverallOf } from './overall'
 import { bestEleven, squadStrength } from './strength'
 import { quickResult } from './quicksim'
 import { makeRng, mixSeed, type Rng } from './random'
 import { clampAscension, gymTrains, offerLevelPenalty } from './ascension'
 
-const RUN_VERSION = 5
+const RUN_VERSION = 6
 export const START_COINS = 100
 /** Vidas da run: pode perder 1 partida e continuar; a 2ª derrota elimina. */
 export const START_LIVES = 2
-export const SQUAD_MIN = 11
-export const SQUAD_MAX = 23
 /** Quanto cada melhoramento da academia soma ao atributo (teto 100). */
 export const GYM_GAIN = 20
 
@@ -56,21 +54,20 @@ const log = (state: RunState, msg: string): void => {
 const nodeOf = (state: RunState, id: string | null): RunNode | undefined =>
   state.nodes.find((n) => n.id === id)
 
-/** Garante 11 titulares válidos (some jogador vendido/trocado é reposto pelo melhor do banco). */
-const ensureStartingXI = (state: RunState): void => {
-  const squadIds = new Set(state.squad.map((p) => p.id))
-  state.startingIds = state.startingIds.filter((id) => squadIds.has(id))
-  if (state.startingIds.length >= 11) {
-    state.startingIds = state.startingIds.slice(0, 11)
-    return
-  }
-  const starters = new Set(state.startingIds)
-  const fill = bestEleven(state.squad.filter((p) => !starters.has(p.id)))
-  for (const p of fill) {
-    if (state.startingIds.length >= 11) break
-    state.startingIds.push(p.id)
-  }
+/**
+ * Recalcula nota geral e valor dos 11 PELO SLOT que cada um ocupa (fonte única
+ * do recálculo) — chamar após qualquer mudança de atributos, ordem ou formação.
+ */
+export const refreshSquadRatings = (state: RunState): void => {
+  state.squad.forEach((p, i) => {
+    p.overall = slotOverallOf(i, state.formationSlots[i], p.attrs)
+    p.value = valueOf(p.overall, p.age)
+  })
 }
+
+/** Força do time 0..100 — média dos 11 (a nota de cada um já é pelo slot). */
+export const xiStrength = (state: RunState): number =>
+  state.squad.reduce((s, p) => s + p.overall, 0) / state.squad.length
 
 /** Cria uma nova corrida: técnico + clube escolhido, elenco cru de 11, mapa gerado. */
 export const newRun = (managerName: string, clubId: string, seed: number, ascension = 0): RunState => {
@@ -84,8 +81,7 @@ export const newRun = (managerName: string, clubId: string, seed: number, ascens
     managerName,
     clubId,
     ascension,
-    squad,
-    startingIds: bestEleven(squad).map((p) => p.id),
+    squad, // gerado na ordem dos slots do 4-3-3 (índice = slot, 0 = gol)
     formationSlots: defaultFormation(),
     coins: START_COINS,
     lives: START_LIVES,
@@ -104,6 +100,7 @@ export const newRun = (managerName: string, clubId: string, seed: number, ascens
       `${managerName} assume o ${ALL_CLUBS[clubId]?.name ?? clubId} para a jornada.${ascension > 0 ? ` 🔥 Ascension ${ascension}.` : ''}`,
     ],
   }
+  refreshSquadRatings(state)
   return state
 }
 
@@ -111,17 +108,20 @@ export const newRun = (managerName: string, clubId: string, seed: number, ascens
 const rngForNode = (state: RunState, nodeId: string): Rng =>
   makeRng(mixSeed(state.seed, [...nodeId].reduce((s, c) => s + c.charCodeAt(0), 0)))
 
-export const startingXI = (state: RunState): GenPlayer[] =>
-  state.squad.filter((p) => state.startingIds.includes(p.id))
-
-/** Entra num nó disponível: abre a partida, o mercado ou a academia. */
+/** Entra num nó disponível: abre o vestiário (pré-jogo), o mercado ou a academia. */
 export const enterNode = (state: RunState, nodeId: string): void => {
   if (state.status !== 'map') return
   if (!state.availableNodeIds.includes(nodeId)) return
   const node = nodeOf(state, nodeId)
   if (!node || node.cleared) return
   state.currentNodeId = nodeId
-  state.status = node.kind === 'market' ? 'market' : node.kind === 'gym' ? 'gym' : 'match'
+  state.status = node.kind === 'market' ? 'market' : node.kind === 'gym' ? 'gym' : 'prematch'
+}
+
+/** Sai do vestiário e começa a partida — a ação primária da tela pré-jogo. */
+export const kickOff = (state: RunState): void => {
+  if (state.status !== 'prematch') return
+  state.status = 'match'
 }
 
 /** Volta ao mapa a partir de um nó de mercado/academia, liberando a próxima fase. */
@@ -181,7 +181,7 @@ export const BLESSING_INFO: Record<
   star: {
     emoji: '🌟',
     label: 'O Craque',
-    desc: 'Um craque de outro nível chega e já assume a titularidade.',
+    desc: 'Um craque de outro nível chega — você escolhe quem sai do time.',
     tone: 'power',
   },
   captain: {
@@ -193,7 +193,7 @@ export const BLESSING_INFO: Record<
   wonderkid: {
     emoji: '💎',
     label: 'Joia da Base',
-    desc: 'Uma promessa de 17 anos, caótica e imprevisível, sobe para o elenco.',
+    desc: 'Uma promessa de 17 anos, caótica e imprevisível, quer uma vaga no time.',
     tone: 'power',
   },
   pact: {
@@ -224,23 +224,22 @@ const applyBlessing = (state: RunState, kind: BlessingKind, rng: Rng): void => {
       break
     case 'star': {
       const p = generateStarPlayer(rng)
-      state.squad.push(p)
-      optimizeStartingXI(state)
-      log(state, `🌟 ${p.name} (${p.overall} OVR) chega como o craque do time.`)
+      state.pendingReward = [p] // entra pela MESMA tela de encaixe: alguém sai
+      log(state, `🌟 ${p.name} chega como o craque — escolha o lugar dele no time.`)
       break
     }
     case 'captain': {
-      const captain = [...startingXI(state)].sort((a, b) => b.overall - a.overall)[0]
+      const captain = [...state.squad].sort((a, b) => b.overall - a.overall)[0]
       for (const k of Object.keys(captain.attrs) as (keyof Attrs)[])
         captain.attrs[k] = clamp(captain.attrs[k] + BLESS_CAPTAIN_BOOST, 1, 100)
-      refreshRating(captain)
+      refreshSquadRatings(state)
       log(state, `🎖️ ${captain.name} vestiu a braçadeira: agora ${captain.overall} OVR.`)
       break
     }
     case 'wonderkid': {
       const p = generateWonderkid(rng)
-      state.squad.push(p)
-      log(state, `💎 ${p.name}, ${p.age} anos, sobe da base (${p.overall} OVR) para o banco.`)
+      state.pendingReward = [p] // mesma tela de encaixe da recompensa
+      log(state, `💎 ${p.name}, ${p.age} anos, sobe da base — escolha o lugar dele no time.`)
       break
     }
     case 'pact':
@@ -259,26 +258,22 @@ export const pickBlessing = (state: RunState, index: number): void => {
   const info = BLESSING_INFO[kind]
   log(state, `${info.emoji} Bênção da largada: ${info.label}.`)
   state.pendingBlessings = null
-  state.status = 'map'
+  // craque/joia abrem a tela de encaixe (alguém do time dá o lugar)
+  state.status = state.pendingReward ? 'reward' : 'map'
 }
 
 // =====================================================================
 // POÇÕES (ganhas ao vencer; efeito de UMA partida, revertido no apito final)
 // =====================================================================
 
-/** Recalcula nota geral e valor após mudar atributos (fonte única do recálculo). */
-const refreshRating = (p: GenPlayer): void => {
-  p.overall = overallOf(p.role, p.attrs)
-  p.value = valueOf(p.overall, p.age)
-}
-
 /**
  * Usa uma poção do inventário num jogador: +50 no atributo correspondente,
- * podendo PASSAR de 100 (teto 150). Pode ser tomada no mapa ou NO MEIO da
- * partida (o motor lê os atributos ao vivo) — o efeito acaba no apito final.
+ * podendo PASSAR de 100 (teto 150). Pode ser tomada no mapa, no vestiário ou
+ * NO MEIO da partida (o motor lê os atributos ao vivo) — o efeito acaba no
+ * apito final.
  */
 export const usePotion = (state: RunState, index: number, playerId: number): boolean => {
-  if (state.status !== 'map' && state.status !== 'match') return false
+  if (state.status !== 'map' && state.status !== 'prematch' && state.status !== 'match') return false
   const kind = state.potions[index]
   const p = state.squad.find((pl) => pl.id === playerId)
   if (!kind || !p) return false
@@ -287,7 +282,7 @@ export const usePotion = (state: RunState, index: number, playerId: number): boo
   if (amount <= 0) return false
   state.potions.splice(index, 1)
   p.attrs[kind] += amount
-  refreshRating(p)
+  refreshSquadRatings(state)
   state.activePotions.push({ playerId, attr: kind, amount })
   const info = POTION_INFO[kind]
   log(state, `${info.emoji} ${p.name} tomou a ${info.label}: ${before} → ${p.attrs[kind]} até o fim da partida.`)
@@ -301,8 +296,8 @@ const expirePotions = (state: RunState): void => {
     const p = state.squad.find((pl) => pl.id === a.playerId)
     if (!p) continue
     p.attrs[a.attr] -= a.amount
-    refreshRating(p)
   }
+  refreshSquadRatings(state)
   state.activePotions = []
   log(state, '🧪 O efeito das poções acabou — atributos de volta ao normal.')
 }
@@ -337,15 +332,22 @@ const penaltyChance = (finishing: number, composure: number, gk: Attrs): number 
   return clamp(0.55 + off * 0.4 - def * 0.28, 0.3, 0.95)
 }
 
+/** Um lado da disputa de pênaltis: quem defende e quem cobra (do melhor ao pior finalizador). */
+interface ShootoutSide {
+  gk: Attrs
+  takers: GenPlayer[]
+}
+const shootoutSide = (gk: GenPlayer, others: GenPlayer[]): ShootoutSide => ({
+  gk: gk.attrs,
+  takers: [...others].sort((a, b) => b.attrs.finishing - a.attrs.finishing),
+})
+
 /** Disputa de pênaltis (empate na eliminatória tem que ter um vencedor). */
-const penaltyShootout = (home: GenPlayer[], away: GenPlayer[], rng: Rng): 'home' | 'away' => {
-  const takers = (squad: GenPlayer[]) =>
-    [...squad].filter((p) => p.role !== 'GK').sort((a, b) => b.attrs.finishing - a.attrs.finishing)
-  const gkOf = (squad: GenPlayer[]) => squad.find((p) => p.role === 'GK') ?? squad[0]
-  const homeTakers = takers(home)
-  const awayTakers = takers(away)
-  const homeGk = gkOf(home).attrs
-  const awayGk = gkOf(away).attrs
+const penaltyShootout = (home: ShootoutSide, away: ShootoutSide, rng: Rng): 'home' | 'away' => {
+  const homeTakers = home.takers
+  const awayTakers = away.takers
+  const homeGk = home.gk
+  const awayGk = away.gk
   let hs = 0
   let as_ = 0
   for (let round = 0; round < 5; round++) {
@@ -398,8 +400,16 @@ export const finishMatch = (state: RunState, homeGoals: number, awayGoals: numbe
 
   let won = homeGoals > awayGoals
   if (draw) {
-    // chefão precisa de um campeão: empate decide nos pênaltis
-    won = penaltyShootout(startingXI(state), bestEleven(node.opponent.squad), rng) === 'home'
+    // chefão precisa de um campeão: empate decide nos pênaltis.
+    // No time do jogador, o goleiro é quem OCUPA o gol (slot 0).
+    const awayXI = bestEleven(node.opponent.squad)
+    const awayGk = awayXI.find((p) => p.role === 'GK') ?? awayXI[0]
+    won =
+      penaltyShootout(
+        shootoutSide(state.squad[0], state.squad.slice(1)),
+        shootoutSide(awayGk, awayXI.filter((p) => p !== awayGk)),
+        rng,
+      ) === 'home'
   }
   // pênaltis inclusos, a partida acabou: o efeito das poções termina aqui
   expirePotions(state)
@@ -445,83 +455,122 @@ export const continueAfterDefeat = (state: RunState): void => {
 export const quickPlayNode = (state: RunState): void => {
   const node = nodeOf(state, state.currentNodeId)
   if (!node || !node.opponent) return
+  kickOff(state) // "pular" direto do vestiário também vale
+  if (state.status !== 'match') return
   const rng = rngForNode(state, node.id + ':quick' + attemptSalt(state))
-  const home = squadStrength(startingXI(state))
+  const home = xiStrength(state)
   const away = squadStrength(bestEleven(node.opponent.squad))
   const r = quickResult(home, away, rng)
   finishMatch(state, r.homeGoals, r.awayGoals)
 }
 
 // =====================================================================
-// RECOMPENSA (3 cartas)
+// RECOMPENSA (cartas de reforço — o novo SEMPRE entra no lugar de alguém)
 // =====================================================================
 
-/** Escolhe uma das 3 cartas oferecidas: entra no elenco pelo BANCO (não titular). */
-export const pickReward = (state: RunState, index: number): void => {
-  if (state.status !== 'reward' || !state.pendingReward) return
-  const chosen = state.pendingReward[index]
-  if (!chosen) return
-  state.squad.push(chosen)
-  if (state.squad.length > SQUAD_MAX) {
-    const worst = [...state.squad].sort((a, b) => a.overall - b.overall)[0]
-    if (worst.id !== chosen.id) state.squad = state.squad.filter((p) => p.id !== worst.id)
-  }
-  log(state, `Reforço: ${chosen.name} (${chosen.overall} OVR) entra no banco.`)
+/** Fecha a tela de recompensa (a poção pendente não pega fica para trás). */
+const closeReward = (state: RunState): void => {
   if (state.pendingPotion) {
     log(state, `${POTION_INFO[state.pendingPotion].emoji} A ${POTION_INFO[state.pendingPotion].label} ficou para trás…`)
   }
   state.pendingReward = null
   state.pendingPotion = null
-  ensureStartingXI(state)
   state.status = 'map'
 }
 
-// =====================================================================
-// ESCALAÇÃO (titulares × banco)
-// =====================================================================
-
-/** Promove um reserva a titular no lugar de um titular escolhido (troca simples). */
-export const swapStarter = (state: RunState, benchId: number, starterId: number): void => {
-  const idx = state.startingIds.indexOf(starterId)
-  if (idx < 0) return
-  if (!state.squad.some((p) => p.id === benchId)) return
-  if (state.startingIds.includes(benchId)) return
-  state.startingIds[idx] = benchId
+/** Troca dois jogadores de slot no campinho (inclusive o gol — slot 0). */
+export const swapSlots = (state: RunState, a: number, b: number): void => {
+  const pa = state.squad[a]
+  const pb = state.squad[b]
+  if (!pa || !pb || a === b) return
+  state.squad[a] = pb
+  state.squad[b] = pa
+  refreshSquadRatings(state)
 }
 
-/**
- * Há algum reserva no banco melhor que o titular mais fraco da mesma posição?
- * Usado pra acender um aviso ("dá pra melhorar o time") na aba Meu Time.
- */
-export const benchHasUpgrade = (state: RunState): boolean => {
-  const starters = state.squad.filter((p) => state.startingIds.includes(p.id))
-  const bench = state.squad.filter((p) => !state.startingIds.includes(p.id))
-  return bench.some((b) => {
-    const sameRole = starters.filter((s) => s.role === b.role)
-    const worst = sameRole.length ? sameRole : starters
-    return worst.some((s) => b.overall > s.overall)
-  })
+/** Põe `newcomer` no slot escolhido; quem estava lá deixa o time de vez. Retorna quem saiu. */
+const replaceAtSlot = (state: RunState, slotIndex: number, newcomer: GenPlayer): GenPlayer | null => {
+  const out = state.squad[slotIndex]
+  if (!out) return null
+  state.squad[slotIndex] = newcomer
+  refreshSquadRatings(state)
+  return out
 }
 
-/** Escala automaticamente os 11 melhores do elenco (botão "melhor time" na UI). */
-export const optimizeStartingXI = (state: RunState): void => {
-  state.startingIds = bestEleven(state.squad).map((p) => p.id)
+/** Escolhe uma carta oferecida e o slot de quem sai: o reforço entra ali na hora. */
+export const pickReward = (state: RunState, index: number, slotIndex: number): void => {
+  if (state.status !== 'reward' || !state.pendingReward) return
+  const chosen = state.pendingReward[index]
+  if (!chosen) return
+  const out = replaceAtSlot(state, slotIndex, chosen)
+  if (!out) return
+  log(state, `Reforço: ${chosen.name} entra no lugar de ${out.name} — que deixa o time.`)
+  closeReward(state)
+}
+
+/** Recusa o reforço oferecido e segue viagem com o time como está. */
+export const skipReward = (state: RunState): void => {
+  if (state.status !== 'reward') return
+  closeReward(state)
 }
 
 // =====================================================================
-// TÁTICA (formação — presets e arrasto das âncoras na aba Tática)
+// TÁTICA (formação — presets e arrasto das âncoras no pré-jogo)
 // =====================================================================
 
 /** Aplica um preset de formação (4-4-2, 3-5-2…) — sempre uma CÓPIA das âncoras. */
 export const setFormation = (state: RunState, slots: Vec2[]): void => {
   if (slots.length !== 11) return
   state.formationSlots = slots.map((s) => ({ ...s }))
+  refreshSquadRatings(state) // a faixa do campo mudou → a função (e a nota) mudam junto
 }
 
 /** Move uma âncora da formação (arrasto no campinho). O goleiro (slot 0) é fixo. */
 export const moveFormationSlot = (state: RunState, index: number, pos: Vec2): void => {
   if (index <= 0 || index >= state.formationSlots.length) return
   state.formationSlots[index] = clampSlot(pos)
+  refreshSquadRatings(state)
+}
+
+/**
+ * Reorganiza o time inteiro nos 11 slots num só toque: encaixa cada jogador
+ * onde ele mais eleva a nota (a função vem do slot, não de um rótulo fixo do
+ * jogador), sem precisar trocar par a par. Guloso — pega sempre o melhor
+ * encaixe jogador↔slot ainda livre até não sobrar nenhum.
+ */
+export const autoOrganizeSquad = (state: RunState): void => {
+  const slots = state.formationSlots
+  const players = state.squad
+  const openSlots = players.map((_, i) => i)
+  const openPlayers = players.map((_, i) => i)
+  const next = new Array<GenPlayer>(players.length)
+  while (openSlots.length > 0) {
+    let bestSlot = openSlots[0]
+    let bestPlayer = openPlayers[0]
+    let bestScore = -Infinity
+    for (const si of openSlots) {
+      for (const pi of openPlayers) {
+        const score = slotOverallOf(si, slots[si], players[pi].attrs)
+        if (score > bestScore) {
+          bestScore = score
+          bestSlot = si
+          bestPlayer = pi
+        }
+      }
+    }
+    next[bestSlot] = players[bestPlayer]
+    openSlots.splice(openSlots.indexOf(bestSlot), 1)
+    openPlayers.splice(openPlayers.indexOf(bestPlayer), 1)
+  }
+  state.squad = next
+  refreshSquadRatings(state)
+}
+
+/** Restaura a ordem exata do time nos slots — o "desfazer" de uma troca ou organização automática. */
+export const setSquadOrder = (state: RunState, order: GenPlayer[]): void => {
+  if (order.length !== state.squad.length) return
+  state.squad = order.slice()
+  refreshSquadRatings(state)
 }
 
 // =====================================================================
@@ -546,29 +595,14 @@ export const shopOffers = (state: RunState): ShopOffer[] => {
   })
 }
 
-/** Compra um jogador do mercado deste nó (soma ao elenco, pelo banco). */
-export const buyPlayer = (state: RunState, offer: ShopOffer): boolean => {
+/** Compra um jogador do mercado direto para um slot: quem estava lá deixa o time. */
+export const buyPlayer = (state: RunState, offer: ShopOffer, slotIndex: number): boolean => {
   if (state.status !== 'market') return false
-  if (state.coins < offer.fee || state.squad.length >= SQUAD_MAX) return false
+  if (state.coins < offer.fee) return false
+  const out = replaceAtSlot(state, slotIndex, offer.player)
+  if (!out) return false
   state.coins -= offer.fee
-  state.squad.push(offer.player)
-  log(state, `Contratado: ${offer.player.name} por ${offer.fee} moedas.`)
-  ensureStartingXI(state)
-  return true
-}
-
-/** Vende um jogador do elenco (nunca pode ficar com menos de 11). */
-export const sellPlayer = (state: RunState, playerId: number): boolean => {
-  if (state.status !== 'market') return false
-  if (state.squad.length <= SQUAD_MIN) return false
-  const idx = state.squad.findIndex((p) => p.id === playerId)
-  if (idx < 0) return false
-  const p = state.squad[idx]
-  const fee = Math.round(coinValueOf(p.overall, p.age) * 0.85)
-  state.squad.splice(idx, 1)
-  state.coins += fee
-  log(state, `Vendido: ${p.name} por ${fee} moedas.`)
-  ensureStartingXI(state)
+  log(state, `Contratado: ${offer.player.name} por ${offer.fee} moedas — ${out.name} deixa o time.`)
   return true
 }
 
@@ -583,7 +617,7 @@ export const boostAttribute = (state: RunState, playerId: number, attr: keyof At
   // já no teto do treino (ou acima dele, por poção) — não pode reduzir o atributo
   if (!p || p.attrs[attr] >= 100) return false
   p.attrs[attr] = clamp(p.attrs[attr] + GYM_GAIN, 1, 100)
-  refreshRating(p)
+  refreshSquadRatings(state)
   log(state, `${p.name} treinou forte: +${GYM_GAIN} em atributo, agora ${p.overall} OVR.`)
   return true
 }
@@ -594,58 +628,70 @@ export const boostAttribute = (state: RunState, playerId: number, attr: keyof At
 // =====================================================================
 
 /**
- * Ganho na força do MELHOR XI possível se `candidate` entrasse no elenco —
- * conta o encaixe de posição de verdade (um GK a mais só ajuda se for melhor
- * que o titular atual), não só a nota bruta da carta.
+ * Melhor encaixe de `candidate` no time: o slot onde ele mais eleva a nota em
+ * relação a quem o ocupa hoje (ganho por slot — pode ser negativo em todos).
  */
-const xiGainOf = (state: RunState, candidate: GenPlayer): number =>
-  squadStrength([...state.squad, candidate]) - squadStrength(state.squad)
+const bestFitOf = (state: RunState, candidate: GenPlayer): { slot: number; gain: number } => {
+  let slot = 0
+  let gain = -Infinity
+  state.squad.forEach((p, i) => {
+    const g = slotOverallOf(i, state.formationSlots[i], candidate.attrs) - p.overall
+    if (g > gain) {
+      gain = g
+      slot = i
+    }
+  })
+  return { slot, gain }
+}
 
-/** Reforça o elenco num nó de mercado: vende o pior banco e compra o melhor upgrade acessível. */
+/** Reforça o time num nó de mercado: compra o melhor upgrade acessível, encaixando no melhor slot. */
 const autoShop = (state: RunState): void => {
   let guard = 0
   while (guard++ < 10) {
-    const offers = shopOffers(state)
+    const options = shopOffers(state)
       .filter((o) => state.coins >= o.fee)
-      .sort((a, b) => xiGainOf(state, b.player) - xiGainOf(state, a.player))
-    const best = offers[0]
-    if (!best || xiGainOf(state, best.player) <= 0.3) break
-    if (state.squad.length >= SQUAD_MAX) {
-      const worstBench = [...state.squad]
-        .filter((p) => !state.startingIds.includes(p.id))
-        .sort((a, b) => a.overall - b.overall)[0]
-      if (worstBench) sellPlayer(state, worstBench.id)
-      else break
-    }
-    buyPlayer(state, best)
+      .map((o) => ({ o, fit: bestFitOf(state, o.player) }))
+      .sort((a, b) => b.fit.gain - a.fit.gain)
+    const best = options[0]
+    if (!best || best.fit.gain <= 3) break
+    buyPlayer(state, best.o, best.fit.slot)
   }
 }
 
-/** Usa os melhoramentos da academia no melhor titular, sempre no atributo mais fraco atual. */
+/**
+ * Usa os melhoramentos da academia no melhor jogador — bot BURRO de propósito:
+ * treina o atributo mais FRACO dentre os que valem algo no slot dele (nada de
+ * otimizar o ganho, senão o selftest deixa de medir a dificuldade do jogo).
+ */
 const autoGym = (state: RunState): void => {
-  const xi = startingXI(state)
-  if (xi.length === 0) return
-  const target = [...xi].sort((a, b) => b.overall - a.overall)[0]
-  const keys = Object.keys(target.attrs) as (keyof Attrs)[]
+  let idx = 0
+  state.squad.forEach((p, i) => {
+    if (p.overall > state.squad[idx].overall) idx = i
+  })
+  const target = state.squad[idx]
+  const slot = state.formationSlots[idx]
+  const trainedOvr = (k: keyof Attrs): number =>
+    slotOverallOf(idx, slot, { ...target.attrs, [k]: Math.min(100, target.attrs[k] + GYM_GAIN) })
   for (let i = 0; i < gymTrains(state.ascension); i++) {
-    const weakest = keys.reduce((a, b) => (target.attrs[a] < target.attrs[b] ? a : b))
+    const keys = (Object.keys(target.attrs) as (keyof Attrs)[]).filter(
+      (k) => target.attrs[k] < 100 && trainedOvr(k) > target.overall,
+    )
+    if (keys.length === 0) break
+    const weakest = keys.reduce((a, b) => (target.attrs[a] <= target.attrs[b] ? a : b))
     boostAttribute(state, target.id, weakest)
   }
 }
 
-/** Escolhe a carta de recompensa que MAIS reforça o melhor XI possível (encaixe de posição real). */
+/** Escolhe a carta e o slot que MAIS reforçam o time — ou recusa, se nenhuma melhora nada. */
 const autoPickReward = (state: RunState): void => {
   if (!state.pendingReward) return
-  let best = 0
-  let bestGain = -Infinity
-  for (let i = 0; i < state.pendingReward.length; i++) {
-    const gain = xiGainOf(state, state.pendingReward[i])
-    if (gain > bestGain) {
-      bestGain = gain
-      best = i
-    }
+  let best: { index: number; slot: number; gain: number } | null = null
+  for (const [index, cand] of state.pendingReward.entries()) {
+    const fit = bestFitOf(state, cand)
+    if (!best || fit.gain > best.gain) best = { index, slot: fit.slot, gain: fit.gain }
   }
-  pickReward(state, best)
+  if (!best || best.gain <= 0) skipReward(state)
+  else pickReward(state, best.index, best.slot)
 }
 
 export interface RunAutoPlayResult {
@@ -675,24 +721,22 @@ export const autoPlayRun = (state: RunState, maxNodes = 60): RunAutoPlayResult =
         candidates.find((n) => n.kind === 'match' || n.kind === 'boss') ??
         candidates.find((n) => n.kind === 'gym') ??
         candidates[0]
-      // antes de uma partida, esvazia o inventário de poções no melhor titular
+      // antes de uma partida, esvazia o inventário de poções no melhor jogador
       if (pick.kind === 'match' || pick.kind === 'boss') {
-        const target = [...startingXI(state)].sort((a, b) => b.overall - a.overall)[0]
+        const target = [...state.squad].sort((a, b) => b.overall - a.overall)[0]
         if (target) for (let i = state.potions.length - 1; i >= 0; i--) usePotion(state, i, target.id)
       }
       enterNode(state, pick.id)
       nodesVisited++
-    } else if (state.status === 'match') {
+    } else if (state.status === 'prematch' || state.status === 'match') {
       quickPlayNode(state)
     } else if (state.status === 'reward') {
       claimPotion(state)
       autoPickReward(state)
-      optimizeStartingXI(state)
     } else if (state.status === 'lifelost') {
       continueAfterDefeat(state)
     } else if (state.status === 'market') {
       autoShop(state)
-      optimizeStartingXI(state)
       leaveNode(state)
     } else if (state.status === 'gym') {
       autoGym(state)

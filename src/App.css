@@ -980,6 +980,28 @@
 .ps-group {
   break-inside: avoid;
 }
+.ps-legend {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #334155;
+  font-size: 10.5px;
+  color: #94a3b8;
+}
+.ps-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ps-legend-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
 .ps-group h4 {
   margin: 6px 0 6px;
   font-size: 12px;

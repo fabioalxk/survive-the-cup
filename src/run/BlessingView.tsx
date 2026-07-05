@@ -4,6 +4,7 @@ import { ALL_CLUBS } from '../game/worldcup'
 import { ClubBadge } from '../ui/ClubBadge'
 import { ArtIcon } from '../ui/ArtIcon'
 import { chooseSfx } from '../sfx/crowd'
+import { HelpIcon } from '../ui/icons'
 import type { RunApi } from './useRun'
 
 /** Realça números e palavras gritadas da descrição (estilo Slay the Spire). */
@@ -19,7 +20,15 @@ const emphasize = (desc: string) =>
   )
 
 /** Tela da bênção da largada: 3 ofertas (segura, de poder, amaldiçoada) — leva 1. */
-export default function BlessingView({ state, act }: { state: RunState; act: RunApi['act'] }) {
+export default function BlessingView({
+  state,
+  act,
+  onHelp,
+}: {
+  state: RunState
+  act: RunApi['act']
+  onHelp: () => void
+}) {
   if (!state.pendingBlessings) return null
   const club = ALL_CLUBS[state.clubId]
   return (
@@ -31,6 +40,13 @@ export default function BlessingView({ state, act }: { state: RunState; act: Run
           <p>
             Toda jornada começa com uma escolha… leve <strong>UMA</strong> bênção.
           </p>
+          <button
+            className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico rq-bless-help"
+            onClick={onHelp}
+            title="Como jogar"
+          >
+            <HelpIcon size={15} />
+          </button>
         </div>
         <div className="rq-bless-list">
           {state.pendingBlessings.map((kind, i) => {
