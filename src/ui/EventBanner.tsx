@@ -76,6 +76,7 @@ export function EventBanner({
   return (
     <div
       key={shown.id}
+      role="status"
       className={`event-banner ${phase ? 'event-banner--center' : ''} ev-${shown.type} ti-${tone}`}
       style={info ? ({ '--accent': info.shirt } as React.CSSProperties) : undefined}
     >

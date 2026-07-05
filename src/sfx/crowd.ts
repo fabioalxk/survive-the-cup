@@ -37,11 +37,17 @@ const getCtx = (): AudioContext | null => {
 /** Saída de qualquer efeito sintetizado — usar no lugar de `c.destination` direto. */
 const dest = (c: AudioContext): AudioNode => master ?? c.destination
 
-/** Destrava/retoma o áudio dentro de um gesto do usuário. */
-export const primeAudio = (): void => {
+/** Contexto já destravado (retoma se a política de autoplay o suspendeu) —
+ *  todo efeito sintetizado abaixo começa chamando isto em vez de repetir
+ *  "pega o contexto + retoma se suspenso" no próprio corpo. */
+const activeCtx = (): AudioContext | null => {
   const c = getCtx()
   if (c && c.state === 'suspended') void c.resume()
+  return c
 }
+
+/** Destrava/retoma o áudio dentro de um gesto do usuário. */
+export const primeAudio = (): void => void activeCtx()
 
 /** Está mudo agora? (preferência persistida entre sessões) */
 export const isMuted = (): boolean => muted
@@ -60,9 +66,8 @@ export const setMuted = (v: boolean): void => {
 
 /** Toca um rugido de torcida ao sair o gol. */
 export const goalRoar = (): void => {
-  const c = getCtx()
+  const c = activeCtx()
   if (!c) return
-  if (c.state === 'suspended') void c.resume()
 
   const now = c.currentTime
   const dur = 1.9
@@ -120,9 +125,8 @@ const glug = (c: AudioContext, at: number, pitch: number) => {
  * "ping" mágico que sobe no fim, como o efeito fazendo efeito.
  */
 export const potionSfx = (): void => {
-  const c = getCtx()
+  const c = activeCtx()
   if (!c) return
-  if (c.state === 'suspended') void c.resume()
 
   const now = c.currentTime
   glug(c, now, 320)
@@ -238,9 +242,8 @@ export const resumeMainTheme = (): void => resumeLoop(MAIN_THEME_TRACK)
 
 /** Blip curto e discreto para qualquer clique de botão (usado pelo listener global). */
 export const uiClick = (): void => {
-  const c = getCtx()
+  const c = activeCtx()
   if (!c) return
-  if (c.state === 'suspended') void c.resume()
 
   const now = c.currentTime
   const osc = c.createOscillator()
@@ -259,9 +262,8 @@ export const uiClick = (): void => {
 
 /** Chime de confirmação ao escolher algo (carta de reforço, bênção): duas notas subindo. */
 export const chooseSfx = (): void => {
-  const c = getCtx()
+  const c = activeCtx()
   if (!c) return
-  if (c.state === 'suspended') void c.resume()
 
   const now = c.currentTime
   ;([[660, 0], [990, 0.09]] as const).forEach(([freq, at]) => {
@@ -281,9 +283,8 @@ export const chooseSfx = (): void => {
 
 /** Jingle de "subiu de nível" ao treinar um atributo: arpejo ascendente + brilho no topo. */
 export const upgradeSfx = (): void => {
-  const c = getCtx()
+  const c = activeCtx()
   if (!c) return
-  if (c.state === 'suspended') void c.resume()
 
   const now = c.currentTime
   const arpeggio = [523, 659, 784, 1047] // C5 E5 G5 C6
@@ -340,9 +341,8 @@ const coinClink = (c: AudioContext, at: number, pitch: number, gainPeak: number)
 
 /** Compra no mercado: dois "clings" de moeda subindo, tipo caixa registradora. */
 export const buySfx = (): void => {
-  const c = getCtx()
+  const c = activeCtx()
   if (!c) return
-  if (c.state === 'suspended') void c.resume()
   const now = c.currentTime
   coinClink(c, now, 900, 0.1)
   coinClink(c, now + 0.09, 1200, 0.12)
@@ -350,9 +350,8 @@ export const buySfx = (): void => {
 
 /** Venda no mercado: dois "clings" descendo — moeda entrando no bolso, tom mais grave. */
 export const sellSfx = (): void => {
-  const c = getCtx()
+  const c = activeCtx()
   if (!c) return
-  if (c.state === 'suspended') void c.resume()
   const now = c.currentTime
   coinClink(c, now, 700, 0.11)
   coinClink(c, now + 0.08, 550, 0.09)
@@ -360,9 +359,8 @@ export const sellSfx = (): void => {
 
 /** Fanfarra de vitória (chefão derrotado): arpejo maior triunfante e mais longo. */
 export const victorySfx = (): void => {
-  const c = getCtx()
+  const c = activeCtx()
   if (!c) return
-  if (c.state === 'suspended') void c.resume()
   const now = c.currentTime
   const notes = [523, 659, 784, 1047, 784, 1047, 1319] // C E G C G C E(oitava)
   notes.forEach((freq, i) => {
@@ -383,9 +381,8 @@ export const victorySfx = (): void => {
 
 /** Tom de derrota: três notas descendo e abafadas — vida perdida ou eliminação. */
 export const defeatSfx = (): void => {
-  const c = getCtx()
+  const c = activeCtx()
   if (!c) return
-  if (c.state === 'suspended') void c.resume()
   const now = c.currentTime
   const notes = [440, 349, 261]
   notes.forEach((freq, i) => {
@@ -415,9 +412,8 @@ export const defeatSfx = (): void => {
  *  • 'full' — os três apitos clássicos (curto, curto, looongo): fim de jogo.
  */
 export const refWhistle = (kind: 'stop' | 'half' | 'full'): void => {
-  const c = getCtx()
+  const c = activeCtx()
   if (!c) return
-  if (c.state === 'suspended') void c.resume()
 
   const now = c.currentTime
   if (kind === 'stop') whistleBlast(c, now, 0.45)

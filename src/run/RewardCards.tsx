@@ -49,9 +49,9 @@ export default function RewardCards({
         >
           <HelpIcon size={15} />
         </button>
-        <div className="cm-ribbon cm-ribbon-sm">
+        <h2 className="cm-ribbon cm-ribbon-sm">
           <GiftIcon size={22} className="rq-h2-ico" /> Reforço à vista!
-        </div>
+        </h2>
         <p className="rc-sub">
           {candidate
             ? `Agora toque em quem sai — ${candidate.name} entra no lugar dele.`

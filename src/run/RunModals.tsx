@@ -5,7 +5,7 @@ import { ASCENSION_MAX } from '../game/ascension'
 import { ALL_CLUBS } from '../game/worldcup'
 import { defeatSfx, victorySfx } from '../sfx/crowd'
 import { useEscapeKey } from '../shared/useEscapeKey'
-import { HeartbreakIcon, RestartIcon, SkullIcon } from '../ui/icons'
+import { FlameIcon, HeartbreakIcon, RestartIcon, SkullIcon } from '../ui/icons'
 import { TrophyIcon } from './MapIcons'
 
 function Backdrop({ children }: { children: React.ReactNode }) {
@@ -52,7 +52,7 @@ export function LifeLostModal({ state, onContinue }: { state: RunState; onContin
           {state.lives === 1 ? 'Resta 1 vida' : `Restam ${state.lives} vidas`}: a próxima derrota
           elimina. O confronto continua no mapa — tente a revanche ou reforce o time antes.
         </p>
-        <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onContinue}>
+        <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onContinue} autoFocus>
           Continuar a corrida
         </button>
       </ModalPanel>
@@ -70,9 +70,14 @@ export function GameOverModal({ state, onNewRun }: { state: RunState; onNewRun: 
           <SkullIcon size={56} />
         </div>
         <h2>ELIMINADO</h2>
+        {state.ascension > 0 && (
+          <span className="rq-asc-chip" title={`Ascension ${state.ascension} — dificuldade aumentada`}>
+            <FlameIcon size={13} /> A{state.ascension}
+          </span>
+        )}
         <p className="cm-modal-sub">{lastMatchLine(state)}</p>
         <p className="cm-modal-sub">Suas vidas acabaram. Fim de jornada — comece uma corrida nova do zero.</p>
-        <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onNewRun}>
+        <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onNewRun} autoFocus>
           <RestartIcon size={15} className="cm-btn-ico-lead" /> Nova corrida
         </button>
       </ModalPanel>
@@ -94,7 +99,9 @@ export function ConfirmResetModal({ onConfirm, onCancel }: { onConfirm: () => vo
           Isso apaga o progresso da corrida atual (elenco, moedas, mapa). Não tem como desfazer.
         </p>
         <div className="cm-modal-actions">
-          <button className="cm-btn cm-btn-ghost cm-btn-lg" onClick={onCancel}>
+          {/* foco vai pro Cancelar (não pro Recomeçar): opção destrutiva nunca deve ser o
+              padrão de quem confirma sem querer com Enter/toque duplo */}
+          <button className="cm-btn cm-btn-ghost cm-btn-lg" onClick={onCancel} autoFocus>
             Cancelar
           </button>
           <button className="cm-btn cm-btn-danger cm-btn-lg" onClick={onConfirm}>
@@ -140,6 +147,11 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             prove que não foi sorte.
           </li>
         </ul>
+        {/* sem autoFocus: essa lista é a mais longa dos modais (4 tópicos) — em
+            tela baixa ela passa da altura visível, e focar o botão do rodapé
+            de cara rola o painel pro fim, escondendo o título e os primeiros
+            tópicos sem dar pra voltar. Esc já fecha; quem usa teclado tabula
+            até aqui do mesmo jeito. */}
         <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onClose}>
           Entendi
         </button>
@@ -162,12 +174,22 @@ export function VictoryModal({ state, onNewRun }: { state: RunState; onNewRun: (
         <p className="cm-modal-sub">
           {state.managerName} levou o {club?.name ?? state.clubId} do primeiro quadradinho até o topo do
           mapa — jornada completa!
+          {state.ascension === ASCENSION_MAX
+            ? ' No nível máximo de Ascension — não foi sorte.'
+            : state.ascension > 0
+              ? ` Na Ascension ${state.ascension}.`
+              : ''}
         </p>
         <div className="cm-won-stats">
+          {state.ascension > 0 && (
+            <span className="rq-asc-chip" title={`Ascension ${state.ascension} — dificuldade aumentada`}>
+              <FlameIcon size={13} /> A{state.ascension}
+            </span>
+          )}
           <span>{state.squad.length} jogadores no elenco final</span>
           <span>{state.coins} moedas guardadas</span>
         </div>
-        <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onNewRun}>
+        <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onNewRun} autoFocus>
           <RestartIcon size={15} className="cm-btn-ico-lead" /> Nova corrida
         </button>
       </ModalPanel>

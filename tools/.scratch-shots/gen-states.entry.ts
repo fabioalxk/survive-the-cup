@@ -11,6 +11,7 @@ import {
   leaveNode,
   skipReward,
   continueAfterDefeat,
+  shopOffers,
 } from '../../src/game/run'
 import { ALL_CLUBS } from '../../src/game/worldcup'
 
@@ -66,6 +67,18 @@ save('map', fresh())
 
 // gym: navega até achar um nó de academia de verdade
 save('gym', reach('gym'))
+
+// mercado com TODAS as ofertas já compradas (squad já tem os mesmos nome+idade
+// das 5 ofertas, que é como `owned()` reconhece quem já foi contratado)
+{
+  const s = reach('market')
+  const offers = shopOffers(s)
+  offers.forEach((o, i) => {
+    s.squad[i].name = o.player.name
+    s.squad[i].age = o.player.age
+  })
+  save('market-empty', s)
+}
 
 // market: idem, com ofertas de verdade calculadas por shopOffers (currentNodeId setado)
 save('market', reach('market'))

@@ -2,6 +2,7 @@ import type { Attrs, Vec2 } from '../sim/types'
 import { clampSlot, defaultFormation, formationName } from '../sim/formation'
 import type { GenPlayer } from './types'
 import type { BlessingKind, PotionKind, RunNode, RunState } from './runTypes'
+import { pushLog } from './log'
 import { ALL_CLUBS } from './worldcup'
 import {
   generateMap,
@@ -46,10 +47,7 @@ export const coinValueOf = (overall: number, age: number): number => {
   return Math.max(4, Math.round(base * ageMul))
 }
 
-const log = (state: RunState, msg: string): void => {
-  state.log.unshift(msg)
-  if (state.log.length > 30) state.log.pop()
-}
+const log = (state: RunState, msg: string): void => pushLog(state.log, msg, 30)
 
 const nodeOf = (state: RunState, id: string | null): RunNode | undefined =>
   state.nodes.find((n) => n.id === id)
@@ -215,12 +213,15 @@ const applyBlessing = (state: RunState, kind: BlessingKind, rng: Rng): void => {
   switch (kind) {
     case 'sponsor':
       state.coins += BLESS_COINS
+      log(state, `💰 Patrocínio Master: +${BLESS_COINS} moedas.`)
       break
     case 'potionkit':
       while (state.potions.length < POTIONS_MAX) state.potions.push(rng.pick(POTION_KINDS))
+      log(state, `🧪 Kit do Preparador: inventário cheio (${POTIONS_MAX} poções).`)
       break
     case 'extralife':
       state.lives += 1
+      log(state, `❤️ Torcida Apaixonada: +1 vida (agora ${state.lives}).`)
       break
     case 'star': {
       const p = generateStarPlayer(rng)
@@ -245,6 +246,7 @@ const applyBlessing = (state: RunState, kind: BlessingKind, rng: Rng): void => {
     case 'pact':
       state.coins += BLESS_PACT_COINS
       state.lives -= 1
+      log(state, `😈 Pacto com o Agente: +${BLESS_PACT_COINS} moedas, mas -1 vida (resta ${state.lives}).`)
       break
   }
 }
@@ -545,35 +547,59 @@ export const moveFormationSlot = (state: RunState, index: number, pos: Vec2): vo
   refreshSquadRatings(state)
 }
 
+const popcount = (x: number): number => {
+  let c = 0
+  while (x) {
+    x &= x - 1
+    c++
+  }
+  return c
+}
+
 /**
  * Reorganiza o time inteiro nos 11 slots num só toque: encaixa cada jogador
  * onde ele mais eleva a nota (a função vem do slot, não de um rótulo fixo do
- * jogador), sem precisar trocar par a par. Guloso — pega sempre o melhor
- * encaixe jogador↔slot ainda livre até não sobrar nenhum.
+ * jogador), sem precisar trocar par a par. Ótimo de verdade, não guloso: com
+ * só 11 jogadores um DP por bitmask (2^11 estados × 11 jogadores, irrisório)
+ * acha a escalação que maximiza a nota TOTAL do time — o guloso anterior
+ * (pegava sempre o melhor par jogador↔slot solto) podia render um encaixe
+ * ótimo pra alguém à custa de deixar outro preso num slot péssimo mais tarde,
+ * quebrando a própria promessa do botão ("cada jogador onde mais rende").
  */
 export const autoOrganizeSquad = (state: RunState): void => {
   const slots = state.formationSlots
   const players = state.squad
-  const openSlots = players.map((_, i) => i)
-  const openPlayers = players.map((_, i) => i)
-  const next = new Array<GenPlayer>(players.length)
-  while (openSlots.length > 0) {
-    let bestSlot = openSlots[0]
-    let bestPlayer = openPlayers[0]
-    let bestScore = -Infinity
-    for (const si of openSlots) {
-      for (const pi of openPlayers) {
-        const score = slotOverallOf(si, slots[si], players[pi].attrs)
-        if (score > bestScore) {
-          bestScore = score
-          bestSlot = si
-          bestPlayer = pi
-        }
+  const n = players.length
+  // score[slot][jogador] = nota se esse jogador jogasse nesse slot
+  const score = slots.map((slot, si) => players.map((p) => slotOverallOf(si, slot, p.attrs)))
+
+  const full = 1 << n
+  const dp = new Float64Array(full).fill(-Infinity)
+  dp[0] = 0
+  // parent[mask]: jogador escalado no slot (popcount(mask)-1) pra chegar em `mask`
+  const parent = new Int8Array(full).fill(-1)
+  for (let mask = 0; mask < full; mask++) {
+    if (dp[mask] === -Infinity) continue
+    const slotIndex = popcount(mask)
+    if (slotIndex >= n) continue
+    for (let p = 0; p < n; p++) {
+      if (mask & (1 << p)) continue
+      const nextMask = mask | (1 << p)
+      const candidate = dp[mask] + score[slotIndex][p]
+      if (candidate > dp[nextMask]) {
+        dp[nextMask] = candidate
+        parent[nextMask] = p
       }
     }
-    next[bestSlot] = players[bestPlayer]
-    openSlots.splice(openSlots.indexOf(bestSlot), 1)
-    openPlayers.splice(openPlayers.indexOf(bestPlayer), 1)
+  }
+
+  // reconstrói a escalação de trás pra frente a partir do estado "todos usados"
+  const next = new Array<GenPlayer>(n)
+  let mask = full - 1
+  for (let slotIndex = n - 1; slotIndex >= 0; slotIndex--) {
+    const p = parent[mask]
+    next[slotIndex] = players[p]
+    mask &= ~(1 << p)
   }
   state.squad = next
   refreshSquadRatings(state)
@@ -585,7 +611,7 @@ export const setSquadOrder = (state: RunState, order: GenPlayer[]): void => {
   if (order.length !== state.squad.length) return
   state.squad = order.slice()
   refreshSquadRatings(state)
-  log(state, '↩️ Troca desfeita — time como estava antes.')
+  log(state, '↩️ Mudança desfeita — time como estava antes.')
 }
 
 // =====================================================================
@@ -631,9 +657,11 @@ export const boostAttribute = (state: RunState, playerId: number, attr: keyof At
   const p = state.squad.find((pl) => pl.id === playerId)
   // já no teto do treino (ou acima dele, por poção) — não pode reduzir o atributo
   if (!p || p.attrs[attr] >= 100) return false
-  p.attrs[attr] = clamp(p.attrs[attr] + GYM_GAIN, 1, 100)
+  const before = p.attrs[attr]
+  p.attrs[attr] = clamp(before + GYM_GAIN, 1, 100)
+  const gained = p.attrs[attr] - before
   refreshSquadRatings(state)
-  log(state, `${p.name} treinou forte: +${GYM_GAIN} em atributo, agora ${p.overall} OVR.`)
+  log(state, `${p.name} treinou forte: +${gained} em atributo, agora ${p.overall} OVR.`)
   return true
 }
 

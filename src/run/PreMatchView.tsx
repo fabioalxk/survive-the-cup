@@ -9,13 +9,19 @@ import {
   setFormation,
   setSquadOrder,
   swapSlots,
+  xiStrength,
 } from '../game/run'
 import { ALL_CLUBS } from '../game/worldcup'
+import { attrColor } from '../ui/attrDisplay'
 import { ClubBadge } from '../ui/ClubBadge'
 import { PlayerDetailPop } from '../ui/PlayerDetail'
 import { AutoIcon, HelpIcon, PlayIcon, SkipIcon } from '../ui/icons'
 import FormationEditor from '../ui/FormationEditor'
 import type { RunApi } from './useRun'
+
+/** Nota média do time adversário — mesmo cálculo de `xiStrength`, mas pro time de fora. */
+const oppStrength = (squad: { overall: number }[]): number =>
+  Math.round(squad.reduce((s, p) => s + p.overall, 0) / squad.length)
 
 /**
  * Vestiário (pré-jogo): a ÚNICA tela entre o mapa e a bola rolar. Os 11 já
@@ -43,6 +49,9 @@ export default function PreMatchView({
 
   if (!node || !node.opponent) return null
 
+  const myRating = Math.round(xiStrength(state))
+  const oppRating = oppStrength(node.opponent.squad)
+
   /** Toque num chip: 1º seleciona (mostra atributos), 2º troca os dois de lugar. */
   const tap = (i: number) => {
     if (selIdx === null || selIdx === i) {
@@ -67,22 +76,35 @@ export default function PreMatchView({
 
   return (
     <div className="cm-backdrop rq-scene rq-scene-prematch">
-      <div className="cm-modal rq-prematch">
+      <div className={`cm-modal rq-prematch ${sel ? 'has-detail' : ''}`}>
         <header className="rq-prematch-head">
           <div className="rq-prematch-title">
-            {opp && <ClubBadge club={opp} size={34} />}
+            {opp && (
+              <span className="rq-prematch-crest">
+                <ClubBadge club={opp} size={32} />
+              </span>
+            )}
             <div className="rq-prematch-title-text">
               <span className="rq-prematch-kicker">{isBoss ? '👑 Chefão' : 'Próximo jogo'}</span>
-              <strong>vs {opp?.name ?? node.opponent.clubId}</strong>
+              <h2>vs {opp?.name ?? node.opponent.clubId}</h2>
             </div>
+            {/* comparação de nota (seu XI × XI do rival): o jogo já calcula essa
+                força pra resolver a partida (`xiStrength`) mas nunca mostrava —
+                todo squad-manager comercial expõe essa comparação antes do jogo,
+                é o contexto que falta pra "Jogar" fazer sentido como decisão. */}
+            <span className="rq-prematch-vs" title="Nota do seu time × nota do adversário">
+              <b style={{ color: attrColor(myRating) }}>{myRating}</b>
+              <span className="rq-prematch-vs-x">×</span>
+              <b style={{ color: attrColor(oppRating) }}>{oppRating}</b>
+            </span>
           </div>
           <div className="rq-prematch-actions">
             {undo && (
               <button
                 className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico"
                 onClick={undoLast}
-                title="Volta o time pra ordem de antes da última troca"
-                aria-label="Desfazer última troca"
+                title="Volta o time pra ordem de antes da última mudança"
+                aria-label="Desfazer última mudança"
               >
                 ↩
               </button>

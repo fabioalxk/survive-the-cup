@@ -8,6 +8,7 @@ import {
 } from '../game/ascension'
 import { START_LIVES } from '../game/run'
 import { isMuted, resumeMainTheme, setMuted, startMainTheme, stopMainTheme } from '../sfx/crowd'
+import { handleRadioGroupKeyDown } from '../shared/radioGroupKeyDown'
 import { BackButton } from '../ui/BackButton'
 import { ClubBadge } from '../ui/ClubBadge'
 import { BallIcon, FlameIcon, LockIcon, PlayIcon, SoundIcon } from '../ui/icons'
@@ -182,12 +183,18 @@ export default function NewRun({
           <div className="rq-select-bottom">
             <section className="rq-event-strip">
               <h3 className="rq-event-label">Ascension (dificuldade)</h3>
-              <div className="rq-asc-row" role="radiogroup" aria-label="Nível de ascension">
+              <div
+                className="rq-asc-row"
+                role="radiogroup"
+                aria-label="Nível de ascension"
+                onKeyDown={handleRadioGroupKeyDown}
+              >
                 {Array.from({ length: ASCENSION_MAX + 1 }, (_, a) => (
                   <button
                     key={a}
                     role="radio"
                     aria-checked={ascension === a}
+                    tabIndex={ascension === a ? 0 : -1}
                     className={`rq-asc-btn ${ascension === a ? 'active' : ''}`}
                     style={{ ['--asc-heat' as string]: ascensionHeat(a) }}
                     onClick={() => setAscension(a)}
@@ -201,12 +208,20 @@ export default function NewRun({
 
             <section className="rq-event-strip">
               <h3 className="rq-event-label">Escolha sua seleção</h3>
-              <div className="rq-flag-row">
+              <div
+                className="rq-flag-row"
+                role="radiogroup"
+                aria-label="Escolha sua seleção"
+                onKeyDown={handleRadioGroupKeyDown}
+              >
                 {teams.map((c) => {
                   const locked = c.id !== BRAZIL_ID
                   return (
                     <button
                       key={c.id}
+                      role="radio"
+                      aria-checked={clubId === c.id}
+                      tabIndex={clubId === c.id ? 0 : -1}
                       className={`rq-flag ${clubId === c.id ? 'active' : ''} ${locked ? 'rq-flag-locked' : ''}`}
                       disabled={locked}
                       title={locked ? `${c.name} — em breve` : c.name}

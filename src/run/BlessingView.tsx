@@ -34,7 +34,7 @@ export default function BlessingView({
   return (
     <div className="cm-backdrop rq-scene rq-scene-blessing">
       <div className="rq-bless">
-        <div className="cm-ribbon rq-bless-ribbon">Bênção da largada</div>
+        <h2 className="cm-ribbon rq-bless-ribbon">Bênção da largada</h2>
         <div className="rq-bless-bubble">
           {club && <ClubBadge club={club} size={42} />}
           <p>

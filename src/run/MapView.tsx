@@ -128,7 +128,9 @@ function NodeButton({
           <LockIcon size={11} />
         </span>
       )}
-      <span className={`rq-node-cap${isBoss ? ' rq-node-cap-boss' : ''}`}>
+      <span
+        className={`rq-node-cap${isBoss ? ' rq-node-cap-boss' : ''}${!isBoss ? ` rq-node-cap-band-${node.lane % 3}` : ''}`}
+      >
         {isBoss && <TrophyIcon size={11} className="rq-cap-ico" />}
         {cap}
       </span>
@@ -173,7 +175,7 @@ export default function MapView({ state, act }: { state: RunState; act: RunApi['
     <div className="rq-map-wrap">
       <div className="rq-map-scroll" ref={scrollRef}>
         <div className="rq-map" style={{ height: MAP_HEIGHT }}>
-          <img className="rq-map-bg" src="/assets/surviveTheCup_background.png" alt="" />
+          <img className="rq-map-bg" src="/assets/bg/bg_map.webp" alt="" />
         <div className="rq-map-veil" aria-hidden />
 
         <svg className="rq-map-lines" viewBox="0 0 100 100" preserveAspectRatio="none">

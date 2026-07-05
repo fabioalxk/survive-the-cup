@@ -207,6 +207,11 @@ export function AttrInfo({ label, desc, effects }: { label: string; desc: string
       onMouseLeave={hide}
       onFocus={show}
       onBlur={hide}
+      // (sem stopPropagation em pointerdown/up aqui: o card-botão por trás,
+      // no mercado/recompensa, PRECISA ver esses eventos passarem — é assim
+      // que ele detecta um arraste que começa em cima do "i". Quem evita o
+      // "toque no 'i' também arma/desarma o card" é o próprio card, que
+      // ignora o toque simples quando o alvo é `.ps-info`.)
       onClick={(e) => {
         e.stopPropagation()
         if (tip) hide()

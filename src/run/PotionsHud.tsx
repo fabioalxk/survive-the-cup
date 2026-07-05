@@ -70,6 +70,7 @@ export default function PotionsHud({
             setPicking(i)
             onOpenPicker?.()
           }}
+          aria-label={`Usar ${POTION_INFO[k].label}`}
           title={`${POTION_INFO[k].label}: +${POTION_BOOST} de ${attrLabel(k)} num jogador (pode passar de 100, teto ${POTION_ATTR_CAP}) até o fim ${horizon}${usable ? '' : ' — disponível no mapa ou durante a partida'}`}
         >
           <PotionIcon kind={k} size={21} />
@@ -154,6 +155,10 @@ export default function PotionsHud({
             </div>
 
             <footer className="rq-potion-foot">
+              {/* sem autoFocus: o modal (`.cm-modal`) rola por dentro, e focar de
+                  cara o botão do rodapé, com a lista de jogadores ainda mais alta
+                  que a tela, rolava o painel pro fim escondendo o cabeçalho (nome
+                  e efeito da poção) sem dar pra ver de novo sem rolar na mão. */}
               <button className="cm-btn cm-btn-ghost cm-btn-block" onClick={closePicker}>
                 Guardar para depois
               </button>

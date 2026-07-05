@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { RunState } from '../game/runTypes'
 import { buyPlayer, leaveNode, shopOffers } from '../game/run'
 import { buySfx, startMerchantMusic, stopMerchantMusic } from '../sfx/crowd'
@@ -32,13 +32,16 @@ export default function MarketNodeView({
     return stopMerchantMusic
   }, [])
 
-  // shopOffers é determinístico nos DADOS mas gera ids novos a cada chamada,
-  // então quem já foi comprado é reconhecido por nome+idade, não por id.
+  // shopOffers gera um `id` novo por jogador a cada chamada — sem memoizar,
+  // cada render (inclusive só de armar uma carta) recriava as 5 ofertas com
+  // ids diferentes, trocando a `key` de cada `CandidateCard` e remontando
+  // tudo (perdendo o estado local do arraste no meio do próprio gesto).
+  // Preso ao nó atual: refaz só ao entrar num mercado novo de verdade.
+  const baseOffers = useMemo(() => shopOffers(state), [state.currentNodeId])
+  // quem já foi comprado é reconhecido por nome+idade (não por id, que muda).
   const owned = (p: { name: string; age: number }) =>
     state.squad.some((s) => s.name === p.name && s.age === p.age)
-  const offers = shopOffers(state)
-    .filter((o) => !owned(o.player))
-    .sort((a, b) => b.fee - a.fee)
+  const offers = baseOffers.filter((o) => !owned(o.player)).sort((a, b) => b.fee - a.fee)
   const candidate = armed !== null ? (offers[armed]?.player ?? null) : null
 
   const place = (offerIndex: number, slotIndex: number) => {
@@ -59,7 +62,9 @@ export default function MarketNodeView({
             <p>
               {candidate
                 ? `Toque em quem sai — ${candidate.name} entra no lugar dele.`
-                : 'Toque numa oferta pra ver onde ela rende mais no seu time.'}
+                : offers.length === 0
+                  ? 'Nada por aqui desta vez — siga viagem.'
+                  : 'Toque numa oferta pra ver onde ela rende mais no seu time.'}
             </p>
           </div>
           <div className="rq-market-wallet">

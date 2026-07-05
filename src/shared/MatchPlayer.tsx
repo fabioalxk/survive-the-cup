@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { canvasSize, setLabelsUpright, setShowNames } from '../render/renderer'
 import { useMatchLoop, type MatchSetup } from '../useMatchLoop'
-import { primeAudio } from '../sfx/crowd'
+import { isMuted, primeAudio, setMuted } from '../sfx/crowd'
 import type { Vec2 } from '../sim/types'
 import type { GenPlayer } from '../game/types'
 import { lineupFor, lineupFromSlots } from '../game/lineup'
@@ -20,6 +20,7 @@ import {
   ExpandIcon,
   PauseIcon,
   PlayIcon,
+  SoundIcon,
   SpeedIcon,
   WhistleIcon,
 } from '../ui/icons'
@@ -87,6 +88,7 @@ export default function MatchPlayer({
   const rootRef = useRef<HTMLDivElement>(null)
   const [tactics, setTactics] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  const [muted, setMutedState] = useState(isMuted)
   const [speedMenu, setSpeedMenu] = useState(false)
   const speedBtnRef = useRef<HTMLButtonElement>(null)
   const speedMenuRef = useRef<HTMLDivElement>(null)
@@ -214,7 +216,12 @@ export default function MatchPlayer({
           <ClubBadge club={left.side} size={30} />
           <span className="cm-sb-name">{left.side.name}</span>
         </span>
-        <span className="cm-sb-score">
+        <span
+          className="cm-sb-score"
+          role="status"
+          aria-live="polite"
+          aria-label={`Placar: ${left.side.name} ${left.goals}, ${right.side.name} ${right.goals}`}
+        >
           {left.goals}
           <small>×</small>
           {right.goals}
@@ -252,7 +259,12 @@ export default function MatchPlayer({
             >
               <div className="cm-tactics-head">
                 <span className="tv-name">Esquema: {formationName(slots)}</span>
-                <button className="cm-tactics-close" onClick={closeTactics} title="Voltar ao jogo">
+                <button
+                  className="cm-tactics-close"
+                  onClick={closeTactics}
+                  title="Voltar ao jogo"
+                  aria-label="Voltar ao jogo"
+                >
                   <CloseIcon size={16} />
                 </button>
               </div>
@@ -302,6 +314,7 @@ export default function MatchPlayer({
             className="cm-btn cm-btn-play-pause"
             onClick={() => setRunning(!running)}
             title={running ? 'Pausar' : 'Jogar'}
+            aria-label={running ? 'Pausar' : 'Jogar'}
           >
             {running ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
           </button>
@@ -351,9 +364,21 @@ export default function MatchPlayer({
           )}
           {extraControls?.({ pause: freeze, resume: unfreeze })}
           <button
+            className="cm-btn cm-btn-sm cm-btn-ico"
+            onClick={() => {
+              setMuted(!muted)
+              setMutedState(!muted)
+            }}
+            title={muted ? 'Ativar som' : 'Silenciar'}
+            aria-label={muted ? 'Ativar som' : 'Silenciar'}
+          >
+            <SoundIcon size={14} muted={muted} />
+          </button>
+          <button
             className="cm-btn cm-btn-sm cm-btn-fullscreen"
             onClick={toggleFullscreen}
             title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+            aria-label={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
           >
             {fullscreen ? <CompressIcon size={14} /> : <ExpandIcon size={14} />}
           </button>

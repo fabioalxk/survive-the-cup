@@ -133,8 +133,14 @@ export default function GymNodeView({
           <div className="rq-gym-title">
             <h2 className="cm-ribbon cm-ribbon-sm">Treinamento</h2>
             <p>
-              Melhoramentos de <strong>+{GYM_GAIN} pontos</strong> (teto 100). Toque num jogador
-              pra treinar; arraste no campinho pra mudar a tática.
+              {done ? (
+                'Treinamento concluído — sem melhoramentos restantes.'
+              ) : (
+                <>
+                  Melhoramentos de <strong>+{GYM_GAIN} pontos</strong> (teto 100). Toque num jogador
+                  pra treinar; arraste no campinho pra mudar a tática.
+                </>
+              )}
             </p>
           </div>
           <div
@@ -237,7 +243,11 @@ export default function GymNodeView({
             </div>
           )}
           {summary && (
-            <div key={results.length} className={`rq-gym-summary ${done ? 'rq-gym-done' : ''}`}>
+            <div
+              key={results.length}
+              className={`rq-gym-summary ${done ? 'rq-gym-done' : ''}`}
+              role="status"
+            >
               {done ? (
                 <span className="rq-gym-done-ico" aria-hidden>
                   ✓

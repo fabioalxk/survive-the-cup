@@ -13,7 +13,7 @@ export function MatchHistory({ events }: { events: MatchEvent[] }) {
   return (
     <div className="cm-history">
       <h3 className="cm-history-title">Histórico da partida</h3>
-      <ul className="cm-history-list">
+      <ul className="cm-history-list" role="log" aria-live="polite">
         {events.map((e, i) => (
           <li key={i} className={`cm-history-ev cm-ev-${e.type}`}>
             <span className="cm-history-min">{e.minute}&apos;</span>

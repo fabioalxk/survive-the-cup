@@ -37,7 +37,7 @@ export function CandidateCard({
   onPlace: (slotIndex: number) => void
 }) {
   const [ghost, setGhost] = useState<{ x: number; y: number } | null>(null)
-  const start = useRef<{ x: number; y: number; moved: boolean } | null>(null)
+  const start = useRef<{ x: number; y: number; moved: boolean; onInfo: boolean } | null>(null)
 
   return (
     <button
@@ -45,8 +45,15 @@ export function CandidateCard({
       disabled={disabled}
       title={disabled ? 'Moedas insuficientes' : undefined}
       onPointerDown={(e) => {
+        if (disabled) return
         e.currentTarget.setPointerCapture(e.pointerId)
-        start.current = { x: e.clientX, y: e.clientY, moved: false }
+        // guarda AGORA se o dedo/cursor começou em cima do "i": depois de
+        // `setPointerCapture`, todo evento de ponteiro seguinte (inclusive o
+        // de soltar) é re-alvejado pro card inteiro — checar `e.target` no
+        // onPointerUp nunca mais acharia `.ps-info`, mesmo tendo soltado bem
+        // em cima do ícone.
+        const onInfo = !!(e.target as HTMLElement).closest('.ps-info')
+        start.current = { x: e.clientX, y: e.clientY, moved: false, onInfo }
       }}
       onPointerMove={(e) => {
         const s = start.current
@@ -67,8 +74,11 @@ export function CandidateCard({
           const slot = slotAt(e.clientX, e.clientY)
           if (slot !== null) onPlace(slot)
           else onArm(false) // soltou fora do campinho: desarma
-        } else {
-          onArm(!armed) // toque simples: arma/desarma a carta
+        } else if (!s.onInfo) {
+          // toque simples: arma/desarma a carta — exceto em cima do "i" de um
+          // atributo (o ícone já trata o próprio toque abrindo a explicação;
+          // sem essa exceção, tocar nele também armava/desarmava a carta).
+          onArm(!armed)
         }
       }}
       onPointerCancel={() => {
@@ -137,14 +147,20 @@ export default function PlacePlayerBoard({
   const best = bestPick && bestPick.gain > 0 ? bestPick.slot : null
   return (
     <div className={`pb-board ${candidate ? 'is-armed' : ''}`}>
-      {candidate && best !== null && (
-        <button className="cm-btn cm-btn-primary cm-btn-block pb-auto" onClick={() => onPlace(best)}>
-          ★ Encaixar no melhor lugar — sai {state.squad[best].name}
-        </button>
-      )}
-      {candidate && bestPick && best === null && (
-        <p className="pb-no-gain">Nenhum encaixe melhora o time agora — toque num jogador pra trocar mesmo assim.</p>
-      )}
+      {/* altura reservada mesmo sem nada pra mostrar: sem isto, o campinho
+          pula pra baixo assim que a carta arma (o botão/aviso empurra tudo),
+          e um arraste contínuo (carta → jogador) erra o alvo porque o chip
+          já não está mais onde o dedo/cursor mirou no começo do gesto. */}
+      <div className="pb-auto-slot">
+        {candidate && best !== null && (
+          <button className="cm-btn cm-btn-primary cm-btn-block pb-auto" onClick={() => onPlace(best)}>
+            ★ Encaixar no melhor lugar — sai {state.squad[best].name}
+          </button>
+        )}
+        {candidate && bestPick && best === null && (
+          <p className="pb-no-gain">Nenhum encaixe melhora o time agora — toque num jogador pra trocar mesmo assim.</p>
+        )}
+      </div>
       <FormationEditor
         slots={slots}
         xi={state.squad.map((p) => ({

@@ -941,6 +941,13 @@ const drawPlayerName = (
   const lcy = labelsUpright ? cy : cy + gap
   // gira o nome p/ ficar legível no celular
   uprightLabel(ctx, lcx, lcy, () => {
+    // contorno escuro: sem isso o nome branco quase desaparece nas faixas
+    // claras do gramado, e dois jogadores próximos (ex. na bola parada)
+    // ficam com os nomes ilegíveis quando se tocam.
+    ctx.lineWidth = Math.max(1.5, scale * 0.22)
+    ctx.lineJoin = 'round'
+    ctx.strokeStyle = 'rgba(0,0,0,0.65)'
+    ctx.strokeText(p.name, lcx, lcy)
     ctx.fillStyle = '#fff'
     ctx.fillText(p.name, lcx, lcy)
   })

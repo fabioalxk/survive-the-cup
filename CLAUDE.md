@@ -79,3 +79,6 @@ _<Project-specific rules the agent must never violate.>_
 
 ## Sobre o jogo
 Acho que se for fazer simulações, melhor fazer com no maximo 200 jogos, para ir mais rapido, mesmo que tenha mais variancia
+
+## Outros
+Não fique fazendo animações desnecessarias. Só as que realmente forem necessárias

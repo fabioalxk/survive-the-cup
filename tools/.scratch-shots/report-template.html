@@ -1,0 +1,275 @@
+<title>Mapa dos Caminhos — Diário de Redesign</title>
+<style>
+  :root {
+    --bg: #070b14;
+    --panel: #0e1626;
+    --panel-2: #131f34;
+    --line: rgba(148, 163, 189, 0.16);
+    --text: #e8eef9;
+    --muted: #93a3bf;
+    --gold: #fbbf24;
+    --gold-2: #f59e0b;
+    --green: #34d399;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(120% 100% at 15% 0%, #0c1524 0%, var(--bg) 55%);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 56px 24px 80px; }
+  header { margin-bottom: 48px; }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 12px;
+  }
+  h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(30px, 4.4vw, 44px);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+    text-wrap: balance;
+    background: linear-gradient(100deg, #fff 10%, #d8cba8 60%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .sub { color: var(--muted); font-size: 16px; max-width: 62ch; margin: 0 0 24px; }
+  .meta-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .meta-chip {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 12px;
+  }
+  .meta-chip b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+  section { margin-bottom: 52px; }
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .compare figure { margin: 0; }
+  .compare img, .shot img {
+    width: 100%;
+    display: block;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+  }
+  .compare figcaption, .shot figcaption {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tag {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 5px;
+  }
+  .tag-before { background: rgba(148, 163, 189, 0.16); color: var(--muted); }
+  .tag-after { background: rgba(52, 211, 153, 0.16); color: var(--green); }
+
+  .findings { display: flex; flex-direction: column; gap: 0; }
+  .finding {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 18px;
+    padding: 22px 0;
+    border-top: 1px solid var(--line);
+  }
+  .finding:last-child { border-bottom: 1px solid var(--line); }
+  .finding-n {
+    font-family: Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+  }
+  .finding h3 { margin: 0 0 6px; font-size: 16px; }
+  .finding p { margin: 0; color: var(--muted); font-size: 14.5px; max-width: 68ch; }
+  .finding p + p { margin-top: 6px; }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .shot figcaption { justify-content: center; }
+
+  .checklist {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .check-ico {
+    width: 16px; height: 16px; flex: none;
+    border-radius: 50%;
+    background: rgba(52, 211, 153, 0.18);
+    color: var(--green);
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 900;
+  }
+
+  footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 20px; }
+
+  @media (max-width: 640px) {
+    .compare { grid-template-columns: 1fr; }
+    .gallery { grid-template-columns: 1fr 1fr; }
+    .finding { grid-template-columns: 28px 1fr; gap: 12px; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Survive the Cup · Run mode</p>
+    <h1>O mapa dos caminhos, do genérico ao comercial</h1>
+    <p class="sub">
+      Loop de 6 em 6 minutos analisando prints e ajustando a tela do mapa até um acabamento
+      de jogo comercial — sem animação de sobra, com identidade visual coerente com o resto do jogo.
+    </p>
+    <div class="meta-row">
+      <span class="meta-chip"><b>10</b> iterações</span>
+      <span class="meta-chip"><b>4</b> correções reais aplicadas</span>
+      <span class="meta-chip"><b>1</b> imagem gerada (gpt-image-2)</span>
+      <span class="meta-chip">build + prod preview validados</span>
+    </div>
+  </header>
+
+  <section>
+    <p class="section-label">A maior mudança</p>
+    <div class="compare">
+      <figure>
+        <img src="data:image/jpeg;base64,__OLD_BG__" alt="Fundo antigo, estilo cartoon/vetorial" />
+        <figcaption><span class="tag tag-before">Antes</span> arte cartoon/vetorial, destoava do resto do jogo</figcaption>
+      </figure>
+      <figure>
+        <img src="data:image/jpeg;base64,__NEW_BG__" alt="Fundo novo, pictórico e atmosférico" />
+        <figcaption><span class="tag tag-after">Depois</span> pintura atmosférica, no mesmo idioma visual do jogo</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-label">O que foi corrigido</p>
+    <div class="findings">
+      <div class="finding">
+        <div class="finding-n">01</div>
+        <div>
+          <h3>Fundo genérico → arte pictórica gerada sob medida</h3>
+          <p>O mapa usava uma ilustração cartoon que não combinava com o resto do jogo (menus, mercado,
+          recompensa), que já é todo pintado/atmosférico. Gerei um novo fundo com gpt-image-2 no mesmo
+          estilo noturno e nebuloso das outras telas — gramado desgastado, holofotes dourados, arquibancada
+          desfocada.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="finding-n">02</div>
+        <div>
+          <h3>Excesso de animação → um único sinal funcional</h3>
+          <p>Nó pulsando, ícone flutuando, moeda balançando, faísca piscando, bandeira tremulando e anel do
+          chefão girando — tudo ao mesmo tempo, sempre. Sobrou só o pulso do nó disponível (indica
+          "clicável agora"); o resto virou estático.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="finding-n">03</div>
+        <div>
+          <h3>Bandeiras irreconhecíveis → identidade visual corrigida</h3>
+          <p>O componente de brasão recortava a bandeira com zoom de 120%, apagando as faixas finas
+          (Peru, Holanda viravam quase um círculo branco). Troquei para exibição completa da bandeira —
+          correção que também melhora outras telas que usam o mesmo componente.</p>
+        </div>
+      </div>
+      <div class="finding">
+        <div class="finding-n">04</div>
+        <div>
+          <h3>Corte abrupto no scroll → esmaecimento nas bordas</h3>
+          <p>Ao rolar o mapa, a fase seguinte era cortada em linha reta no meio do nó. Um leve gradiente
+          de esmaecimento nas bordas do scroll deixa a transição natural, como em qualquer app comercial
+          com listas roláveis.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-label">Resultado em diferentes estados do jogo</p>
+    <div class="gallery">
+      <figure class="shot">
+        <img src="data:image/jpeg;base64,__FRESH__" alt="Mapa no início da jornada" />
+        <figcaption>Início da jornada</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="data:image/jpeg;base64,__PROGRESS__" alt="Mapa com progresso real" />
+        <figcaption>Com trilha percorrida</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="data:image/jpeg;base64,__BOSS__" alt="Mapa completo até o chefão" />
+        <figcaption>Mapa completo, chefão</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-label">Verificações feitas</p>
+    <div class="checklist">
+      <div class="check-item"><span class="check-ico">✓</span> yarn build</div>
+      <div class="check-item"><span class="check-ico">✓</span> build de produção</div>
+      <div class="check-item"><span class="check-ico">✓</span> mobile (390px)</div>
+      <div class="check-item"><span class="check-ico">✓</span> desktop largo (1920px)</div>
+      <div class="check-item"><span class="check-ico">✓</span> console/rede limpos</div>
+      <div class="check-item"><span class="check-ico">✓</span> reduced motion</div>
+      <div class="check-item"><span class="check-ico">✓</span> foco por teclado</div>
+      <div class="check-item"><span class="check-ico">✓</span> fase com 5 nós</div>
+    </div>
+  </section>
+
+  <footer>
+    Gerado automaticamente pelo loop de design — sessão de 6 em 6 minutos no branch <code>fabio-v3</code>.
+  </footer>
+</div>

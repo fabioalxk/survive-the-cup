@@ -71,7 +71,12 @@ export function PlayerDetailPop({
 }: { onClose: () => void } & ComponentProps<typeof PlayerDetail>) {
   return createPortal(
     <div className="rq-detail-pop">
-      <button className="cm-tactics-close rq-detail-close" onClick={onClose} title="Fechar">
+      <button
+        className="cm-tactics-close rq-detail-close"
+        onClick={onClose}
+        title="Fechar"
+        aria-label="Fechar"
+      >
         <CloseIcon size={16} />
       </button>
       <PlayerDetail {...detail} />

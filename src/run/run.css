@@ -164,7 +164,7 @@
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
-  transition: transform 0.12s, color 0.15s, filter 0.15s;
+  transition: transform 0.12s, color 0.15s;
   animation: rq-menu-in 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 .rq-menu-item::before {
@@ -177,6 +177,13 @@
   border-radius: 3px;
   background: rgba(212, 175, 55, 0.45);
   transition: background 0.15s;
+}
+/* mesmo problema do `.cm-btn:focus-visible` em career.css: o `clip-path`
+   arredondado recorta o próprio anel de foco (box-shadow), deixando o menu
+   do título sem NENHUM indicador visível pra quem navega no teclado. */
+.rq-menu-item:focus-visible {
+  clip-path: none;
+  border-radius: 10px;
 }
 .rq-menu-item:nth-child(2) {
   animation-delay: 0.08s;
@@ -200,7 +207,6 @@
 .rq-menu-item:hover {
   color: #fde68a;
   transform: translateX(6px);
-  filter: brightness(1.15);
 }
 .rq-menu-item:hover::before,
 .rq-menu-item-hot::before {
@@ -434,8 +440,8 @@
   display: block;
 }
 
-/* CTA de largada: banner largo com brilho — o "GO" da cena. Reaproveita a
-   mesma placa verde pintada dos botões genéricos (ver .cm-btn-go). */
+/* CTA de largada: banner largo — o "GO" da cena. Reaproveita a mesma placa
+   verde pintada dos botões genéricos (ver .cm-btn-go). */
 .rq-event-go {
   display: block;
   width: 100%;
@@ -451,12 +457,13 @@
   clip-path: inset(0 round 14px);
   cursor: pointer;
   box-shadow: 0 10px 28px rgba(34, 197, 94, 0.3);
-  transition: transform 0.14s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.15s, filter 0.15s;
 }
-.rq-event-go:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-  box-shadow: 0 14px 34px rgba(34, 197, 94, 0.42);
+/* mesmo problema do `.cm-btn:focus-visible` em career.css: o `clip-path`
+   arredondado recorta o próprio anel de foco (box-shadow) de quem navega
+   no teclado. */
+.rq-event-go:focus-visible {
+  clip-path: none;
+  border-radius: 14px;
 }
 
 /* =====================================================================
@@ -677,6 +684,19 @@
   background: color-mix(in srgb, var(--asc-heat) 13%, transparent);
   box-shadow: 0 0 10px color-mix(in srgb, var(--asc-heat) 25%, transparent);
 }
+/* celular: 11 botões (0-10) não cabem numa linha só — com `flex:1` cada linha
+   quebrada estica pra preencher a largura toda, então a 2ª linha (sobra de
+   3) fica com botões bem mais largos que a 1ª (8 botões), desalinhado. Uma
+   grade de largura fixa mantém todo botão do mesmo tamanho nas duas linhas. */
+@media (max-width: 480px) {
+  .rq-asc-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+  }
+  .rq-asc-btn {
+    flex: none;
+  }
+}
 .rq-asc-desc {
   margin: 8px 0 0;
   font-size: 12px;
@@ -753,11 +773,18 @@
   border-radius: var(--cm-radius-lg);
   border: 1px solid var(--cm-line-strong);
   box-shadow: var(--cm-shadow-lg), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  /* esmaece o topo/base do recorte: sem isto, fases fora da área visível
+     cortavam em linha reta no meio do nó — parecia bug, não "role pra ver mais". */
+  mask-image: linear-gradient(to bottom, transparent 0, black 32px, black calc(100% - 32px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 32px, black calc(100% - 32px), transparent 100%);
 }
 /* conteúdo alto (altura vem inline do componente) — dá espaço vertical de sobra */
 .rq-map {
   position: relative;
   width: 100%;
+  /* tom médio do gramado do fundo — evita o "vazio" escuro/frio antes da
+     imagem (bg_map.webp) terminar de carregar */
+  background: #141c10;
 }
 .rq-map-bg {
   position: absolute;
@@ -788,11 +815,11 @@
    grosso/opaco e com leve sombra (em vez de brilho, que é só do trecho aberto)
    pra não ficar "wireframe" perto do resto do mapa, que é bem pintado */
 .rq-line {
-  stroke: rgba(230, 237, 247, 0.4);
+  stroke: rgba(255, 240, 210, 0.45);
   stroke-width: 0.85;
   stroke-dasharray: 2 2;
   stroke-linecap: round;
-  filter: drop-shadow(0 0.5px 1px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 0.5px 1.5px rgba(0, 0, 0, 0.55));
 }
 /* trilha já percorrida: dourado estático (histórico, não indica próximo passo) */
 .rq-line-done {
@@ -825,8 +852,12 @@
 .rq-node:focus-visible {
   box-shadow: none;
 }
+/* o anel de foco padrão (--cm-ring, azul bem fraco) sumia atrás do anel
+   dourado decorativo que os nós disponíveis já têm sempre visível — no
+   teclado, dava pra saber que um nó era clicável mas não qual estava com
+   foco. Anel branco+azul bem mais forte, contraste de cor com o dourado. */
 .rq-node:focus-visible .rq-node-badge {
-  box-shadow: var(--cm-ring);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 0 0 6px rgba(37, 99, 235, 0.7);
 }
 /* anel externo decorativo (medalha de 2 tons) */
 .rq-node-ring {
@@ -861,20 +892,9 @@
 .rq-node-art svg {
   display: block;
 }
-/* só balança quando dá pra clicar — bloqueado/concluído fica parado (o
-   movimento é reservado pra indicar "isso aqui é uma opção agora") */
-.rq-node-available .rq-node-art {
-  animation: rq-float 3.4s ease-in-out infinite;
-}
-@keyframes rq-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
-  }
-}
+/* o "isso aqui é uma opção agora" já é o pulso de escala do nó inteiro
+   (`rq-node-pulse`, ver mais abaixo) — balançar o ícone por cima seria o
+   mesmo recado duas vezes. */
 /* halo colorido atrás do emblema (a "aura" que substitui o fundo do círculo) */
 .rq-node-halo {
   position: absolute;
@@ -924,58 +944,20 @@
   color: #fde68a;
 }
 
-/* ---- micro-animações dentro dos ícones (partes dos SVGs) ---- */
-.rqi-swing,
-.rqi-spark,
-.rqi-wave {
-  transform-box: fill-box;
-}
-/* moeda do mercado balançando pendurada — só quando o nó está disponível
-   (mesma regra do balanço do ícone: parado sempre que não dá pra clicar) */
+/* ---- detalhes dentro dos ícones (partes dos SVGs) ---- */
+/* estáticos de propósito: o pulso do nó disponível (`rq-node-pulse`) já é o
+   único sinal de movimento do mapa — moeda balançando, faísca piscando e
+   bandeira tremulando eram só decoração ambiente competindo com esse sinal. */
 .rqi-swing {
+  transform: rotate(-6deg);
   transform-origin: 50% 0;
 }
-.rq-node-available .rqi-swing {
-  animation: rqi-swing 3.2s ease-in-out infinite;
-}
-@keyframes rqi-swing {
-  0%,
-  100% {
-    transform: rotate(-8deg);
-  }
-  50% {
-    transform: rotate(8deg);
-  }
-}
-/* faísca do troféu piscando */
 .rqi-spark {
   transform-origin: 50% 50%;
-  animation: rqi-spark 2.2s ease-in-out infinite;
 }
-@keyframes rqi-spark {
-  0%,
-  100% {
-    opacity: 0.95;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.25;
-    transform: scale(0.55) rotate(25deg);
-  }
-}
-/* bandeira da largada tremulando no mastro */
 .rqi-wave {
+  transform: rotate(1.4deg) scaleX(1.01);
   transform-origin: 0 50%;
-  animation: rqi-wave 2.6s ease-in-out infinite;
-}
-@keyframes rqi-wave {
-  0%,
-  100% {
-    transform: rotate(-1.6deg) scaleX(0.98);
-  }
-  50% {
-    transform: rotate(2.2deg) scaleX(1.02);
-  }
 }
 
 /* ---- coroa flutuando sobre o chefão ---- */
@@ -990,7 +972,6 @@
 .rq-node-crown svg {
   display: block;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 7px rgba(251, 191, 36, 0.5));
-  animation: rq-float 3.4s ease-in-out infinite;
 }
 /* legenda flutuante sob os nós especiais/chefão */
 .rq-node-cap {
@@ -1004,8 +985,8 @@
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--cm-text);
-  background: rgba(6, 10, 18, 0.8);
-  border: 1px solid var(--cm-line-strong);
+  background: linear-gradient(180deg, rgba(24, 18, 10, 0.88), rgba(6, 10, 18, 0.88));
+  border: 1px solid rgba(214, 184, 122, 0.32);
   padding: 1.5px 7px;
   border-radius: 999px;
   pointer-events: none;
@@ -1014,6 +995,7 @@
   text-overflow: ellipsis;
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .rq-node-cap-boss {
   display: inline-flex;
@@ -1024,6 +1006,24 @@
   font-size: 9.5px;
   max-width: 162px;
   box-shadow: 0 0 12px rgba(251, 191, 36, 0.25);
+}
+/* zigue-zague em 3 faixas: numa fase com 4-5 nós, as legendas (largura
+   variável, cada uma centralizada só sob o próprio nó) ficam mais perto uma
+   da outra do que a própria largura do texto — sem isto, colam/embaralham.
+   Com só 2 faixas (par/ímpar) uma fase de 5 nós ainda cola a raia 0 na 2 (as
+   duas caem na faixa par); com 3 faixas por raia (`lane % 3`) duas legendas
+   na MESMA faixa ficam sempre a pelo menos 3 raias de distância — espaço de
+   sobra até em telas bem estreitas. O passo entre faixas (20px) é maior que
+   a própria altura da legenda (~16px) DE PROPÓSITO: ícone de evento e escudo
+   de time têm alturas de botão levemente diferentes, então "100%" (a base de
+   cada faixa) não cai exatamente igual entre nós vizinhos — um passo justo
+   de 16px podia ainda encostar. Ainda cabe folga de sobra até a próxima fase
+   (ver `ROW_GAP` em MapView.tsx). */
+.rq-node-cap-band-1 {
+  top: calc(100% + 27px);
+}
+.rq-node-cap-band-2 {
+  top: calc(100% + 51px);
 }
 .rq-cap-ico {
   flex: none;
@@ -1045,12 +1045,6 @@
 }
 .rq-node-boss .rq-node-ring {
   background: conic-gradient(from 0deg, var(--cm-gold), #dc2626, var(--cm-gold), #dc2626, var(--cm-gold));
-  animation: rq-spin 6s linear infinite;
-}
-@keyframes rq-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* ---- estados (cores sempre normais, sem cinza e sem piscar) ---- */
@@ -1128,8 +1122,8 @@
   position: absolute;
   bottom: -2px;
   right: -2px;
-  background: rgba(6, 10, 18, 0.9);
-  color: var(--cm-muted);
+  background: rgba(30, 38, 56, 0.95);
+  color: #cbd5e1;
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -1137,7 +1131,7 @@
   place-items: center;
   border: 2px solid var(--cm-bg);
   z-index: 4;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 /* ---- ponto de partida (origem dos 3 caminhos) ---- */
 .rq-start-node {
@@ -1169,16 +1163,6 @@
   text-shadow: 0 0 8px rgba(239, 68, 68, 0.85), 0 2px 3px rgba(0, 0, 0, 0.6);
   z-index: 4;
   pointer-events: none;
-  animation: rq-here-bounce 1.1s ease-in-out infinite;
-}
-@keyframes rq-here-bounce {
-  0%,
-  100% {
-    transform: translate(-50%, calc(-100% - 30px));
-  }
-  50% {
-    transform: translate(-50%, calc(-100% - 20px));
-  }
 }
 .rq-start-cap {
   font-size: 9px;
@@ -1186,10 +1170,11 @@
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--cm-text);
-  background: rgba(6, 10, 18, 0.8);
-  border: 1px solid var(--cm-line-strong);
+  background: linear-gradient(180deg, rgba(24, 18, 10, 0.88), rgba(6, 10, 18, 0.88));
+  border: 1px solid rgba(214, 184, 122, 0.32);
   padding: 1.5px 8px;
   border-radius: 999px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .rq-simple-detail {
@@ -1261,22 +1246,49 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.tv-presets-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.tv-presets-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cm-muted);
+}
 .tv-presets {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 .tv-pitch {
   position: relative;
+  /* container nomeado pro tamanho dos chips reagir à largura REAL do campinho
+     (ver @container mais abaixo) — a tática no meio da partida, por exemplo,
+     é bem mais estreita que o vestiário mesmo num desktop largo (a largura
+     dela vem de `cqh` da altura do campo, não da largura da janela), então um
+     `@media` de largura de TELA não pega esse caso. */
+  container-type: inline-size;
+  container-name: pitch;
   /* cresce até quase a altura da tela (proporção 68/105), nunca menor que antes */
   width: min(100%, max(400px, calc((100dvh - 320px) * 68 / 105)));
   margin: 0 auto;
   aspect-ratio: 68 / 105;
   border-radius: 14px;
   border: 1px solid var(--cm-line-strong);
+  /* grama de verdade (foto gerada, tools/.scratch-shots/gen-turf.mjs) com
+     profundidade por cima: realce radial suave no miolo (luz de cima) +
+     vinheta nas bordas (funda o campinho no painel em vez de flutuar liso). */
   background:
-    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0 9.5%, rgba(0, 0, 0, 0.06) 9.5% 19%),
-    linear-gradient(180deg, #14532d, #166534);
+    radial-gradient(120% 70% at 50% 8%, rgba(255, 255, 255, 0.08), transparent 60%),
+    radial-gradient(140% 90% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.32) 100%),
+    linear-gradient(rgba(9, 41, 22, 0.18), rgba(6, 26, 15, 0.28)), url('/assets/bg/turf_pitch.webp');
+  background-size: auto, auto, auto, cover;
+  background-position: center;
   box-shadow: var(--cm-shadow), inset 0 0 0 6px rgba(255, 255, 255, 0.06);
   /* visível (não hidden): o goleiro fica bem perto da linha de fundo (x=5) e o
      chip (foto + nome + nota) é mais alto que a folga até a borda — cortava
@@ -1303,6 +1315,19 @@
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
 }
+/* marca do meio-campo — todo campo de verdade tem; sem ela o círculo central
+   ficava vazio e o campinho lia mais como diagrama técnico que gramado real */
+.tv-circle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
 .tv-box {
   position: absolute;
   left: 50%;
@@ -1318,6 +1343,79 @@
 .tv-box-bottom {
   bottom: -2px;
   border-bottom: none;
+}
+/* marca do pênalti — mesmo raciocínio da marca do meio-campo, uma por área */
+.tv-box::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+}
+.tv-box-top::after {
+  top: 62%;
+}
+.tv-box-bottom::after {
+  bottom: 62%;
+}
+/* arco da grande área (a "D"): bulge pra fora da caixa, na linha onde ela
+   termina — mesmo desenho de um campo de verdade, só decorativo. */
+.tv-arc {
+  position: absolute;
+  left: 50%;
+  width: 20%;
+  aspect-ratio: 2 / 1;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transform: translateX(-50%);
+}
+.tv-arc-top {
+  top: 15.7%;
+  border-top: none;
+  border-radius: 0 0 999px 999px;
+}
+.tv-arc-bottom {
+  bottom: 15.7%;
+  border-bottom: none;
+  border-radius: 999px 999px 0 0;
+}
+/* quinas do campo: quarto de círculo bem pequeno, só o suficiente pra ler
+   como campo de verdade sem chamar atenção. */
+.tv-corner {
+  position: absolute;
+  width: 5%;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+.tv-corner-tl {
+  top: -2px;
+  left: -2px;
+  border-top: none;
+  border-left: none;
+  border-radius: 0 0 100% 0;
+}
+.tv-corner-tr {
+  top: -2px;
+  right: -2px;
+  border-top: none;
+  border-right: none;
+  border-radius: 0 0 0 100%;
+}
+.tv-corner-bl {
+  bottom: -2px;
+  left: -2px;
+  border-bottom: none;
+  border-left: none;
+  border-radius: 0 100% 0 0;
+}
+.tv-corner-br {
+  bottom: -2px;
+  right: -2px;
+  border-bottom: none;
+  border-right: none;
+  border-radius: 100% 0 0 0;
 }
 
 /* jogador no campinho: botão colorido pela função + nome, arrastável */
@@ -1344,17 +1442,21 @@
 .tv-chip:focus-visible {
   outline: none;
 }
+/* --cm-ring (azul bem translúcido) quase não aparecia contra a borda colorida
+   por posição da própria foto (mesmo problema do anel de foco do mapa) — anel
+   branco+azul mais forte, sempre visível independente da cor da posição. */
 .tv-chip:focus-visible .tv-chip-photo {
-  box-shadow: var(--cm-ring), 0 4px 10px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 0 0 6px rgba(37, 99, 235, 0.7),
+    0 4px 10px rgba(0, 0, 0, 0.45);
 }
 .tv-chip-photo-wrap {
   position: relative;
 }
 .tv-chip-photo {
-  width: 36px;
-  height: 36px;
-  border: 2px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 0 3px color-mix(in srgb, var(--role-tone, transparent) 55%, transparent);
   transition: transform 0.12s ease, border-color 0.12s;
 }
 .tv-chip-lock {
@@ -1370,40 +1472,136 @@
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
+.tv-role-gk {
+  --role-tone: #d97706;
+}
 .tv-role-gk .tv-chip-photo {
-  border-color: #b45309;
+  border-color: #d97706;
+}
+.tv-role-def {
+  --role-tone: #3b82f6;
 }
 .tv-role-def .tv-chip-photo {
-  border-color: #1d4ed8;
+  border-color: #3b82f6;
+}
+.tv-role-mid {
+  --role-tone: #22c55e;
 }
 .tv-role-mid .tv-chip-photo {
-  border-color: #15803d;
+  border-color: #22c55e;
+}
+.tv-role-fwd {
+  --role-tone: #ef4444;
 }
 .tv-role-fwd .tv-chip-photo {
-  border-color: #b91c1c;
+  border-color: #ef4444;
 }
 .tv-chip.is-drag .tv-chip-photo {
   transform: scale(1.18);
   border-color: var(--cm-gold);
+}
+/* mouse no chip: anel da posição fica mais forte — a única pista de "isto
+   troca de lugar" pra quem usa cursor (touch já aprende arrastando/tocando).
+   Só cor/glow, sem crescer: o campinho já tem MUITO chip lado a lado pra
+   qualquer um deles pular de tamanho ao passar o mouse por perto. */
+.tv-chip:hover:not(.is-drag) .tv-chip-photo {
+  border-color: color-mix(in srgb, var(--role-tone, #fff) 55%, white);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 0 4px color-mix(in srgb, var(--role-tone, transparent) 70%, transparent);
 }
 .tv-chip-name {
   white-space: nowrap;
   font-size: 10.5px;
   font-weight: 700;
   color: #fff;
-  background: rgba(0, 0, 0, 0.45);
+  background: linear-gradient(180deg, rgba(10, 15, 26, 0.82), rgba(10, 15, 26, 0.68));
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  padding: 1px 7px;
+  padding: 1.5px 8px;
+  /* nomes gerados (fictícios) podem sair bem compridos ("Wellington
+     Cavalcanti") — sem isso a pílula estourava pra fora do campinho e podia
+     encostar no chip vizinho. Ainda dá pra reconhecer o jogador pelo começo
+     do nome + retrato + número da camisa.
+     96px ainda deixava 2 nomes compridos ADJACENTES se tocarem (defensores
+     ficam só uns 60px de centro a centro na formação padrão) — 64px cobre
+     esse caso mais apertado com folga. */
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-/* nota geral do slot no chip — número no lugar do antigo rótulo de posição */
-.tv-chip-ovr {
+/* número da camisa: selo simétrico ao de nota, do outro lado da foto —
+   reaproveita a cor da função (--role-tone) já usada no anel da foto.
+   Encaixe raso (perto do padlock, -2px): formações com linha de 5 (ex. 3-5-2)
+   têm âncoras centrais a ~60px de centro a centro — um selo que "pendura"
+   pra fora da foto (como no primeiro rascunho, -5/-7px) colide com o vizinho
+   nesse caso; encostado na foto, o selo cabe em qualquer esquema. */
+.tv-chip-num {
+  position: absolute;
+  top: -1px;
+  left: -3px;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 2.5px;
+  display: grid;
+  place-items: center;
   font-family: var(--cm-font-display);
   font-weight: 800;
-  font-size: 10.5px;
+  font-size: 9px;
   font-variant-numeric: tabular-nums;
-  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  background: var(--role-tone, #475569);
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
   border-radius: 999px;
-  padding: 0 7px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+/* nota geral do slot: badge sobre o canto da foto (estilo "carta FIFA"), não
+   mais uma pílula solta embaixo do nome — junta a leitura foto+nota num só
+   elemento e sobra altura pro chip inteiro respirar no campinho. Mesmo
+   encaixe raso do número (ver comentário acima) pelo mesmo motivo. */
+.tv-chip-ovr {
+  position: absolute;
+  top: -1px;
+  right: -3px;
+  font-family: var(--cm-font-display);
+  font-weight: 800;
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+  background: rgba(8, 12, 22, 0.92);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 0.5px 4.5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+/* a tática NO MEIO DA PARTIDA usa um campinho bem mais estreito que o
+   vestiário mesmo em desktop largo (a largura ali vem da ALTURA do campo em
+   `cqh`, não da janela) — um `@media` de largura de tela não pega esse caso
+   (medido ~258px, contra ~330px do vestiário). Reage à largura REAL do
+   campinho (`container-name: pitch`), então cobre esse e qualquer contexto
+   futuro igual de estreito, em vez de só o celular. Esquemas com 5 numa
+   linha (3-5-2/3-4-3) são os que mais sentem — os chips do meio ficam bem
+   próximos dos vizinhos nessa largura. */
+@container pitch (max-width: 280px) {
+  .tv-chip-photo {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  .tv-chip-num {
+    min-width: 11px;
+    height: 11px;
+    font-size: 7.5px;
+    top: -1px;
+    left: -2px;
+  }
+  .tv-chip-ovr {
+    font-size: 8.5px;
+    padding: 0 3.5px;
+    top: -1px;
+    right: -2px;
+  }
+  .tv-chip-name {
+    font-size: 8px;
+    padding: 1px 4px;
+    max-width: 52px;
+  }
 }
 
 /* tática no meio da partida: o campinho abre por cima do campo, com o jogo pausado */
@@ -1450,14 +1648,9 @@
   /* badge redondo pintado (tools/generate-art.mjs buttons) — o X já vem na arte */
   background: url('/assets/ui/btn_round_close.webp') center / 100% 100% no-repeat;
   cursor: pointer;
-  transition: transform 0.15s ease, filter 0.15s ease;
 }
 .cm-tactics-close svg {
   display: none;
-}
-.cm-tactics-close:hover {
-  filter: brightness(1.3);
-  transform: scale(1.07);
 }
 .cm-tactics-btn-bottom {
   margin-top: 8px !important;
@@ -1495,6 +1688,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  margin: 0;
   min-width: 380px;
   padding: 26px 84px 34px;
   font-family: var(--cm-font-display);
@@ -1511,6 +1705,9 @@
   padding: 14px 48px 21px;
   font-size: 16px;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+  /* a arte da faixa (background-size 100% 100%) distorce feio se o texto
+     quebrar linha — nunca deixa, mesmo que aperte um pouco a fonte */
+  white-space: nowrap;
 }
 .cm-ribbon .rq-h2-ico {
   filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.4));
@@ -1555,12 +1752,26 @@
     linear-gradient(180deg, rgba(22, 34, 58, 0.92), rgba(12, 19, 34, 0.96));
   overflow: hidden;
   box-shadow: var(--cm-shadow-lg);
-  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.28s;
   /* `backwards` (não `both`): sem o `forwards`, a animação de entrada não fica
      travando `opacity: 1` pra sempre depois que termina — isso encobria o
      `opacity: 0.55` de `.pb-card:disabled` (oferta sem moedas suficientes),
      que ficava sem ficar visualmente esmaecida mesmo desabilitada. */
   animation: rq-deal 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+/* carta inteira é um botão — só o brilho (tingido pela posição) confirma que
+   dá pra clicar; sem transform/escala, que já saiu daqui antes por ser
+   chamativo demais num grid de várias cartas ao mesmo tempo. */
+.rc-card:hover:not(:disabled):not(.is-armed) {
+  box-shadow: var(--cm-shadow-lg), 0 0 26px rgba(var(--tone), 0.32);
+}
+/* mesmo problema do `.cm-btn:focus-visible` (career.css): `overflow:hidden`
+   (aqui, pra recortar a moldura pintada nos cantos arredondados) some com o
+   anel de foco do teclado do mesmo jeito que um `clip-path` recortaria — só
+   que aqui o anel É PRA DENTRO (inset), então não depende de nada por fora
+   da própria caixa pra aparecer. */
+.rc-card:focus-visible {
+  box-shadow: var(--cm-shadow-lg), inset 0 0 0 3px rgba(96, 165, 250, 0.7);
 }
 /* moldura + tom por posição — as 4 artes (`card_frame_gk/def/mid/fwd.webp`)
    existiam mas a carta nunca recebia a classe `cm-role-*`, então toda
@@ -1598,16 +1809,6 @@
     transform: none;
   }
 }
-/* a carta inteira é o botão: no hover ela cresce suavemente e ganha glow */
-.rc-card:hover,
-.rc-card:focus-visible {
-  transform: translateY(-8px) scale(1.05);
-  z-index: 1;
-  box-shadow: 0 26px 50px rgba(0, 0, 0, 0.55), 0 0 40px rgba(var(--tone), 0.5);
-}
-.rc-card:active {
-  transform: translateY(-4px) scale(1.02);
-}
 /* topo da carta: glow tingido pela posição + retrato do jogador */
 .rc-card-portrait {
   position: relative;
@@ -1643,10 +1844,6 @@
   object-fit: contain;
   filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.55));
   transform: translateY(16%);
-  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-.rc-card:hover .rc-card-face {
-  transform: translateY(10%) scale(1.05);
 }
 .rc-card-body {
   display: flex;
@@ -1720,7 +1917,6 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 4px 12px rgba(251, 191, 36, 0.15);
 }
 .rq-market-head h2 {
-  margin: 0;
   font-size: 17px;
 }
 .rq-market-head p {
@@ -1873,7 +2069,6 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 .rq-gym-head h2 {
-  margin: 0;
   font-size: 17px;
 }
 .rq-gym-head p {
@@ -1938,19 +2133,12 @@
   width: min(100%, max(300px, calc((100dvh - 440px) * 68 / 105)));
 }
 
-/* chip do campinho destacado como selecionado (jogador aberto no painel de treino) */
+/* chip do campinho destacado como selecionado (jogador aberto no painel de
+   treino): anel firme, sem pulsar — é uma seleção, não precisa chamar atenção
+   com brilho piscando por cima de tudo mais na tela. */
 .tv-chip.is-sel .tv-chip-photo {
   border-color: var(--cm-gold);
-  animation: rq-sel-ring 1.6s ease-in-out infinite;
-}
-@keyframes rq-sel-ring {
-  0%,
-  100% {
-    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.35), 0 4px 10px rgba(0, 0, 0, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 0 5px rgba(251, 191, 36, 0.55), 0 4px 14px rgba(0, 0, 0, 0.5);
-  }
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.55), 0 4px 10px rgba(0, 0, 0, 0.45);
 }
 
 /* coluna direita: identidade + grupos de atributos treináveis */
@@ -2210,6 +2398,12 @@
   .rq-market-head {
     flex-wrap: wrap;
   }
+  /* "Mercador de jogadores" é o título mais comprido dos 4 (mercado, academia,
+     recompensa, bênção) — com `nowrap` ele só cabe numa linha em telas
+     estreitas com a fonte um pouco menor; os outros nem notam a diferença. */
+  .rq-market-head h2 {
+    font-size: 15px;
+  }
   .rq-market-wallet {
     width: 100%;
     margin-left: 0;
@@ -2313,27 +2507,15 @@
     linear-gradient(180deg, rgba(var(--potion), 0.38), rgba(var(--potion), 0.1));
   border: 1px solid rgba(var(--potion), 0.65);
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, filter 0.15s ease;
-  animation: rq-potion-glow 2.4s ease-in-out infinite;
-}
-@keyframes rq-potion-glow {
-  0%,
-  100% {
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 5px rgba(var(--potion), 0.25);
-  }
-  50% {
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 16px 3px rgba(var(--potion), 0.6);
-  }
+  transition: border-color 0.15s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 5px rgba(var(--potion), 0.25);
 }
 .rq-potion-chip:hover:not(:disabled) {
-  transform: translateY(-2px) scale(1.1);
   border-color: rgba(var(--potion), 1);
-  filter: brightness(1.15);
 }
 .rq-potion-chip:disabled {
   opacity: 0.4;
   cursor: default;
-  animation: none;
   filter: saturate(0.4);
 }
 
@@ -2373,11 +2555,9 @@
   color: var(--potion-text);
   line-height: 1.45;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-  animation: rq-potion-glow 2.4s ease-in-out infinite;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 .rq-potion-earned:hover {
-  transform: translateY(-1px);
   border-color: rgba(var(--potion), 0.95);
   background:
     radial-gradient(80% 160% at 8% 0%, rgba(var(--potion), 0.28), rgba(var(--potion), 0) 55%),
@@ -2582,7 +2762,7 @@
   --scene: url('/assets/bg/bg_reward.webp');
 }
 .rq-scene-prematch {
-  --scene: url('/assets/bg/bg_tactics.webp');
+  --scene: url('/assets/bg/bg_squad.webp');
 }
 /* backdrop de modal com cenário atrás do painel */
 .cm-backdrop.rq-scene {
@@ -2906,18 +3086,43 @@
     font-size: 12px;
   }
   /* campo estreito: 3 jogadores por linha (4-3-3 etc.) colidem se o chip
-     ficar largo — encolhe foto/rótulo pra caber sem sobrepor o vizinho */
+     ficar largo — encolhe foto/rótulo pra caber sem sobrepor o vizinho.
+     O tamanho real da foto vem de uma prop JS (size, inline style em
+     PlayerAvatar) — só !important derruba o inline neste breakpoint (mesmo
+     caso do escudo/bandeira em .rq-select-badge .cm-crest, mais abaixo). */
   .tv-chip-photo {
-    width: 28px;
-    height: 28px;
+    width: 28px !important;
+    height: 28px !important;
   }
   .tv-chip-name {
     font-size: 9px;
     padding: 1px 5px;
   }
+  .tv-chip-num {
+    min-width: 12px;
+    height: 12px;
+    font-size: 8px;
+  }
   .tv-chip-ovr {
     font-size: 9px;
-    padding: 0 5px;
+    padding: 0 4px;
+  }
+}
+/* celular estreito (~320-480px): fases com 5 raias colocam os nós de evento
+   (56px, mais largos que os 46px de partida) quase colados — o vão entre
+   raias vem de um % fixo da largura (ver LANE_MIN_X/LANE_MAX_X em
+   MapView.tsx), então em telas finas ele fica menor que o próprio nó e as
+   duas academias/mercados da mesma fase chegam a se sobrepor. Encolher os
+   nós aqui é mais simples que reescrever o espaçamento das raias. */
+@media (max-width: 480px) {
+  .rq-node {
+    width: 38px;
+    height: 38px;
+  }
+  .rq-node-gym,
+  .rq-node-market {
+    width: 44px;
+    height: 44px;
   }
 }
 @media (max-width: 760px) {
@@ -3000,7 +3205,16 @@
     gap: 8px;
   }
 
-  /* ---- Cartela de atributos no rodapé (ver .rq-detail-pop acima) ---- */
+}
+
+/* Cartela de atributos (rodapé): o painel flutuante ao lado (ver bloco
+   "vestiário" abaixo) só cabe sem sobrepor o campinho a partir de ~1300px de
+   largura — `right: max(16px, calc(50vw - 640px))` some pra 16px bem antes
+   disso, enquanto o cartão central (.rq-prematch, 600px) continua largo o
+   bastante pra colidir com ele. Por isso o corte da cartela fixa no rodapé é
+   mais alto que o breakpoint geral de celular (760px): cobre também
+   tablet/notebook, onde a versão flutuante bloquearia cliques nos chips. */
+@media (max-width: 1299px) {
   .rq-detail-pop {
     display: block;
     position: fixed;
@@ -3008,7 +3222,7 @@
     right: 0;
     bottom: 0;
     z-index: 40;
-    max-height: 52dvh;
+    max-height: 34dvh;
     overflow-y: auto;
     background: linear-gradient(180deg, rgba(17, 26, 45, 0.98), rgba(10, 16, 28, 0.99));
     border-top: 1px solid var(--cm-line-strong);
@@ -3035,15 +3249,44 @@
   .rq-detail-pop .cm-squad-detail-head {
     padding-right: 36px;
   }
+  /* a cartela fixa no rodapé cobria as 2 fileiras de baixo do campinho
+     (defesa/goleiro) — justo os jogadores que o texto "toque em outro jogador
+     pra trocar" pede pra tocar. `.tv-pitch` já encolhe mantendo a proporção
+     (flex + aspect-ratio, ver `.rq-prematch-board .tv-pitch`); reservando esse
+     mesmo respiro embaixo do campinho, ele encolhe sozinho e nenhum chip fica
+     escondido atrás do painel. Sem piso de altura, telas baixas (~700px)
+     encolhiam o campinho a ponto dos 11 chips se sobreporem, ilegível — o piso
+     evita isso; se não sobrar espaço nem pro piso, o resto rola dentro do
+     próprio `.rq-prematch-board` (`overflow-y:auto`) em vez de espremer tudo. */
+  .rq-prematch.has-detail .rq-prematch-board {
+    padding-bottom: 34dvh;
+    overflow-y: auto;
+  }
+  /* piso em LARGURA, não só altura: com o piso só em altura (300px), o
+     aspect-ratio (68/105, retrato) derivava uma largura de ~194px — estreito
+     demais pra 3 chips numa fileira sem se atropelarem (nomes/badges
+     colando). Com piso também em largura, o campinho cresce em ALTURA (via
+     aspect-ratio) até caber os 270px de largura mínima; se isso passar da
+     área visível, `.rq-prematch-board` já rola por dentro (acima). */
+  .rq-prematch.has-detail .rq-prematch-board .tv-pitch {
+    min-height: 300px;
+    min-width: 270px;
+  }
 }
 
-/* Tática no meio da partida (portrait): painel compacto — cabeçalho, presets,
-   campinho e CTA cabem juntos DENTRO da área do campo (o overlay cobre só o
-   campo, não a tela toda — por isso a conta usa cqh, a altura do overlay). */
+/* Tática no meio da partida: o overlay cobre só a área do campo (não a tela
+   toda), então o campinho da tática precisa da altura do CAMPO, não da
+   janela — daí `cqh` em vez de `dvh` nas duas orientações, e por isso
+   `.cm-tactics-over` precisa ser container nas duas (sem isto `cqh` não tem
+   contra o que resolver e o campinho encolhe pra quase 0px). */
+.cm-tactics-over {
+  container-type: size;
+}
+/* portrait: painel compacto — cabeçalho, presets, campinho e CTA cabem
+   juntos DENTRO da área do campo. */
 @media (orientation: portrait) {
   .cm-tactics-over {
     padding: 10px;
-    container-type: size;
   }
   .cm-tactics-panel {
     margin: 0 0 10px;
@@ -3052,18 +3295,20 @@
   }
   .cm-tactics-panel .tv-pitch {
     width: min(100%, calc((100dvh - 320px) * 68 / 105)); /* fallback sem cq */
-    width: min(100%, calc((100cqh - 210px) * 68 / 105));
+    width: min(100%, max(160px, calc((100cqh - 210px) * 68 / 105)));
   }
 }
 
-/* Tática no meio da partida (paisagem/desktop): mesmo problema do portrait — o
-   overlay cobre só a área do campo (.cm-pitch já é container em paisagem, ver
-   acima), então o campinho da tática precisa da MESMA conta em cqh; usar
-   100dvh (altura da JANELA) aqui cortava o goleiro e o botão "Voltar ao jogo"
-   sempre que o campo ficava mais baixo que a tela inteira. */
+/* paisagem/desktop: mesmo problema do portrait, mas usar 100dvh (altura da
+   JANELA) aqui cortava o goleiro e o botão "Voltar ao jogo" sempre que o
+   campo ficava mais baixo que a tela inteira. `max(160px, ...)` é o piso
+   legível: em celular bem baixo (~236px de área de jogo) a conta em cqh dá
+   quase 0 — sem piso os 11 chips iam colar uns nos outros. Com o piso, quem
+   estiver num aparelho tão baixo assim rola o painel (`.cm-tactics-over`
+   já tem `overflow-y:auto`) pra ver o resto do time. */
 @media (orientation: landscape) {
   .cm-tactics-panel .tv-pitch {
-    width: min(100%, calc((100cqh - 230px) * 68 / 105));
+    width: min(100%, max(160px, calc((100cqh - 230px) * 68 / 105)));
   }
 }
 
@@ -3081,19 +3326,43 @@
   flex-direction: column;
   gap: 10px;
   overflow: hidden;
+  /* painel com mais corpo que o .cm-modal genérico (gradiente liso de 2 tons):
+     realce radial no canto superior (luz batendo na superfície) + vinheta nas
+     bordas (funda o conteúdo, não flutua liso) + friso dourado bem discreto —
+     ecoa o acabamento das cartelas ornamentadas (mercado/recompensa) sem
+     competir com elas. Só aqui: o .cm-modal genérico das outras telas fica
+     como está. */
+  background: radial-gradient(120% 90% at 18% 0%, rgba(255, 255, 255, 0.05), transparent 55%),
+    radial-gradient(140% 100% at 50% 100%, rgba(0, 0, 0, 0.28), transparent 60%),
+    linear-gradient(180deg, rgba(22, 34, 58, 0.95), rgba(14, 22, 38, 0.97));
+  box-shadow: var(--cm-shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.07), inset 0 0 0 1px rgba(251, 191, 36, 0.1);
 }
 .rq-prematch-head {
   display: flex;
   align-items: center;
   gap: 10px;
   flex: none;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--cm-line);
 }
 .rq-prematch-title {
   flex: 1 1 auto;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
+}
+/* moldura do escudo do adversário: eleva o ícone plano padrão (.cm-crest) só
+   aqui — é a primeira coisa que o olho vê ao entrar no vestiário, merece mais
+   presença que um badge de lista qualquer. Sem animação: brilho estático. */
+.rq-prematch-crest {
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, rgba(251, 191, 36, 0.22), rgba(251, 191, 36, 0) 72%);
+  box-shadow: inset 0 0 0 1.5px rgba(251, 191, 36, 0.35);
 }
 .rq-prematch-title-text {
   display: flex;
@@ -3112,13 +3381,43 @@
   text-transform: uppercase;
   color: var(--cm-gold);
 }
-.rq-prematch-title-text strong {
+.rq-prematch-title-text h2 {
+  margin: 0;
   font-size: 15px;
   font-weight: 800;
   color: #fff;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* placar de nota: seu XI × XI do rival — mesmo cálculo que decide a partida
+   (`xiStrength`), só que agora visível ANTES de jogar. Cor por faixa (mesma
+   escala dos atributos) já entrega "favorito/zebra" sem precisar de rótulo. */
+.rq-prematch-vs {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--cm-font-display);
+  font-weight: 800;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--cm-line);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.rq-prematch-vs-x {
+  color: var(--cm-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+/* tela bem estreita: nome do adversário + 3 ações do cabeçalho já disputam
+   espaço sozinhos — o placar de nota é o primeiro a ceder lugar. */
+@media (max-width: 420px) {
+  .rq-prematch-vs {
+    display: none;
+  }
 }
 .rq-prematch-actions {
   display: flex;
@@ -3150,9 +3449,8 @@
   align-items: center;
   gap: 8px;
 }
-.rq-prematch-board .tv-presets {
+.rq-prematch-board .tv-presets-wrap {
   flex: none;
-  justify-content: center;
 }
 .rq-prematch-board .tv-pitch {
   flex: 1 1 0;
@@ -3161,11 +3459,71 @@
   max-width: 100%;
   margin: 0 auto;
 }
-/* seleção no vestiário: anel firme, sem pulsar — tela de decisão rápida, não
-   precisa chamar atenção com brilho piscando. */
-.rq-prematch-board .tv-chip.is-sel .tv-chip-photo {
-  animation: none;
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.55), 0 4px 10px rgba(0, 0, 0, 0.45);
+/* celular em paisagem (ex. 844x390): a combinação flex+aspect-ratio espreme o
+   campinho até os 11 chips se sobreporem, ilegível — nunca deixa a largura
+   cair de um piso legível, e volta a rolar o vestiário nesse caso (senão o
+   excesso fica cortado por `.rq-prematch{overflow:hidden}`). */
+@media (max-height: 480px) and (orientation: landscape) {
+  /* mesmo aperto do celular deitado que o treinamento tem (ver `.cm-modal.rq-gym`
+     abaixo): `.rq-prematch-board .tv-pitch` reescreve `width` pra `auto` com
+     `flex: 1 1 0`, então numa altura tão curta o flex resolve uma altura
+     mínima pro campinho e o `aspect-ratio` deriva a largura DAQUELA altura —
+     ~70px de largura, os 11 chips se atropelando de verdade a ponto de
+     BLOQUEAR toque em jogador encoberto por outro chip por cima.
+     `flex: none` tira o campinho da disputa por altura (deixa o
+     `aspect-ratio` partir da LARGURA de novo, como no resto do app). */
+  /* a versão anterior mantinha `.rq-prematch` de altura FIXA (100dvh-40px,
+     overflow:hidden) e só deixava `.rq-prematch-board` rolar por dentro —
+     com min-width:280px o campinho vira ~432px de altura, MUITO mais que a
+     faixa visível daquele miolo (~95-155px numa tela de 390px de altura), e o
+     scroll nasce parado no topo, que mostra só a marca do meio-campo: nenhum
+     jogador aparece sem rolar primeiro. Mesmo defeito do treinamento, que já
+     resolve deixando o MODAL INTEIRO crescer e rolar (ver `.cm-modal.rq-gym`
+     abaixo) em vez de espremer tudo num miolo pequeno — mesma solução aqui. */
+  .cm-modal.rq-prematch {
+    height: auto;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+  }
+  /* `flex: none` (não só `overflow:visible`): com `flex: 1 1 auto` a coluna
+     ainda ENCOLHE o board pra caber no `max-height` do modal — o campinho
+     (que recusa encolher, `flex:none` dele) só transbordava por cima do
+     rodapé em vez de empurrá-lo pra baixo. Sem disputar espaço, o board
+     assume a altura NATURAL do campinho e o modal (com `overflow-y:auto` lá
+     em cima) rola do jeito certo: cabeçalho → campinho inteiro → rodapé. */
+  .rq-prematch-board {
+    flex: none;
+    overflow: visible;
+  }
+  .rq-prematch-board .tv-pitch {
+    flex: none;
+    min-width: 220px;
+  }
+  /* mesmo aperto do celular deitado, agora no treinamento: a fórmula do
+     campinho (pensada pro modal alto, sem rolagem) força um mínimo de 300px
+     de largura — em ~390px de altura isso passa longe da conta e o campinho
+     com os 11 do time precisa de quase o dobro da altura disponível pra
+     caber. Deixa o modal crescer e rolar em vez de cortar o time pela metade. */
+  .cm-modal.rq-gym {
+    height: auto;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+  }
+  .rq-gym-body {
+    overflow: visible;
+  }
+  .rq-gym-field,
+  .rq-gym-attrs {
+    overflow-y: visible;
+  }
+  .rq-gym-field .tv-pitch {
+    width: min(100%, 175px);
+  }
+  /* descrição de 2 linhas custa caro em altura aqui — o essencial (+20 pontos,
+     teto 100) já está no rótulo "Melhoramentos"; o resto cabe na ajuda (?). */
+  .rq-gym-head p {
+    display: none;
+  }
 }
 .rq-prematch-foot {
   flex: none;
@@ -3236,6 +3594,16 @@
   z-index: 1;
   box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.65), 0 18px 40px rgba(0, 0, 0, 0.5);
 }
+/* celular estreito (~480px): a lista de atributos vira 1 coluna (ver regra
+   acima), o que deixa o card bem mais alto — o `padding-bottom: 14px` fixo
+   (pensado pra carta deitada curta, com 2 colunas de atributo) não sobra pra
+   última linha ("Goleiro"), que acaba entrando no floreio ornamentado do
+   canto da moldura e fica ilegível. Mais respiro embaixo evita a colisão. */
+@media (max-width: 480px) {
+  .pb-card {
+    padding-bottom: 34px;
+  }
+}
 .pb-card-price {
   display: inline-flex;
   align-items: center;
@@ -3258,19 +3626,10 @@
   padding: 2px 9px;
   font-size: 10.5px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  animation: rq-tap-pulse 1.8s ease-in-out infinite;
-}
-@keyframes rq-tap-pulse {
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 1;
-  }
 }
 /* fantasma que segue o dedo durante o arrasto da carta */
 .pb-ghost {
@@ -3298,6 +3657,15 @@
 }
 .pb-board .tv-pitch {
   width: min(100%, max(300px, calc((100dvh - 380px) * 68 / 105)));
+}
+/* altura reservada pro botão "melhor lugar" (ou o aviso de "nenhum ganho")
+   MESMO sem carta armada — sem isto, o campinho pula pra baixo assim que a
+   carta arma (o conteúdo aparece e empurra tudo), o que atrapalha um
+   arraste contínuo (carta → jogador): o chip já não está mais onde o
+   dedo/cursor mirou no começo do gesto. 59px = altura do botão (49px) +
+   sua margem (10px) — o aviso é mais baixo e cabe folgado no mesmo espaço. */
+.pb-auto-slot {
+  min-height: 59px;
 }
 .pb-board.is-armed .tv-chip {
   cursor: pointer;
@@ -3343,19 +3711,12 @@
   font-size: 12.5px;
   text-align: center;
 }
-/* chip sugerido como melhor encaixe pro reforço armado */
+/* chip sugerido como melhor encaixe pro reforço armado: anel firme, sem
+   pulsar — a cor verde + o rótulo "★ melhor encaixe" já entregam o recado,
+   um terceiro sinal piscando por cima só compete por atenção à toa. */
 .tv-chip.is-best .tv-chip-photo {
   border-color: #4ade80;
-  animation: rq-best-ring 1.6s ease-in-out infinite;
-}
-@keyframes rq-best-ring {
-  0%,
-  100% {
-    box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.35), 0 4px 10px rgba(0, 0, 0, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.12), 0 4px 10px rgba(0, 0, 0, 0.45);
-  }
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.35), 0 4px 10px rgba(0, 0, 0, 0.45);
 }
 .tv-chip-best {
   position: absolute;
@@ -3428,8 +3789,11 @@
    a cartela pode passar da altura da tela — sem isso ela cortava embaixo (ou em
    cima e embaixo, já que fica centralizada com translateY(-50%)) sem dar pra
    ver o resto. O ✕ é sticky (como no rodapé mobile) pra continuar alcançável
-   rolando. */
-@media (min-width: 761px) {
+   rolando. Só entra a partir de 1300px: abaixo disso o cartão central de
+   600px não deixa espaço lateral livre, e a cartela flutuante acabaria
+   cobrindo (e bloqueando cliques nos chips) do campinho — por isso o corte
+   equivalente no rodapé mobile vai até 1299px também. */
+@media (min-width: 1300px) {
   .rq-detail-pop {
     display: block;
     position: fixed;

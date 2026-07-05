@@ -93,22 +93,37 @@ a:focus-visible {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: filter 0.15s, transform 0.1s;
-}
-.cm-btn:hover:not(:disabled) {
-  filter: brightness(1.15);
-  transform: translateY(-1px);
-}
-.cm-btn:active:not(:disabled) {
-  transform: translateY(0);
-  filter: brightness(0.94);
+  transition: filter 0.12s ease;
 }
 .cm-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+/* placa pintada clareando no hover — não é decoração, é a única confirmação
+   de "isto é clicável" pra quem usa mouse (sem isso todo botão do jogo fica
+   mudo até o clique). Só brightness, sem transform/escala: rápido e sério,
+   sem o exagero das animações que já removemos daqui. */
+.cm-btn:hover:not(:disabled) {
+  filter: brightness(1.14);
+}
+/* fantasma (sem placa pintada): brightness sozinho não mostra nada em cima de
+   fundo transparente — precisa de um preenchimento próprio pro hover aparecer. */
+.cm-btn-ghost:hover:not(:disabled) {
+  filter: none;
+  background: rgba(148, 163, 189, 0.1);
+  border-color: var(--cm-line-strong);
+}
 .cm-btn.active {
   border-image-source: url('/assets/ui/btn_plate_primary.webp');
+}
+/* o `clip-path` acima recorta a placa pintada nos cantos arredondados — mas
+   também recorta FORA o anel de foco (`button:focus-visible { box-shadow }`),
+   que rende sempre invisível em qualquer `.cm-btn` (some silenciosamente, sem
+   erro). Sem o clip-path, o `border-radius` equivalente já arredonda a placa
+   o bastante enquanto o anel precisa aparecer. */
+.cm-btn:focus-visible {
+  clip-path: none;
+  border-radius: 10px;
 }
 .cm-btn-primary {
   border-image-source: url('/assets/ui/btn_plate_primary.webp');
@@ -134,38 +149,28 @@ a:focus-visible {
   font-size: 13px;
   clip-path: inset(0 round 8px);
 }
+.cm-btn-sm:focus-visible {
+  border-radius: 8px;
+}
 .cm-btn-lg {
   border-width: 8px;
   padding: 13px 22px;
   font-size: 16px;
   clip-path: inset(0 round 13px);
 }
+.cm-btn-lg:focus-visible {
+  border-radius: 13px;
+}
 .cm-btn-block {
   width: 100%;
 }
-/* CTA verde — com brilho varrendo no hover */
+/* CTA verde */
 .cm-btn-go {
   border-image-source: url('/assets/ui/btn_plate_go.webp');
   color: #052e16;
   font-weight: 800;
   margin-top: 6px;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
-  overflow: hidden;
-}
-.cm-btn-go::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -80%;
-  width: 50%;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.45), transparent);
-  transform: skewX(-20deg);
-  transition: left 0.45s ease;
-  pointer-events: none;
-}
-.cm-btn-go:hover::after {
-  left: 130%;
 }
 
 /* ---------- Tela inicial (nova campanha) ---------- */
@@ -517,6 +522,12 @@ a:focus-visible {
   width: 22px;
   height: 22px;
 }
+/* Ícone de arte gerada (componente ArtIcon) — mesmo tratamento do escudo/foto
+   abaixo: sem isto, o alinhamento padrão de <img> inline (baseline) deixa uma
+   folga vertical em relação ao texto ao lado (ex.: "🪙 120"). */
+.cm-art-ico {
+  vertical-align: middle;
+}
 /* Escudo do clube (componente ClubBadge) */
 .cm-crest {
   flex: none;
@@ -544,10 +555,14 @@ a:focus-visible {
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
+/* contain (não cover): bandeiras com faixas verticais/horizontais finas (Peru,
+   Holanda) perdiam a identidade quando cortadas cheias num círculo pequeno —
+   sobrava quase só a faixa central. Full bleed 100% mostra o padrão inteiro;
+   o fundo escuro do badge preenche o que sobra nos cantos do círculo. */
 .cm-crest-flag-img {
-  width: 120%;
-  height: 120%;
-  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* Foto do jogador (componente PlayerAvatar) */
@@ -779,28 +794,6 @@ a:focus-visible {
   cursor: pointer;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
   box-shadow: 0 10px 28px rgba(34, 197, 94, 0.35);
-  transition: filter 0.15s, transform 0.1s, box-shadow 0.15s;
-  overflow: hidden;
-}
-.cm-play::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -80%;
-  width: 50%;
-  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transform: skewX(-20deg);
-  transition: left 0.5s ease;
-  pointer-events: none;
-}
-.cm-play:hover {
-  filter: brightness(1.06);
-  transform: translateY(-1px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 14px 34px rgba(34, 197, 94, 0.45);
-}
-.cm-play:hover::after {
-  left: 130%;
 }
 .cm-play:active {
   transform: translateY(1px);
@@ -1554,6 +1547,13 @@ a:focus-visible {
   color: var(--cm-muted);
   font-variant-numeric: tabular-nums;
 }
+/* sem isto o texto do lance (flex item sem min-width) não encolhe abaixo do
+   seu conteúdo — um lance mais longo estoura a largura da faixa lateral
+   (320px no modo ultrawide) em vez de quebrar linha normalmente. */
+.cm-history-text {
+  flex: 1;
+  min-width: 0;
+}
 .cm-ev-goal {
   color: var(--cm-gold);
   font-weight: 700;
@@ -1735,7 +1735,13 @@ a:focus-visible {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: grid;
-  place-items: center;
+  /* "safe": quando o modal é mais alto que a tela (ex. vestiário em celular
+     deitado bem baixo), `center` sozinho centraliza pelo cálculo cheio e
+     deixa metade do excesso IMPOSSÍVEL de rolar até (o topo do modal nasce
+     "acima" do topo da tela, fora de alcance) — o rodapé some por trás do
+     resto do conteúdo em vez de vir depois dele. "safe" cai pra alinhamento
+     no início nesse caso, e dá pra rolar o modal inteiro do topo ao fim. */
+  place-items: safe center;
   padding: 20px;
   z-index: 50;
   overflow-y: auto;
@@ -1970,7 +1976,12 @@ a:focus-visible {
   border-color: #38bdf8;
   color: #38bdf8;
   outline: none;
-  box-shadow: none;
+}
+/* no teclado, uma troca de cor sozinha some fácil — cada card tem 8+ desses
+   ícones seguidos na ordem de tab, então sem anel dá a impressão de que o
+   foco "sumiu". Só o hover (mouse) fica com a cor sem anel, como já era. */
+.ps-info:focus-visible {
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.45);
 }
 .ps-tip {
   position: fixed;

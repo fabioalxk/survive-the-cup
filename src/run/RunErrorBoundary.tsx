@@ -38,6 +38,7 @@ export class RunErrorBoundary extends Component<Props, State> {
             <button
               className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block"
               onClick={() => window.location.reload()}
+              autoFocus
             >
               Recarregar
             </button>

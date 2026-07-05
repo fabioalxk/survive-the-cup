@@ -3,6 +3,7 @@ import type { Vec2 } from '../sim/types'
 import { FIELD } from '../sim/constants'
 import { FORMATION_PRESETS, clampSlot, formationName, roleForSlot } from '../sim/formation'
 import { uiClick } from '../sfx/crowd'
+import { handleRadioGroupKeyDown } from '../shared/radioGroupKeyDown'
 import { attrColor } from './attrDisplay'
 import { LockIcon } from './icons'
 import { PlayerAvatar } from './PlayerAvatar'
@@ -86,24 +87,41 @@ export default function FormationEditor({
   return (
     <>
       {onPreset && (
-        <div className="tv-presets">
-          {Object.entries(FORMATION_PRESETS).map(([preset, presetSlots]) => (
-            <button
-              key={preset}
-              className={`cm-btn cm-btn-sm ${name === preset ? 'active' : ''}`}
-              onClick={() => onPreset(presetSlots.map((s) => ({ ...s })))}
-            >
-              {preset}
-            </button>
-          ))}
+        <div className="tv-presets-wrap">
+          <span className="tv-presets-label">Esquema</span>
+          <div
+            className="tv-presets"
+            role="radiogroup"
+            aria-label="Esquema tático"
+            onKeyDown={handleRadioGroupKeyDown}
+          >
+            {Object.entries(FORMATION_PRESETS).map(([preset, presetSlots]) => (
+              <button
+                key={preset}
+                role="radio"
+                aria-checked={name === preset}
+                tabIndex={name === preset ? 0 : -1}
+                className={`cm-btn cm-btn-sm ${name === preset ? 'active' : ''}`}
+                onClick={() => onPreset(presetSlots.map((s) => ({ ...s })))}
+              >
+                {preset}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       <div className="tv-pitch">
+        <div className="tv-corner tv-corner-tl" aria-hidden />
+        <div className="tv-corner tv-corner-tr" aria-hidden />
+        <div className="tv-corner tv-corner-bl" aria-hidden />
+        <div className="tv-corner tv-corner-br" aria-hidden />
         <div className="tv-half-line" />
         <div className="tv-circle" />
         <div className="tv-box tv-box-top" />
+        <div className="tv-arc tv-arc-top" aria-hidden />
         <div className="tv-box tv-box-bottom" />
+        <div className="tv-arc tv-arc-bottom" aria-hidden />
         {xi.map((p, i) => {
           const pos = drag?.index === i ? drag.pos : slots[i]
           const role = roleForSlot(i, pos)
@@ -166,6 +184,17 @@ export default function FormationEditor({
             >
               <span className="tv-chip-photo-wrap">
                 <PlayerAvatar teamId={teamId} name={p.name} id={p.id} size={32} className="tv-chip-photo" />
+                <span className="tv-chip-num" aria-hidden>
+                  {p.number}
+                </span>
+                {p.ovr !== undefined && (
+                  <span
+                    className="tv-chip-ovr"
+                    style={{ color: attrColor(p.ovr), borderColor: attrColor(p.ovr) }}
+                  >
+                    {p.ovr}
+                  </span>
+                )}
                 {locked && (
                   <span className="tv-chip-lock" aria-hidden>
                     <LockIcon size={9} />
@@ -174,11 +203,6 @@ export default function FormationEditor({
               </span>
               {highlight === i && <span className="tv-chip-best">★ melhor encaixe</span>}
               <span className="tv-chip-name">{p.name}</span>
-              {p.ovr !== undefined && (
-                <span className="tv-chip-ovr" style={{ color: attrColor(p.ovr) }}>
-                  {p.ovr}
-                </span>
-              )}
               {chipExtra?.(i)}
             </div>
           )

@@ -10,6 +10,7 @@ import type { Attrs } from '../sim/types'
 import { ATTR_FLOOR } from '../sim/chaos'
 import { CLUBS_BY_DIVISION, ALL_CLUBS } from './clubs'
 import { DIVISION_LEVEL, PLAYER_BOOST, generateClub, generateMarket } from './generate'
+import { pushLog } from './log'
 import { overallOf } from './overall'
 import { buildFixtures, computeStandings, positionOf, totalRounds } from './schedule'
 import { quickResult } from './quicksim'
@@ -107,10 +108,7 @@ export const newCareer = (
 // SIMULAÇÃO DE RODADAS
 // =====================================================================
 
-const log = (state: CareerState, msg: string): void => {
-  state.log.unshift(msg)
-  if (state.log.length > 40) state.log.pop()
-}
+const log = (state: CareerState, msg: string): void => pushLog(state.log, msg, 40)
 
 /** Joga uma partida (resultado rápido por força). */
 const playFixture = (state: CareerState, f: Fixture, rng: Rng): void => {
@@ -128,16 +126,36 @@ export const nextPlayerFixture = (state: CareerState): Fixture | null =>
     (f) => !f.played && (f.homeId === state.clubId || f.awayId === state.clubId),
   ) ?? null
 
+/** Resolve todas as partidas da rodada (uma delas já com placar fixo, se `pin`
+ *  vier preenchido) e avança o contador — núcleo comum de `advanceRound` e
+ *  `advanceRoundWithPlayerResult`, que só decidem QUAL fixture (se algum) fica
+ *  de fora da simulação por já ter placar definido. */
+const resolveRound = (
+  state: CareerState,
+  round: number,
+  rng: Rng,
+  pin?: { fixture: Fixture; homeGoals: number; awayGoals: number },
+): void => {
+  for (const f of state.league.fixtures) {
+    if (f.round !== round || f.played) continue
+    if (pin && f === pin.fixture) {
+      f.homeGoals = pin.homeGoals
+      f.awayGoals = pin.awayGoals
+      f.played = true
+    } else {
+      playFixture(state, f, rng)
+    }
+  }
+  state.league.round++
+  if (state.league.round > state.league.totalRounds) endSeason(state)
+}
+
 /** Joga TODAS as partidas da rodada atual e avança o contador. */
 export const advanceRound = (state: CareerState): void => {
   if (state.status !== 'season') return
   const { round } = state.league
   const rng = makeRng(mixSeed(mixSeed(state.seed, state.year), round))
-  for (const f of state.league.fixtures) {
-    if (f.round === round && !f.played) playFixture(state, f, rng)
-  }
-  state.league.round++
-  if (state.league.round > state.league.totalRounds) endSeason(state)
+  resolveRound(state, round, rng)
 }
 
 /**
@@ -153,18 +171,7 @@ export const advanceRoundWithPlayerResult = (
   const fixture = nextPlayerFixture(state)
   const { round } = state.league
   const rng = makeRng(mixSeed(mixSeed(state.seed, state.year), round))
-  for (const f of state.league.fixtures) {
-    if (f.round !== round || f.played) continue
-    if (fixture && f === fixture) {
-      f.homeGoals = homeGoals
-      f.awayGoals = awayGoals
-      f.played = true
-    } else {
-      playFixture(state, f, rng)
-    }
-  }
-  state.league.round++
-  if (state.league.round > state.league.totalRounds) endSeason(state)
+  resolveRound(state, round, rng, fixture ? { fixture, homeGoals, awayGoals } : undefined)
 }
 
 /** Joga a temporada inteira de uma vez (a partir da rodada atual). */

@@ -210,6 +210,12 @@ var WC_SPECS = { brasil: BRASIL, argentina: ARGENTINA };
 var roleForSlot = (index, slot) => index === 0 ? "GK" : slot.x < 30 ? "DEF" : slot.x < 58 ? "MID" : "FWD";
 var defaultFormation = () => FORMATION_433.map((s) => ({ ...s }));
 
+// src/game/log.ts
+var pushLog = (log2, msg, max) => {
+  log2.unshift(msg);
+  if (log2.length > max) log2.pop();
+};
+
 // src/game/worldcup.ts
 var ROWS = [
   ["brasil", "Brasil", "BRA", "#fde047", "#16a34a", 90, "#1d4ed8", "#f8fafc"],
@@ -1106,10 +1112,12 @@ var POTION_INFO = {
   pace: { label: "Po\xE7\xE3o de Velocidade", emoji: "\u26A1" }
 };
 var clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-var log = (state, msg) => {
-  state.log.unshift(msg);
-  if (state.log.length > 30) state.log.pop();
+var coinValueOf = (overall, age) => {
+  const base = Math.pow(Math.max(0, overall - 35) / 10, 2.1) * 6;
+  const ageMul = age <= 24 ? 1.15 : age <= 28 ? 1 : age <= 31 ? 0.7 : 0.45;
+  return Math.max(4, Math.round(base * ageMul));
 };
+var log = (state, msg) => pushLog(state.log, msg, 30);
 var nodeOf = (state, id) => state.nodes.find((n) => n.id === id);
 var refreshSquadRatings = (state) => {
   state.squad.forEach((p, i) => {
@@ -1230,12 +1238,15 @@ var applyBlessing = (state, kind, rng) => {
   switch (kind) {
     case "sponsor":
       state.coins += BLESS_COINS;
+      log(state, `\u{1F4B0} Patroc\xEDnio Master: +${BLESS_COINS} moedas.`);
       break;
     case "potionkit":
       while (state.potions.length < POTIONS_MAX) state.potions.push(rng.pick(POTION_KINDS));
+      log(state, `\u{1F9EA} Kit do Preparador: invent\xE1rio cheio (${POTIONS_MAX} po\xE7\xF5es).`);
       break;
     case "extralife":
       state.lives += 1;
+      log(state, `\u2764\uFE0F Torcida Apaixonada: +1 vida (agora ${state.lives}).`);
       break;
     case "star": {
       const p = generateStarPlayer(rng);
@@ -1260,6 +1271,7 @@ var applyBlessing = (state, kind, rng) => {
     case "pact":
       state.coins += BLESS_PACT_COINS;
       state.lives -= 1;
+      log(state, `\u{1F608} Pacto com o Agente: +${BLESS_PACT_COINS} moedas, mas -1 vida (resta ${state.lives}).`);
       break;
   }
 };
@@ -1405,6 +1417,17 @@ var skipReward = (state) => {
   if (state.status !== "reward") return;
   closeReward(state);
 };
+var shopOffers = (state) => {
+  const node = nodeOf(state, state.currentNodeId);
+  if (!node || node.kind !== "market") return [];
+  const rng = rngForNode(state, node.id + ":shop");
+  const roles = ["GK", "DEF", "DEF", "MID", "MID", "FWD", "FWD"];
+  const level = 45 + node.stage * 6 - offerLevelPenalty(state.ascension);
+  return Array.from({ length: 5 }, () => {
+    const p = generatePlayer(rng.pick([...roles]), level + rng.range(-6, 14), rng.int(1, 39), rng);
+    return { player: p, fee: Math.max(4, Math.round(coinValueOf(p.overall, p.age) * rng.range(0.9, 1.2))) };
+  });
+};
 
 // tools/.scratch-shots/gen-states.entry.ts
 var outDir = "tools/.scratch-shots/states";
@@ -1437,6 +1460,15 @@ save("map", fresh());
   save("map-potions", s);
 }
 save("gym", reach("gym"));
+{
+  const s = reach("market");
+  const offers = shopOffers(s);
+  offers.forEach((o, i) => {
+    s.squad[i].name = o.player.name;
+    s.squad[i].age = o.player.age;
+  });
+  save("market-empty", s);
+}
 save("market", reach("market"));
 {
   const s = fresh();

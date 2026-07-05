@@ -258,10 +258,32 @@ function drawRunning(
     const f = ((st.frameFloat % n) + n) % n
     const i0 = Math.floor(f)
     const t = f - i0
-    drawCell(ctx, tinted, GRID_COLS, GRID_ROWS, RUN_FRAMES[i0], cx, cy, sizePx, st.facingLeft, 1)
-    if (t > 0.001) drawCell(ctx, tinted, GRID_COLS, GRID_ROWS, RUN_FRAMES[(i0 + 1) % n], cx, cy, sizePx, st.facingLeft, t)
+    drawCrossfade(ctx, tinted, GRID_COLS, GRID_ROWS, RUN_FRAMES[i0], RUN_FRAMES[(i0 + 1) % n], t, cx, cy, sizePx, st.facingLeft)
   }
   return true
+}
+
+/** Quadro em cheio + o seguinte em transparência fracionária — o crossfade
+ *  suave entre dois quadros da spritesheet que tanto a corrida (looping)
+ *  quanto as ações de um só tiro (param-tudo no fim) precisam; cada uma só
+ *  decide por conta própria QUAL é "o quadro seguinte" (`null` = não tem). */
+const drawCrossfade = (
+  ctx: CanvasRenderingContext2D,
+  src: HTMLCanvasElement,
+  cols: number,
+  rows: number,
+  frame: number,
+  nextFrame: number | null,
+  frac: number,
+  cx: number,
+  cy: number,
+  sizePx: number,
+  facingLeft: boolean,
+): void => {
+  drawCell(ctx, src, cols, rows, frame, cx, cy, sizePx, facingLeft, 1)
+  if (nextFrame !== null && frac > 0.001) {
+    drawCell(ctx, src, cols, rows, nextFrame, cx, cy, sizePx, facingLeft, frac)
+  }
 }
 
 // =====================================================================
@@ -342,10 +364,8 @@ function drawActionIfActive(
   const frameFloat = t * def.frames
   const i0 = Math.min(def.frames - 1, Math.floor(frameFloat))
   const frac = Math.min(1, frameFloat - i0)
-  drawCell(ctx, tinted, def.cols, def.rows, i0, cx, cy, sizePx, active.facingLeft, 1)
-  if (frac > 0.001 && i0 + 1 < def.frames) {
-    drawCell(ctx, tinted, def.cols, def.rows, i0 + 1, cx, cy, sizePx, active.facingLeft, frac)
-  }
+  const nextFrame = i0 + 1 < def.frames ? i0 + 1 : null
+  drawCrossfade(ctx, tinted, def.cols, def.rows, i0, nextFrame, frac, cx, cy, sizePx, active.facingLeft)
   return true
 }
 
