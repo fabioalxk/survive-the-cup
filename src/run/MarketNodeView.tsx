@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { RunState } from '../game/runTypes'
 import { buyPlayer, leaveNode, shopOffers } from '../game/run'
 import { buySfx, startMerchantMusic, stopMerchantMusic } from '../sfx/crowd'
+import { useMediaQuery } from '../shared/useMediaQuery'
 import { useScrollOverflow } from '../shared/useScrollOverflow'
 import { CoinIcon, HelpIcon } from '../ui/icons'
+import { CandidatePager } from './CandidatePager'
 import { MarketIcon } from './MapIcons'
 import PlacePlayerBoard, { CandidateCard } from './PlacePlayerBoard'
 import type { RunApi } from './useRun'
@@ -27,6 +29,10 @@ export default function MarketNodeView({
   const [armed, setArmed] = useState<number | null>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
   const hasMore = useScrollOverflow(bodyRef)
+  // celular estreito: só cabe UMA oferta cheia por vez sem rolar (ver
+  // CandidatePager) — desktop continua mostrando a grade toda de uma vez.
+  const isNarrow = useMediaQuery('(max-width: 900px)')
+  const [page, setPage] = useState(0)
   useEffect(() => {
     startMerchantMusic()
     return stopMerchantMusic
@@ -43,12 +49,20 @@ export default function MarketNodeView({
     state.squad.some((s) => s.name === p.name && s.age === p.age)
   const offers = baseOffers.filter((o) => !owned(o.player)).sort((a, b) => b.fee - a.fee)
   const candidate = armed !== null ? (offers[armed]?.player ?? null) : null
+  const shown = isNarrow ? offers.map((_, i) => i).filter((i) => i === page) : offers.map((_, i) => i)
 
   const place = (offerIndex: number, slotIndex: number) => {
     buySfx()
     act((s) => buyPlayer(s, offers[offerIndex], slotIndex))
     setArmed(null)
   }
+
+  // comprar (ou o mercador renovar as ofertas) encolhe a lista — sem isto a
+  // página ativa podia sobrar apontando pra fora do novo tamanho.
+  useEffect(() => {
+    const max = offers.length - 1
+    if (page > max) setPage(Math.max(0, max))
+  }, [offers.length, page])
 
   return (
     <div className="cm-backdrop rq-scene rq-scene-market">
@@ -82,26 +96,32 @@ export default function MarketNodeView({
           </div>
         </header>
 
+        {isNarrow && !candidate && offers.length > 0 && (
+          <CandidatePager count={offers.length} index={page} onSelect={setPage} />
+        )}
         <div className={`rq-market-body pb-layout${hasMore ? ' has-more' : ''}`} ref={bodyRef}>
           {offers.length === 0 ? (
             <p className="cm-empty">O mercador não tem mais ninguém pra oferecer.</p>
           ) : (
             <div className="rc-grid mk-offers">
-              {offers.map((o, i) => (
-                <CandidateCard
-                  key={o.player.id}
-                  p={o.player}
-                  armed={armed === i}
-                  disabled={state.coins < o.fee}
-                  price={
-                    <>
-                      <CoinIcon size={16} /> {o.fee}
-                    </>
-                  }
-                  onArm={(on) => setArmed(on ? i : null)}
-                  onPlace={(slot) => place(i, slot)}
-                />
-              ))}
+              {shown.map((i) => {
+                const o = offers[i]
+                return (
+                  <CandidateCard
+                    key={o.player.id}
+                    p={o.player}
+                    armed={armed === i}
+                    disabled={state.coins < o.fee}
+                    price={
+                      <>
+                        <CoinIcon size={16} /> {o.fee}
+                      </>
+                    }
+                    onArm={(on) => setArmed(on ? i : null)}
+                    onPlace={(slot) => place(i, slot)}
+                  />
+                )
+              })}
             </div>
           )}
           <PlacePlayerBoard

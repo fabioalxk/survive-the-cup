@@ -87,6 +87,13 @@ export default function NewRun({
         aria-hidden
       />
       <div className="rq-title-veil" aria-hidden />
+      {/* a arte de fundo da seleção tem o logo do jogo embutido no canto sup.
+          esquerdo (ver comentário em .rq-title-bg-select); em telas 16:9 (as
+          mais comuns — 1920x1080, 1366x768) o zoom/recorte não empurra esse
+          canto pra fora do quadro por completo, deixando vazar um fragmento
+          distorcido atrás do chip de perfil. Este véu extra escurece só esse
+          canto, na mesma linguagem visual do `.rq-title-veil`. */}
+      {screen === 'setup' && <div className="rq-select-corner-veil" aria-hidden />}
       {screen === 'setup' && (
         <div className="rq-select-fx" aria-hidden>
           <span className="rq-select-ray rq-select-ray-a" />

@@ -36,7 +36,7 @@
    e centra a escadaria dourada atrás do painel do herói. */
 .rq-title-bg-select {
   object-position: 96% 40%;
-  transform-origin: 96% 40%;
+  transform-origin: 100% 60%;
   animation: rq-bg-drift-select 28s ease-in-out infinite alternate;
 }
 /* a arte do menu (surviveTheCup.png) tem o título "SURVIVE THE CUP" desenhado
@@ -49,22 +49,22 @@
    fica de fora dessa regra. */
 @media (max-aspect-ratio: 3/4) {
   .rq-title-bg:not(.rq-title-bg-select) {
-    top: 50%;
+    top: 0;
     bottom: auto;
     left: 0;
     right: auto;
     width: 100%;
     height: auto;
-    transform: translateY(-50%);
+    transform: none;
     animation: none;
   }
 }
 @keyframes rq-bg-drift-select {
   from {
-    transform: scale(1.4);
+    transform: scale(1.75);
   }
   to {
-    transform: scale(1.5);
+    transform: scale(1.85);
   }
 }
 .rq-title-veil {
@@ -74,6 +74,15 @@
   background:
     radial-gradient(120% 90% at 50% 42%, rgba(4, 7, 14, 0.16) 0%, rgba(4, 7, 14, 0.5) 74%, rgba(4, 7, 14, 0.78) 100%),
     linear-gradient(180deg, rgba(4, 7, 14, 0.45), rgba(4, 7, 14, 0.1) 30%, rgba(4, 7, 14, 0.55));
+}
+/* esconde o fragmento do logo embutido na arte de fundo da seleção (ver
+   comentário em .rq-title-bg-select) que vaza em telas 16:9 — mesmo
+   tratamento do véu acima, só que concentrado no canto. */
+.rq-select-corner-veil {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(46% 54% at 2% 2%, rgba(4, 7, 14, 0.97) 0%, rgba(4, 7, 14, 0.8) 55%, rgba(4, 7, 14, 0) 100%);
 }
 
 /* --- barra superior: perfil à esquerda, versão à direita --- */
@@ -141,6 +150,22 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 12px;
+}
+/* em telas em retrato, o fundo do menu (ver .rq-title-bg acima) fica ancorado
+   no topo com ~56vw de altura. Reserva essa faixa como padding-top do painel
+   e centraliza o menu no espaço restante (`justify-content: center`) — em vez
+   de só empurrar o menu pra baixo da arte e deixar toda a sobra acumulada no
+   rodapé (vão preto enorme em celulares bem altos, ex. 390×844). */
+@media (max-aspect-ratio: 3/4) {
+  /* :has() escopa isso só na tela de menu — setup/help têm seus próprios
+     painéis de altura própria e não devem ganhar esse padding-top extra. */
+  .rq-title:has(> .rq-menu) {
+    padding-top: max(calc(56vw + 28px), 30vh);
+    justify-content: center;
+  }
+  .rq-menu {
+    margin: 0 0 0 clamp(16px, 6vw, 96px);
+  }
 }
 /* superfície pintada (mesma placa dos botões genéricos, ver .cm-btn em
    career.css) no lugar do gradiente CSS liso — o acento dourado à esquerda
@@ -260,6 +285,12 @@
 .rq-help-list b {
   color: var(--cm-text);
 }
+/* esmaece a borda de baixo só quando sobra texto fora da vista (.has-more,
+   calculado em JS) — mesmo padrão do mercado/academia/poções (`.has-more`) */
+.rq-help-modal.has-more {
+  mask-image: linear-gradient(to bottom, black calc(100% - 44px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 44px), transparent 100%);
+}
 .rq-title-tags {
   display: flex;
   flex-wrap: wrap;
@@ -358,11 +389,33 @@
 }
 
 /* --- seleções como medalhões de bandeira (fileira que rola pro lado) --- */
+.rq-event-strip:has(.rq-flag-row) {
+  position: relative;
+}
+/* seta estática sinalizando que a fileira continua pro lado — sem ela o
+   esmaecimento sozinho lê como "corte", não como "role pra ver mais" */
+.rq-event-strip:has(.rq-flag-row)::after {
+  content: '\203A';
+  position: absolute;
+  left: auto;
+  right: 4px;
+  top: auto;
+  bottom: 26px;
+  height: auto;
+  background: none;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--cm-gold);
+  opacity: 0.55;
+  pointer-events: none;
+}
 .rq-flag-row {
   display: flex;
   gap: 10px;
   overflow-x: auto;
   padding: 6px 2px 8px;
+  cursor: grab;
   /* esmaece a borda direita — sinaliza que a fileira continua pro lado */
   mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
   -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
@@ -1658,6 +1711,25 @@
   margin-top: 8px !important;
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
 }
+/* mesmo badge redondo do ✕ do painel de táticas (`.cm-tactics-close`) — antes
+   só dava pra fechar o modal de poção pelo backdrop/Esc/botão de rodapé,
+   menos descobrível que um ✕ visível no cabeçalho como o resto do app usa. */
+.rq-potion-close {
+  flex: none;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: url('/assets/ui/btn_round_close.webp') center / 100% 100% no-repeat;
+  cursor: pointer;
+}
+.rq-potion-close svg {
+  display: none;
+}
 
 /* =====================================================================
    ESCOLHA DE REFORÇO — telão full-screen (estilo "Choose a Card"), sem
@@ -1731,6 +1803,39 @@
   justify-content: center;
   gap: 34px;
   margin-top: 8px;
+}
+/* paginação de reforços (celular, ver CandidatePager): setas + bolinhas,
+   mesma placa pintada dos botões-ícone genéricos. */
+.rc-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 10px 0 2px;
+}
+.rc-pager-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rc-pager-dot {
+  appearance: none;
+  cursor: pointer;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(232, 238, 249, 0.28);
+}
+.rc-pager-dot.is-active {
+  background: var(--cm-gold);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.22);
+}
+.rc-pager-arrow {
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 12px;
 }
 /* carta grande estilo "carta de jogador": retrato em destaque no topo (estoura
    a borda pra cima, como uma figurinha premium) + estatísticas embaixo. */
@@ -2134,6 +2239,20 @@
 .rq-gym-field .tv-pitch {
   width: min(100%, max(300px, calc((100dvh - 440px) * 68 / 105)));
 }
+/* esmaece a borda de baixo só quando o campinho sobra fora da vista (.has-more,
+   calculado em JS — mesmo padrão do mercado/poções): sem isto o goleiro cortado
+   no rodapé parecia bug, não pista de "role pra ver mais". */
+.rq-gym-field.has-more {
+  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+}
+/* mesma pista na coluna de atributos: numa tela baixa, os grupos de baixo
+   (às vezes o de Goleiro, o mais relevante pra quem treina o goleiro) cortam
+   sem aviso — mesmo risco de "parecer bug" que o campinho ao lado já tinha. */
+.rq-gym-attrs.has-more {
+  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+}
 
 /* chip do campinho destacado como selecionado (jogador aberto no painel de
    treino): anel firme, sem pulsar — é uma seleção, não precisa chamar atenção
@@ -2149,6 +2268,13 @@
   flex-direction: column;
   padding: 15px 20px 20px;
   background: rgba(10, 18, 32, 0.35);
+}
+/* mesmo tratamento do campinho ao lado (.rq-gym-field.has-more): com muitos
+   grupos de atributo a coluna também rola por dentro, e sem o fade o último
+   grupo cortado no rodapé parecia bug em vez de convite a rolar. */
+.rq-gym-attrs.has-more {
+  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
 }
 .rq-gym-attrs > .rq-gym-group {
   flex: none;
@@ -2500,8 +2626,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border-radius: 999px;
   background:
@@ -2703,7 +2829,7 @@
   align-items: center;
   gap: 5px;
   color: var(--cm-muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 .rq-potion-delta {
   display: inline-flex;
@@ -2723,13 +2849,9 @@
 }
 
 @media (max-width: 640px) {
-  .rq-potion-chip {
-    width: 33px;
-    height: 33px;
-  }
   .rq-potion-buff {
     padding: 4px 9px;
-    font-size: 11.5px;
+    font-size: 12px;
   }
   .rq-potion-head {
     padding: 13px 15px;
@@ -2751,29 +2873,41 @@
    CENÁRIOS PINTADOS (backgrounds gerados em /assets/bg)
    Cada tela define só o --scene; o véu escuro por cima garante leitura.
    ===================================================================== */
+/* as artes são retrato (1024x1536) mas as telas de desktop são widescreen —
+   com `cover` + posição central, o recorte mostra só a faixa vertical do
+   meio de cada arte, que em todas elas é o vão vazio deixado de propósito
+   pro painel da UI sentar em cima; os detalhes ricos (baús, bancos, velas,
+   cartas) ficam pertinho das bordas de cima/baixo e saem do recorte. Cada
+   cena ajusta a posição vertical do fundo pra puxar esses detalhes pra
+   dentro do recorte em vez de mostrar só vazio. */
 .rq-scene-gym {
   --scene: url('/assets/bg/bg_gym.webp');
+  --scene-pos: center 74%;
 }
 .rq-scene-market {
   --scene: url('/assets/bg/bg_market.webp');
+  --scene-pos: center 80%;
 }
 .rq-scene-blessing {
   --scene: url('/assets/bg/bg_blessing.webp');
+  --scene-pos: center 68%;
 }
 .rq-scene-reward {
   --scene: url('/assets/bg/bg_reward.webp');
+  --scene-pos: center 88%;
 }
 .rq-scene-prematch {
   --scene: url('/assets/bg/bg_squad.webp');
 }
 /* backdrop de modal com cenário atrás do painel */
 .cm-backdrop.rq-scene {
+  --scene-pos: center;
   background-color: #04070e;
   background-image:
     radial-gradient(120% 90% at 50% 40%, rgba(4, 7, 14, 0.38) 0%, rgba(4, 7, 14, 0.78) 100%),
     var(--scene);
   background-size: cover;
-  background-position: center;
+  background-position: center, var(--scene-pos);
 }
 .rq-run-shell {
   position: relative;
@@ -2880,6 +3014,17 @@
   border-color: rgba(var(--tone), 0.85);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 0 26px rgba(var(--tone), 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.09);
+}
+/* :hover nunca dispara no toque — sem isto, escolher uma bênção no celular
+   não dava NENHUM retorno visual até a tela trocar (parecia travado). */
+.rq-bless-card:active {
+  transform: translateY(-2px) scale(0.98);
+  border-color: rgba(var(--tone), 0.85);
+}
+.rq-bless-card:focus-visible {
+  outline: none;
+  box-shadow: var(--cm-shadow-lg), 0 0 0 3px rgba(var(--tone), 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 .rq-bless-ico {
   display: grid;
@@ -3116,6 +3261,30 @@
    MapView.tsx), então em telas finas ele fica menor que o próprio nó e as
    duas academias/mercados da mesma fase chegam a se sobrepor. Encolher os
    nós aqui é mais simples que reescrever o espaçamento das raias. */
+/* poções ativas no cabeçalho do mapa: cada uma é um círculo de 40px — com 2
+   ou mais ativas, a fileira (vidas + poções + moedas + som + ajuda + reset)
+   passa da largura do celular e o botão de ajuda sobra sozinho numa 2ª linha
+   (ver flex-wrap em .cm-header-stats). Encolher só as poções aqui recupera
+   espaço suficiente pra fileira inteira caber numa linha só nos casos comuns
+   (1-2 poções); com 3+ ainda pode quebrar, mas nunca fica inalcançável. */
+@media (max-width: 760px) {
+  .rq-run-shell .cm-header-stats .rq-potion-chip {
+    width: 32px;
+    height: 32px;
+  }
+  /* aperta gap e o chip de moedas pra fechar os ~23px que ainda faltavam pra
+     fileira inteira (vidas + 2 poções + moedas + som + ajuda + reset) caber
+     numa linha só — sem isto, só encolher as poções não bastava. */
+  .rq-run-shell .cm-header-stats {
+    gap: 4px;
+  }
+  .rq-run-shell .cm-coin-chip {
+    padding: 4px 7px;
+  }
+  .rq-run-shell .cm-header-stats .cm-btn-ico {
+    padding: 5px;
+  }
+}
 @media (max-width: 480px) {
   .rq-node {
     width: 38px;
@@ -3322,7 +3491,17 @@
    campo (aspect-ratio de .tv-pitch).
    ===================================================================== */
 .rq-prematch {
-  width: min(600px, 100%);
+  /* o `.cm-modal` genérico trava `max-width:460px` (pensado pros popups
+     simples de oferta) — sem sobrescrever aqui, o `width` abaixo nunca
+     rendia mais que 460px de verdade, e o cabeçalho (escudo + nome do
+     adversário + placar de nota + "Organizar" + ajuda, tudo numa fileira só)
+     cortava nome de seleção longo ("África do Sul", "Arábia Saudita") no
+     meio ("África do...") em QUALQUER largura de janela — o cartão nunca
+     passa de 460px, então o corte acontecia até em desktop largo. O campinho
+     (`.tv-pitch`) tem largura própria (deriva da altura, não do pai), então
+     alargar o cartão só dá mais fôlego ao cabeçalho sem distorcer o campo. */
+  max-width: min(680px, 100%);
+  width: min(680px, 100%);
   height: calc(100dvh - 40px);
   display: flex;
   flex-direction: column;
@@ -3756,6 +3935,37 @@
 @media (max-width: 900px) {
   .pb-layout {
     grid-template-columns: 1fr;
+  }
+  /* sem carta armada, o campinho inteiro (11 chips) empilhado abaixo das
+     cartas empurrava o 3º reforço e o botão "Recusar" pra fora da tela —
+     ele só importa pra decidir o encaixe, então fica escondido até armar
+     uma carta; a "Nota do time" continua visível pra dar contexto. */
+  .pb-board:not(.is-armed) .tv-pitch,
+  .pb-board:not(.is-armed) .tv-presets-wrap {
+    display: none;
+  }
+  /* linhas de atributo mais enxutas nas cartas de reforço/mercado — sem isto,
+     as 10 linhas em 1 coluna (2 colunas não cabem de largura no celular, ver
+     nota acima) deixam as 3 cartas altas demais pra caber sem rolar. */
+  .pb-layout .rc-card .ps-attr {
+    padding: 1px 0;
+    font-size: 9.5px;
+  }
+  .pb-layout .rc-card .ps-attr-bar {
+    height: 4px;
+  }
+  .pb-layout .rc-card .mk-attrs {
+    padding: 5px 0 0;
+    margin-top: 2px;
+  }
+  .pb-layout .pb-card-tap {
+    margin-top: 0;
+  }
+  /* com as linhas mais enxutas acima, sobra folga antes do floreio da moldura
+     no canto — o respiro de 34px (pensado pra 1 coluna com linha alta) pode
+     encolher bastante sem a última linha colidir com o ornamento. */
+  .pb-layout .pb-card {
+    padding-bottom: 16px;
   }
 }
 

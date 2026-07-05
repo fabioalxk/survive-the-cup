@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import type { RunState } from '../game/runTypes'
 import { START_LIVES } from '../game/run'
 import { ASCENSION_MAX } from '../game/ascension'
 import { ALL_CLUBS } from '../game/worldcup'
 import { defeatSfx, victorySfx } from '../sfx/crowd'
 import { useEscapeKey } from '../shared/useEscapeKey'
+import { useScrollOverflow } from '../shared/useScrollOverflow'
 import { FlameIcon, HeartbreakIcon, RestartIcon, SkullIcon } from '../ui/icons'
 import { TrophyIcon } from './MapIcons'
 
@@ -17,13 +18,16 @@ function ModalPanel({
   className,
   label,
   children,
+  panelRef,
 }: {
   className: string
   label: string
   children: React.ReactNode
+  /** só o `HelpModal` usa — precisa medir o próprio scroll pra faixa de "tem mais". */
+  panelRef?: React.Ref<HTMLDivElement>
 }) {
   return (
-    <div className={className} role="dialog" aria-modal="true" aria-label={label}>
+    <div className={className} role="dialog" aria-modal="true" aria-label={label} ref={panelRef}>
       {children}
     </div>
   )
@@ -121,9 +125,20 @@ export function ConfirmResetModal({ onConfirm, onCancel }: { onConfirm: () => vo
 /** Regras da jornada, acessível a qualquer momento pelo botão de ajuda do cabeçalho. */
 export function HelpModal({ onClose }: { onClose: () => void }) {
   useEscapeKey(onClose, true)
+  const panelRef = useRef<HTMLDivElement>(null)
+  // em telas baixas (ex. 360×640) esse é o modal mais alto do app — o painel
+  // inteiro rola (`.cm-modal` já tem overflow-y:auto), mas sem NENHUMA pista
+  // visual disso o último tópico e o botão "Entendi" ficavam invisíveis e
+  // pareciam cortados/quebrados, não um convite a rolar (mesma classe de bug
+  // já corrigida no mercado/academia/poções — mesmo padrão aqui).
+  const hasMore = useScrollOverflow(panelRef)
   return (
     <Backdrop>
-      <ModalPanel className="cm-modal rq-help-modal" label="Como jogar">
+      <ModalPanel
+        className={`cm-modal rq-help-modal${hasMore ? ' has-more' : ''}`}
+        label="Como jogar"
+        panelRef={panelRef}
+      >
         <h2>Como jogar</h2>
         <ul className="rq-help-list">
           <li>

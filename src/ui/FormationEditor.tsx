@@ -137,7 +137,7 @@ export default function FormationEditor({
               data-slot={i}
               className={`tv-chip tv-role-${role.toLowerCase()} ${drag?.index === i && drag.moved ? 'is-drag' : ''} ${selected === i ? 'is-sel' : ''} ${highlight === i ? 'is-best' : ''}`}
               style={toScreen(pos)}
-              title={locked ? 'Goleiro não muda de posição' : undefined}
+              title={locked ? 'Goleiro não muda de posição' : p.name}
               role={interactive ? 'button' : undefined}
               tabIndex={interactive ? 0 : undefined}
               aria-label={locked ? `${p.name} — posição fixa de goleiro` : p.name}

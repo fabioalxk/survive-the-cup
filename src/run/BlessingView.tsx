@@ -7,6 +7,15 @@ import { chooseSfx } from '../sfx/crowd'
 import { HelpIcon } from '../ui/icons'
 import type { RunApi } from './useRun'
 
+/** Risco por extenso — o texto visível já é claro pela cor/tom da carta, mas
+ *  isso é invisível pra quem usa leitor de tela (só o `<button>` nativo, sem
+ *  nada indicando "isso é a opção arriscada"). */
+const TONE_LABEL: Record<string, string> = {
+  safe: 'segura',
+  power: 'de poder',
+  cursed: 'amaldiçoada',
+}
+
 /** Realça números e palavras gritadas da descrição (estilo Slay the Spire). */
 const emphasize = (desc: string) =>
   desc.split(/(\+?\d+|\b[A-ZÇÃÕÁÉÍÓÚ]{2,}\b)/g).map((part, i) =>
@@ -56,6 +65,7 @@ export default function BlessingView({
               <button
                 key={kind}
                 className={`rq-bless-card rq-bless-${info.tone}`}
+                aria-label={`${info.label} — bênção ${TONE_LABEL[info.tone]}: ${info.desc}`}
                 onClick={() => {
                   chooseSfx()
                   act((s) => pickBlessing(s, i))

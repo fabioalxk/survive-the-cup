@@ -1278,6 +1278,15 @@ a:focus-visible {
   align-items: center;
   padding: 16px clamp(16px, 3vw, 48px);
 }
+/* esmaece a borda de baixo só quando sobra conteúdo fora da vista (.has-more,
+   calculado em JS — mesmo padrão do mercado/academia/poções/ajuda): em telas
+   landscape comuns (não-ultrawide) o campo já ocupa quase toda a altura, e sem
+   isto o histórico de lances (`.cm-history`, mostrado abaixo) ficava alcançável
+   só rolando às cegas — nada avisava que existia. */
+.cm-match.has-more {
+  mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 32px), transparent 100%);
+}
 /* O palco (placar + campo + controles, empilhados) só existe como caixa própria
    no desktop; no retrato os filhos empilham direto no .cm-match. */
 .cm-stage {
@@ -1373,6 +1382,11 @@ a:focus-visible {
 .cm-match-over {
   position: absolute;
   inset: 0;
+  /* acima da faixa de evento (.event-banner, z-index: 5) — sem isto o "1º
+     TEMPO"/"2º TEMPO" no meio de uma troca de lado cortava por cima do
+     painel de táticas (ou da tela de fim de jogo), os dois sendo absolutos
+     dentro do mesmo `.cm-pitch`. */
+  z-index: 6;
   display: grid;
   place-items: center;
   background: rgba(5, 9, 18, 0.88);

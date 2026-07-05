@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Attrs, Vec2 } from '../sim/types'
 import type { RunState } from '../game/runTypes'
 import { GYM_GAIN, boostAttribute, leaveNode, moveFormationSlot, setFormation } from '../game/run'
@@ -6,6 +6,7 @@ import { gymTrains } from '../game/ascension'
 import { slotOverallOf } from '../game/overall'
 import { upgradeSfx } from '../sfx/crowd'
 import { formationName } from '../sim/formation'
+import { useScrollOverflow } from '../shared/useScrollOverflow'
 import { attrColor, attrGroupsFor, attrLabel } from '../ui/attrDisplay'
 import FormationEditor from '../ui/FormationEditor'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
@@ -65,6 +66,10 @@ export default function GymNodeView({
 }) {
   const TRAINS = gymTrains(state.ascension)
   const slots = state.formationSlots
+  const fieldRef = useRef<HTMLDivElement>(null)
+  const fieldHasMore = useScrollOverflow(fieldRef)
+  const attrsRef = useRef<HTMLDivElement>(null)
+  const attrsHasMore = useScrollOverflow(attrsRef)
 
   const [selIdx, setSelIdx] = useState<number | null>(null)
   const [attr, setAttr] = useState<keyof Attrs>('pace')
@@ -161,7 +166,11 @@ export default function GymNodeView({
         </header>
 
         <div className="rq-gym-body">
-          <div className="rq-gym-field" aria-label="Tática e time">
+          <div
+            className={`rq-gym-field${fieldHasMore ? ' has-more' : ''}`}
+            aria-label="Tática e time"
+            ref={fieldRef}
+          >
             <div className="rq-gym-field-head">
               <h4>
                 <ClipboardIcon size={14} /> Seu time
@@ -179,7 +188,11 @@ export default function GymNodeView({
             />
           </div>
 
-          <section className="rq-gym-attrs" aria-label="Atributos">
+          <section
+            className={`rq-gym-attrs${attrsHasMore ? ' has-more' : ''}`}
+            aria-label="Atributos"
+            ref={attrsRef}
+          >
             {player ? (
               <>
                 <button

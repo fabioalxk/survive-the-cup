@@ -6,7 +6,7 @@ import { potionSfx } from '../sfx/crowd'
 import { useEscapeKey } from '../shared/useEscapeKey'
 import { useScrollOverflow } from '../shared/useScrollOverflow'
 import { attrColor, attrLabel } from '../ui/attrDisplay'
-import { PotionIcon } from '../ui/icons'
+import { CloseIcon, PotionIcon } from '../ui/icons'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
 import type { RunApi } from './useRun'
 
@@ -98,6 +98,17 @@ export default function PotionsHud({
                   (teto {POTION_ATTR_CAP}).
                 </p>
               </div>
+              {/* só backdrop/Esc/rodapé fechavam antes — menos descobrível que um
+                  ✕ no cabeçalho, que é o padrão do painel de táticas
+                  (`.cm-tactics-close` em MatchPlayer.tsx). */}
+              <button
+                className="rq-potion-close"
+                onClick={closePicker}
+                title="Guardar para depois"
+                aria-label="Fechar"
+              >
+                <CloseIcon size={14} />
+              </button>
             </header>
 
             <div

@@ -185,7 +185,7 @@ export const drawMatch = (
 
   drawPitch(ctx, px, scale)
   // nomes primeiro: jogadores desenhados depois ficam sempre por cima deles
-  if (showNames) for (const p of state.players) drawPlayerName(ctx, p, px, scale, alpha)
+  if (showNames) drawPlayerNames(ctx, state.players, px, scale, alpha)
   for (const p of state.players) drawPlayer(ctx, p, px, scale, alpha, cel)
   drawBall(ctx, state, px, scale, alpha)
   if (cel) drawCelebration(ctx, state, px, scale)
@@ -915,35 +915,37 @@ const drawPlayer = (
 
 }
 
+/** Ponto de ancoragem do rótulo (abaixo do jogador, ou ao lado quando `labelsUpright`). */
+const labelAnchor = (p: Player, px: Px, scale: number, alpha: number) => {
+  const ip = lerpV(p.prevPos, p.pos, alpha)
+  const cx = px(ip.x)
+  const cy = px(ip.y)
+  const r = PHYS.playerRadius * 1.55 * scale
+  const gap = r + scale * 1.9
+  // Posição do nome. No desktop fica abaixo do jogador (canvas +y). No celular
+  // o canvas é girado +90° no CSS, então "abaixo na tela" corresponde a canvas +x.
+  return labelsUpright ? { x: cx + gap, y: cy } : { x: cx, y: cy + gap }
+}
+
 // Nome abaixo do jogador — desenhado num passe separado ANTES dos jogadores no
 // render, para os sprites ficarem sempre por cima dos nomes. Texto branco
 // simples, sem fundo.
 const drawPlayerName = (
   ctx: CanvasRenderingContext2D,
   p: Player,
-  px: Px,
   scale: number,
-  alpha: number,
+  anchor: { x: number; y: number },
 ) => {
-  const ip = lerpV(p.prevPos, p.pos, alpha)
-  const cx = px(ip.x)
-  const cy = px(ip.y)
-  const r = PHYS.playerRadius * 1.55 * scale
+  const { x: lcx, y: lcy } = anchor
   ctx.save()
   ctx.globalAlpha = 1 - p.downAmt * 0.5
   ctx.font = `600 ${Math.round(scale * 1.12)}px "Segoe UI", Roboto, sans-serif`
   ctx.textBaseline = 'middle'
   ctx.textAlign = 'center'
-  // Posição do nome. No desktop fica abaixo do botão (canvas +y). No celular o
-  // canvas é girado +90° no CSS, então "abaixo na tela" corresponde a canvas +x.
-  const gap = r + scale * 1.9
-  const lcx = labelsUpright ? cx + gap : cx
-  const lcy = labelsUpright ? cy : cy + gap
   // gira o nome p/ ficar legível no celular
   uprightLabel(ctx, lcx, lcy, () => {
     // contorno escuro: sem isso o nome branco quase desaparece nas faixas
-    // claras do gramado, e dois jogadores próximos (ex. na bola parada)
-    // ficam com os nomes ilegíveis quando se tocam.
+    // claras do gramado.
     ctx.lineWidth = Math.max(1.5, scale * 0.22)
     ctx.lineJoin = 'round'
     ctx.strokeStyle = 'rgba(0,0,0,0.65)'
@@ -952,6 +954,30 @@ const drawPlayerName = (
     ctx.fillText(p.name, lcx, lcy)
   })
   ctx.restore()
+}
+
+/**
+ * Desenha o nome de cada jogador, pulando quem tem o rótulo colado no de
+ * outro já desenhado — dois jogadores próximos (bola parada, escanteio,
+ * aglomeração na área) tinham os nomes sobrepostos virando texto ilegível
+ * ("R[21]ha" em vez de "Raphinha"). Um rótulo por região é mais legível que
+ * dois empilhados um em cima do outro.
+ */
+const drawPlayerNames = (
+  ctx: CanvasRenderingContext2D,
+  players: Player[],
+  px: Px,
+  scale: number,
+  alpha: number,
+) => {
+  const minDist = scale * 3.4
+  const shown: { x: number; y: number }[] = []
+  for (const p of players) {
+    const anchor = labelAnchor(p, px, scale, alpha)
+    if (shown.some((s) => Math.hypot(s.x - anchor.x, s.y - anchor.y) < minDist)) continue
+    drawPlayerName(ctx, p, scale, anchor)
+    shown.push(anchor)
+  }
 }
 
 const drawBall = (

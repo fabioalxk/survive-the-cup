@@ -26,6 +26,7 @@ import {
 } from '../ui/icons'
 import { MatchHistory } from './MatchHistory'
 import { useEscapeKey } from './useEscapeKey'
+import { useScrollOverflow } from './useScrollOverflow'
 
 /* px por metro do canvas: 12 → 1356×912 nativo, nítido mesmo em tela cheia no desktop */
 const SCALE = 12
@@ -86,6 +87,11 @@ export default function MatchPlayer({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  // em telas landscape comuns (não-ultrawide) o campo já ocupa quase toda a
+  // altura de `.cm-match`, então o histórico de lances (mostrado abaixo) só é
+  // alcançável rolando o painel — sem pista visual disso, ninguém descobre
+  // que dá pra rolar (mesmo padrão já corrigido em Gym/Mercado/Poções/Ajuda).
+  const rootHasMore = useScrollOverflow(rootRef)
   const [tactics, setTactics] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const [muted, setMutedState] = useState(isMuted)
@@ -207,7 +213,7 @@ export default function MatchPlayer({
   const right = swapped ? { side: home, goals: hud.home } : { side: away, goals: hud.away }
 
   return (
-    <div className="cm-match" ref={rootRef}>
+    <div className={`cm-match${rootHasMore ? ' has-more' : ''}`} ref={rootRef}>
       {/* palco: campo + HUD sobreposto (placar/controles) — no desktop vira overlay de transmissão */}
       <div className="cm-stage">
       <div className="cm-scoreboard">
@@ -292,16 +298,21 @@ export default function MatchPlayer({
                 className="cm-over-score"
                 aria-label={`Placar final: ${home.name} ${hud.home}, ${away.name} ${hud.away}`}
               >
+                {/* mesma ordem esquerda/direita do placar do topo (`left`/`right`,
+                    que inverte no 2º tempo pra acompanhar a troca de lado no campo)
+                    — sem isto, o fim de jogo mostrava os times na ordem TROCADA em
+                    relação ao placar que ficou o jogo inteiro embaixo do nariz do
+                    jogador, parecendo um placar diferente por um instante. */}
                 <span className="cm-over-team" aria-hidden>
-                  {home.name}
+                  {left.side.name}
                 </span>
                 <strong aria-hidden>
-                  {hud.home}
+                  {left.goals}
                   <small>×</small>
-                  {hud.away}
+                  {right.goals}
                 </strong>
                 <span className="cm-over-team" aria-hidden>
-                  {away.name}
+                  {right.side.name}
                 </span>
               </div>
               <button

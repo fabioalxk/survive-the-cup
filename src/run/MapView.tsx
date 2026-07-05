@@ -72,6 +72,12 @@ const KIND_LABEL: Record<string, string> = {
 
 type NodeStatus = 'cleared' | 'available' | 'locked'
 
+const STATUS_LABEL: Record<NodeStatus, string> = {
+  cleared: 'concluído',
+  available: 'disponível',
+  locked: 'bloqueado',
+}
+
 function NodeButton({
   node,
   status,
@@ -99,6 +105,7 @@ function NodeButton({
       onClick={onClick}
       disabled={status !== 'available'}
       title={`${KIND_LABEL[node.kind]}${club ? ' · ' + club.name : ''}`}
+      aria-label={`${KIND_LABEL[node.kind]}${club ? ' · ' + club.name : ''} — ${STATUS_LABEL[status]}`}
     >
       {club ? (
         <>

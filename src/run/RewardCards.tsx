@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import type { RunState } from '../game/runTypes'
 import { POTION_BOOST, POTION_INFO, claimPotion, pickReward, skipReward } from '../game/run'
 import { chooseSfx, potionSfx, wonRewardSfx } from '../sfx/crowd'
+import { useMediaQuery } from '../shared/useMediaQuery'
 import { attrLabel } from '../ui/attrDisplay'
 import { GiftIcon, HelpIcon, PotionIcon } from '../ui/icons'
+import { CandidatePager } from './CandidatePager'
 import PlacePlayerBoard, { CandidateCard } from './PlacePlayerBoard'
 import type { RunApi } from './useRun'
 
@@ -24,13 +26,24 @@ export default function RewardCards({
   onHelp: () => void
 }) {
   const [armed, setArmed] = useState<number | null>(null)
+  // celular estreito: só cabe UMA carta cheia por vez sem rolar (ver
+  // CandidatePager) — desktop continua mostrando a grade toda de uma vez.
+  const isNarrow = useMediaQuery('(max-width: 900px)')
+  const [page, setPage] = useState(0)
   useEffect(() => {
     if (state.pendingReward) wonRewardSfx()
   }, [state.pendingReward])
+  // reforço escolhido/recusado encolhe (ou some com) a lista — sem isto a
+  // página ativa podia sobrar apontando pra fora do novo tamanho.
+  useEffect(() => {
+    const max = (state.pendingReward?.length ?? 1) - 1
+    if (page > max) setPage(Math.max(0, max))
+  }, [state.pendingReward, page])
 
   if (!state.pendingReward) return null
   const cards = state.pendingReward
   const candidate = armed !== null ? (cards[armed] ?? null) : null
+  const shown = isNarrow ? cards.map((_, i) => i).filter((i) => i === page) : cards.map((_, i) => i)
 
   const place = (cardIndex: number, slotIndex: number) => {
     chooseSfx()
@@ -76,12 +89,15 @@ export default function RewardCards({
             <span className="rq-potion-grab">Pegar</span>
           </button>
         )}
+        {isNarrow && !candidate && (
+          <CandidatePager count={cards.length} index={page} onSelect={setPage} />
+        )}
         <div className="pb-layout">
           <div className="rc-grid">
-            {cards.map((p, i) => (
+            {shown.map((i) => (
               <CandidateCard
-                key={p.id}
-                p={p}
+                key={cards[i].id}
+                p={cards[i]}
                 armed={armed === i}
                 onArm={(on) => setArmed(on ? i : null)}
                 onPlace={(slot) => place(i, slot)}
