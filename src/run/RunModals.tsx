@@ -32,8 +32,13 @@ function ModalPanel({
 const lastMatchLine = (state: RunState) =>
   state.lastMatch && (
     <>
-      Derrota para o {state.lastMatch.oppName} ({state.lastMatch.homeGoals}×{state.lastMatch.awayGoals})
-      na fase {state.lastMatch.stage}.
+      Derrota para o {state.lastMatch.oppName} (
+      <span aria-label={`${state.lastMatch.homeGoals} a ${state.lastMatch.awayGoals}`}>
+        <span aria-hidden>
+          {state.lastMatch.homeGoals}×{state.lastMatch.awayGoals}
+        </span>
+      </span>
+      ) na fase {state.lastMatch.stage}.
     </>
   )
 

@@ -92,10 +92,20 @@ export default function PreMatchView({
                 força pra resolver a partida (`xiStrength`) mas nunca mostrava —
                 todo squad-manager comercial expõe essa comparação antes do jogo,
                 é o contexto que falta pra "Jogar" fazer sentido como decisão. */}
-            <span className="rq-prematch-vs" title="Nota do seu time × nota do adversário">
-              <b style={{ color: attrColor(myRating) }}>{myRating}</b>
-              <span className="rq-prematch-vs-x">×</span>
-              <b style={{ color: attrColor(oppRating) }}>{oppRating}</b>
+            <span
+              className="rq-prematch-vs"
+              title="Nota do seu time × nota do adversário"
+              aria-label={`Sua nota ${myRating} contra a nota ${oppRating} do adversário`}
+            >
+              <b style={{ color: attrColor(myRating) }} aria-hidden>
+                {myRating}
+              </b>
+              <span className="rq-prematch-vs-x" aria-hidden>
+                ×
+              </span>
+              <b style={{ color: attrColor(oppRating) }} aria-hidden>
+                {oppRating}
+              </b>
             </span>
           </div>
           <div className="rq-prematch-actions">

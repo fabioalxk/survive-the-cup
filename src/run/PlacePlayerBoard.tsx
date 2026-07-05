@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { GenPlayer } from '../game/types'
 import type { RunState } from '../game/runTypes'
+import { xiStrength } from '../game/run'
 import { slotOverallOf } from '../game/overall'
 import { AttrList, attrColor } from '../ui/attrDisplay'
 import { PlayerAvatar } from '../ui/PlayerAvatar'
@@ -145,8 +146,30 @@ export default function PlacePlayerBoard({
   // só chama de "melhor lugar" quando encaixar de fato SOBE a nota de algum slot —
   // senão o botão soaria como recomendação mesmo entregando uma troca pior.
   const best = bestPick && bestPick.gain > 0 ? bestPick.slot : null
+  const myRating = Math.round(xiStrength(state))
+  // nota do time SE o reforço entrar no melhor lugar — mesma conta de
+  // `xiStrength`, só trocando um overall pelo do candidato naquele slot.
+  const nextRating =
+    best !== null && candidate
+      ? Math.round(
+          state.squad.reduce((s, p, i) => s + (i === best ? slotOverallOf(i, slots[i], candidate.attrs) : p.overall), 0) /
+            state.squad.length,
+        )
+      : null
   return (
     <div className={`pb-board ${candidate ? 'is-armed' : ''}`}>
+      {/* nota do time sempre visível — o mesmo contexto que já mostramos no
+          vestiário antes do jogo, aqui na hora de decidir se vale contratar. */}
+      <div className="pb-team-rating">
+        <span>Nota do time</span>
+        <b style={{ color: attrColor(myRating) }}>{myRating}</b>
+        {nextRating !== null && nextRating !== myRating && (
+          <>
+            <span className="pb-arrow">→</span>
+            <b style={{ color: attrColor(nextRating) }}>{nextRating}</b>
+          </>
+        )}
+      </div>
       {/* altura reservada mesmo sem nada pra mostrar: sem isto, o campinho
           pula pra baixo assim que a carta arma (o botão/aviso empurra tudo),
           e um arraste contínuo (carta → jogador) erra o alvo porque o chip

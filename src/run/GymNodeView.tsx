@@ -279,17 +279,28 @@ export default function GymNodeView({
               Seguir viagem →
             </button>
           ) : (
-            player &&
-            summary && (
+            <>
+              {player && summary && (
+                <button
+                  className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block"
+                  onClick={train}
+                  disabled={summary.before >= 100}
+                  title={summary.before >= 100 ? 'Este atributo já está no limite (100)' : undefined}
+                >
+                  Treinar ({trainsLeft} restante{trainsLeft > 1 ? 's' : ''})
+                </button>
+              )}
+              {/* diferente do mercado/recompensa, sem isto não tinha COMO sair
+                  do treino sem gastar todos os melhoramentos — nem esse botão
+                  aparecia antes de escolher alguém pra treinar. */}
               <button
-                className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block"
-                onClick={train}
-                disabled={summary.before >= 100}
-                title={summary.before >= 100 ? 'Este atributo já está no limite (100)' : undefined}
+                className="cm-btn cm-btn-ghost"
+                onClick={() => act((s) => leaveNode(s))}
+                title="Sai sem usar os melhoramentos restantes"
               >
-                Treinar ({trainsLeft} restante{trainsLeft > 1 ? 's' : ''})
+                Seguir viagem sem treinar mais →
               </button>
-            )
+            </>
           )}
         </footer>
       </div>

@@ -11,9 +11,15 @@ export function useScrollOverflow(ref: RefObject<HTMLElement | null>): boolean {
     check()
     el.addEventListener('scroll', check)
     window.addEventListener('resize', check)
+    // conteúdo pode encolher sem rolar nem redimensionar a janela (ex.: compra
+    // no mercado remove uma oferta da grade) — sem isto, a máscara de "tem
+    // mais pra rolar" ficava presa ligada mesmo depois da lista caber inteira.
+    const observer = new MutationObserver(check)
+    observer.observe(el, { childList: true, subtree: true })
     return () => {
       el.removeEventListener('scroll', check)
       window.removeEventListener('resize', check)
+      observer.disconnect()
     }
   }, [ref])
 

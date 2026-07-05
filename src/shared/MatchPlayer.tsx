@@ -288,14 +288,21 @@ export default function MatchPlayer({
                 <WhistleIcon size={44} />
               </div>
               <h2>Fim de jogo</h2>
-              <div className="cm-over-score">
-                <span className="cm-over-team">{home.name}</span>
-                <strong>
+              <div
+                className="cm-over-score"
+                aria-label={`Placar final: ${home.name} ${hud.home}, ${away.name} ${hud.away}`}
+              >
+                <span className="cm-over-team" aria-hidden>
+                  {home.name}
+                </span>
+                <strong aria-hidden>
                   {hud.home}
                   <small>×</small>
                   {hud.away}
                 </strong>
-                <span className="cm-over-team">{away.name}</span>
+                <span className="cm-over-team" aria-hidden>
+                  {away.name}
+                </span>
               </div>
               <button
                 className="cm-btn cm-btn-go cm-btn-lg cm-btn-block"
