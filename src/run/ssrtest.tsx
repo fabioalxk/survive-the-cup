@@ -26,7 +26,9 @@ const apiFor = (state: RunState): RunApi => ({
 })
 
 // 1) tela inicial
-const newRunHtml = renderToStaticMarkup(<NewRun onStart={() => {}} hasSave={false} onContinue={() => {}} />)
+const newRunHtml = renderToStaticMarkup(
+  <NewRun onStart={() => {}} hasSave={false} unlockedAscension={0} onContinue={() => {}} />,
+)
 assert(newRunHtml.includes('Survive the Cup'), 'NewRun deve renderizar o título')
 
 // 2) shell no mapa (mapa + escudo do clube + moedas) — SEM abas
@@ -58,7 +60,7 @@ const matchNode = state.nodes.find((n) => state.availableNodeIds.includes(n.id) 
 if (matchNode) {
   enterNode(state, matchNode.id)
   assert(state.status === 'prematch', 'nó de partida deveria abrir o vestiário')
-  const preHtml = renderToStaticMarkup(<PreMatchView state={state} act={() => {}} onHelp={() => {}} />)
+  const preHtml = renderToStaticMarkup(<PreMatchView state={state} act={() => {}} />)
   assert((preHtml.match(/tv-chip /g)?.length ?? 0) === 11, 'vestiário deve desenhar os 11 no campinho')
   assert(preHtml.includes('Jogar'), 'vestiário deve ter o botão Jogar')
   kickOff(state)

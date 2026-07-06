@@ -50,10 +50,13 @@ type Screen = 'menu' | 'setup' | 'help'
 export default function NewRun({
   onStart,
   hasSave,
+  unlockedAscension,
   onContinue,
 }: {
   onStart: (managerName: string, clubId: string, ascension: number) => void
   hasSave: boolean
+  /** Maior ascension já liberada (vencendo o chefão uma vez por nível, em ordem). */
+  unlockedAscension: number
   onContinue: () => void
 }) {
   // Apenas o Brasil pode ser escolhido por enquanto.
@@ -196,19 +199,24 @@ export default function NewRun({
                 aria-label="Nível de ascension"
                 onKeyDown={handleRadioGroupKeyDown}
               >
-                {Array.from({ length: ASCENSION_MAX + 1 }, (_, a) => (
-                  <button
-                    key={a}
-                    role="radio"
-                    aria-checked={ascension === a}
-                    tabIndex={ascension === a ? 0 : -1}
-                    className={`rq-asc-btn ${ascension === a ? 'active' : ''}`}
-                    style={{ ['--asc-heat' as string]: ascensionHeat(a) }}
-                    onClick={() => setAscension(a)}
-                  >
-                    {a}
-                  </button>
-                ))}
+                {Array.from({ length: ASCENSION_MAX + 1 }, (_, a) => {
+                  const locked = a > unlockedAscension
+                  return (
+                    <button
+                      key={a}
+                      role="radio"
+                      aria-checked={ascension === a}
+                      tabIndex={ascension === a ? 0 : -1}
+                      className={`rq-asc-btn ${ascension === a ? 'active' : ''} ${locked ? 'rq-asc-locked' : ''}`}
+                      style={{ ['--asc-heat' as string]: ascensionHeat(a) }}
+                      disabled={locked}
+                      title={locked ? `Vença o chefão na ascension ${a - 1} para liberar` : undefined}
+                      onClick={() => setAscension(a)}
+                    >
+                      {locked ? <LockIcon size={11} /> : a}
+                    </button>
+                  )
+                })}
               </div>
               <p className="rq-asc-desc">{ascensionSummary(ascension)}</p>
             </section>
@@ -292,8 +300,8 @@ export default function NewRun({
                 e use poções nos momentos decisivos.
               </li>
               <li>
-                <b>Ascension:</b> venceu o chefão? Suba a dificuldade até o nível {ASCENSION_MAX} e
-                prove que não foi sorte.
+                <b>Ascension:</b> vença o chefão para liberar o próximo nível de dificuldade — um de
+                cada vez, em ordem, até o {ASCENSION_MAX}.
               </li>
             </ul>
           </section>

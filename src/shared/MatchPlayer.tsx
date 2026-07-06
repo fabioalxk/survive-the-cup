@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { canvasSize, setLabelsUpright, setShowNames } from '../render/renderer'
 import { useMatchLoop, type MatchSetup } from '../useMatchLoop'
-import { isMuted, primeAudio, setMuted } from '../sfx/crowd'
+import { primeAudio } from '../sfx/crowd'
 import type { Vec2 } from '../sim/types'
 import type { GenPlayer } from '../game/types'
 import { lineupFor, lineupFromSlots } from '../game/lineup'
@@ -20,7 +20,6 @@ import {
   ExpandIcon,
   PauseIcon,
   PlayIcon,
-  SoundIcon,
   SpeedIcon,
   WhistleIcon,
 } from '../ui/icons'
@@ -94,7 +93,6 @@ export default function MatchPlayer({
   const rootHasMore = useScrollOverflow(rootRef)
   const [tactics, setTactics] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
-  const [muted, setMutedState] = useState(isMuted)
   const [speedMenu, setSpeedMenu] = useState(false)
   const speedBtnRef = useRef<HTMLButtonElement>(null)
   const speedMenuRef = useRef<HTMLDivElement>(null)
@@ -237,7 +235,17 @@ export default function MatchPlayer({
           <ClubBadge club={right.side} size={30} />
           <span className="cm-sb-stripe" style={{ background: right.side.shirt }} aria-hidden />
         </span>
-        <span className="cm-sb-clock">{over ? 'FIM' : fmtClock(hud.time)}</span>
+        <span className="cm-sb-right">
+          <span className="cm-sb-clock">{over ? 'FIM' : fmtClock(hud.time)}</span>
+          <button
+            className="cm-btn cm-btn-ghost cm-btn-sm cm-btn-ico cm-btn-fullscreen"
+            onClick={toggleFullscreen}
+            title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+            aria-label={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
+          >
+            {fullscreen ? <CompressIcon size={14} /> : <ExpandIcon size={14} />}
+          </button>
+        </span>
       </div>
 
       <div className="cm-pitch">
@@ -381,25 +389,6 @@ export default function MatchPlayer({
             </button>
           )}
           {extraControls?.({ pause: freeze, resume: unfreeze })}
-          <button
-            className="cm-btn cm-btn-sm cm-btn-ico"
-            onClick={() => {
-              setMuted(!muted)
-              setMutedState(!muted)
-            }}
-            title={muted ? 'Ativar som' : 'Silenciar'}
-            aria-label={muted ? 'Ativar som' : 'Silenciar'}
-          >
-            <SoundIcon size={14} muted={muted} />
-          </button>
-          <button
-            className="cm-btn cm-btn-sm cm-btn-fullscreen"
-            onClick={toggleFullscreen}
-            title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
-            aria-label={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
-          >
-            {fullscreen ? <CompressIcon size={14} /> : <ExpandIcon size={14} />}
-          </button>
         </div>
       )}
       </div>

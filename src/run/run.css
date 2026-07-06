@@ -737,6 +737,18 @@
   background: color-mix(in srgb, var(--asc-heat) 13%, transparent);
   box-shadow: 0 0 10px color-mix(in srgb, var(--asc-heat) 25%, transparent);
 }
+/* ainda não liberada: vença o chefão no nível anterior primeiro */
+.rq-asc-btn.rq-asc-locked {
+  display: grid;
+  place-items: center;
+  color: var(--cm-muted);
+  opacity: 0.45;
+  cursor: default;
+}
+.rq-asc-btn.rq-asc-locked:hover {
+  color: var(--cm-muted);
+  border-color: color-mix(in srgb, var(--asc-heat, var(--cm-line)) 30%, transparent);
+}
 /* celular: 11 botões (0-10) não cabem numa linha só — com `flex:1` cada linha
    quebrada estica pra preencher a largura toda, então a 2ª linha (sobra de
    3) fica com botões bem mais largos que a 1ª (8 botões), desalinhado. Uma
@@ -1473,7 +1485,7 @@
   border-radius: 100% 0 0 0;
 }
 
-/* jogador no campinho: botão colorido pela função + nome, arrastável */
+/* jogador no campinho: foto com anel branco + selo de nota + nome, arrastável */
 .tv-chip {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -1497,9 +1509,9 @@
 .tv-chip:focus-visible {
   outline: none;
 }
-/* --cm-ring (azul bem translúcido) quase não aparecia contra a borda colorida
-   por posição da própria foto (mesmo problema do anel de foco do mapa) — anel
-   branco+azul mais forte, sempre visível independente da cor da posição. */
+/* --cm-ring (azul bem translúcido) quase não aparecia contra a borda branca
+   da própria foto (mesmo problema do anel de foco do mapa) — anel
+   branco+azul mais forte, sempre visível. */
 .tv-chip:focus-visible .tv-chip-photo {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 0 0 6px rgba(37, 99, 235, 0.7),
     0 4px 10px rgba(0, 0, 0, 0.45);
@@ -1511,7 +1523,7 @@
   width: 32px;
   height: 32px;
   border: 2px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 0 3px color-mix(in srgb, var(--role-tone, transparent) 55%, transparent);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
   transition: transform 0.12s ease, border-color 0.12s;
 }
 .tv-chip-lock {
@@ -1527,41 +1539,17 @@
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
-.tv-role-gk {
-  --role-tone: #d97706;
-}
-.tv-role-gk .tv-chip-photo {
-  border-color: #d97706;
-}
-.tv-role-def {
-  --role-tone: #3b82f6;
-}
-.tv-role-def .tv-chip-photo {
-  border-color: #3b82f6;
-}
-.tv-role-mid {
-  --role-tone: #22c55e;
-}
-.tv-role-mid .tv-chip-photo {
-  border-color: #22c55e;
-}
-.tv-role-fwd {
-  --role-tone: #ef4444;
-}
-.tv-role-fwd .tv-chip-photo {
-  border-color: #ef4444;
-}
 .tv-chip.is-drag .tv-chip-photo {
   transform: scale(1.18);
   border-color: var(--cm-gold);
 }
-/* mouse no chip: anel da posição fica mais forte — a única pista de "isto
+/* mouse no chip: anel branco fica mais forte — a única pista de "isto
    troca de lugar" pra quem usa cursor (touch já aprende arrastando/tocando).
    Só cor/glow, sem crescer: o campinho já tem MUITO chip lado a lado pra
    qualquer um deles pular de tamanho ao passar o mouse por perto. */
 .tv-chip:hover:not(.is-drag) .tv-chip-photo {
-  border-color: color-mix(in srgb, var(--role-tone, #fff) 55%, white);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 0 4px color-mix(in srgb, var(--role-tone, transparent) 70%, transparent);
+  border-color: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.3);
 }
 .tv-chip-name {
   white-space: nowrap;
@@ -1575,7 +1563,7 @@
   /* nomes gerados (fictícios) podem sair bem compridos ("Wellington
      Cavalcanti") — sem isso a pílula estourava pra fora do campinho e podia
      encostar no chip vizinho. Ainda dá pra reconhecer o jogador pelo começo
-     do nome + retrato + número da camisa.
+     do nome + retrato.
      96px ainda deixava 2 nomes compridos ADJACENTES se tocarem (defensores
      ficam só uns 60px de centro a centro na formação padrão) — 72px cobre
      esse caso mais apertado com folga e ainda mostra nomes reais curtos
@@ -1584,44 +1572,21 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* número da camisa: selo simétrico ao de nota, do outro lado da foto —
-   reaproveita a cor da função (--role-tone) já usada no anel da foto.
-   "Pendurado" no canto (metade fora da foto, não encostado): encostado
-   (como era antes) o selo tampava um pedaço grande demais do rosto numa
-   foto de só 32px — dificultava ver quem é o jogador. Pendurado ele fica
-   legível sem comer o retrato, e ainda cabe sem colidir com o vizinho nas
-   formações de 5 numa linha (3-5-2/3-4-3). */
-.tv-chip-num {
-  position: absolute;
-  top: -5px;
-  left: -5px;
-  min-width: 13px;
-  height: 13px;
-  padding: 0 2.5px;
-  display: grid;
-  place-items: center;
-  font-family: var(--cm-font-display);
-  font-weight: 800;
-  font-size: 9px;
-  font-variant-numeric: tabular-nums;
-  color: #fff;
-  background: var(--role-tone, #475569);
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
-  border-radius: 999px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-}
-/* nota geral do slot: selo pendurado no canto oposto (mesma lógica do
-   número acima) — não cobre a foto, só assina o cantinho dela. */
+/* nota geral do slot: selo centralizado ACIMA da foto, inteiramente fora do
+   círculo — encostado no canto ele tampava um pedaço do rosto numa foto de só
+   32px. Só a COR do texto varia (faixa da nota); fundo e borda neutros pra
+   não virar arco-íris com 11 chips na tela. */
 .tv-chip-ovr {
   position: absolute;
-  top: -5px;
-  right: -5px;
+  bottom: calc(100% + 1px);
+  left: 50%;
+  transform: translateX(-50%);
   font-family: var(--cm-font-display);
   font-weight: 800;
   font-size: 9.5px;
   font-variant-numeric: tabular-nums;
   background: rgba(8, 12, 22, 0.92);
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
   padding: 0.5px 4.5px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
@@ -1639,18 +1604,9 @@
     width: 26px !important;
     height: 26px !important;
   }
-  .tv-chip-num {
-    min-width: 11px;
-    height: 11px;
-    font-size: 7.5px;
-    top: -4px;
-    left: -4px;
-  }
   .tv-chip-ovr {
     font-size: 8.5px;
     padding: 0 3.5px;
-    top: -4px;
-    right: -4px;
   }
   .tv-chip-name {
     font-size: 8px;
@@ -1754,8 +1710,10 @@
 }
 /* faixa de pergaminho pintada (tools/generate-art.mjs cards), como o
    "Choose a Card" dos deck-builders — o texto senta no miolo vazio da arte.
-   Compartilhada pelos títulos das cenas do roguelike (recompensa, mercado,
-   academia, bênção); a variante -sm cabe em cabeçalho de modal. */
+   A arte é RETA e recortada sem margem (faixa chapada, caudas nos ~7%
+   externos de cada lado), então basta padding lateral > caudas pro texto
+   nunca sair da faixa. Compartilhada pelos títulos das cenas do roguelike
+   (recompensa, mercado, academia, bênção); a -sm cabe em cabeçalho de modal. */
 .cm-ribbon {
   position: relative;
   display: inline-flex;
@@ -1764,7 +1722,7 @@
   gap: 8px;
   margin: 0;
   min-width: 380px;
-  padding: 26px 84px 34px;
+  padding: 20px 76px;
   font-family: var(--cm-font-display);
   font-weight: 800;
   font-size: 21px;
@@ -1776,7 +1734,7 @@
 }
 .cm-ribbon-sm {
   min-width: 0;
-  padding: 14px 48px 21px;
+  padding: 13px 52px;
   font-size: 16px;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
   /* a arte da faixa (background-size 100% 100%) distorce feio se o texto
@@ -1792,9 +1750,6 @@
   font-size: 14.5px;
   text-align: center;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
-}
-.rc-scene .rq-potion-earned {
-  max-width: 620px;
 }
 
 .rc-grid {
@@ -1837,28 +1792,29 @@
   line-height: 1;
   padding: 4px 12px;
 }
-/* carta grande estilo "carta de jogador": retrato em destaque no topo (estoura
-   a borda pra cima, como uma figurinha premium) + estatísticas embaixo. */
+/* carta estilo "carta de jogador": retrato em destaque + estatísticas.
+   O fundo é PAINEL CSS (gradiente + borda tingida pela posição), não arte
+   esticada: a moldura pintada era retrato (2:3) com background-size 100% 100%
+   e distorcia feio em qualquer card paisagem, além do texto cair em cima dos
+   ornamentos da borda. CSS escala em qualquer proporção sem distorcer. */
 .rc-card {
   --tone: 96, 165, 250; /* cor padrão; sobrescrita por cm-role-* abaixo */
   position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
-  border: none;
-  border-radius: 22px;
-  /* respiro em % da largura: a moldura pintada estica junto com o card, então a
-     folga precisa acompanhar a espessura da borda da arte (~12% de cada lado) */
-  padding: 20px 14% 15%;
+  border-radius: 16px;
+  padding: 18px 20px;
   cursor: pointer;
   text-align: left;
   color: var(--cm-text);
   font-family: var(--cm-font);
-  /* moldura pintada por posição (cm-frame-*); o painel interno da arte é o fundo */
-  background: var(--card-frame) center / 100% 100% no-repeat,
-    linear-gradient(180deg, rgba(22, 34, 58, 0.92), rgba(12, 19, 34, 0.96));
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(var(--tone), 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(24, 37, 63, 0.97), rgba(12, 19, 34, 0.98));
+  border: 1px solid rgba(var(--tone), 0.4);
   overflow: hidden;
-  box-shadow: var(--cm-shadow-lg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), var(--cm-shadow-lg);
   /* `backwards` (não `both`): sem o `forwards`, a animação de entrada não fica
      travando `opacity: 1` pra sempre depois que termina — isso encobria o
      `opacity: 0.55` de `.pb-card:disabled` (oferta sem moedas suficientes),
@@ -1869,8 +1825,9 @@
 /* carta inteira é um botão — só o brilho (tingido pela posição) confirma que
    dá pra clicar; sem transform/escala, que já saiu daqui antes por ser
    chamativo demais num grid de várias cartas ao mesmo tempo. */
-.rc-card:hover:not(:disabled):not(.is-armed) {
-  box-shadow: var(--cm-shadow-lg), 0 0 26px rgba(var(--tone), 0.32);
+.rc-card:hover:not(:disabled) {
+  border-color: rgba(var(--tone), 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), var(--cm-shadow-lg), 0 0 26px rgba(var(--tone), 0.32);
 }
 /* mesmo problema do `.cm-btn:focus-visible` (career.css): `overflow:hidden`
    (aqui, pra recortar a moldura pintada nos cantos arredondados) some com o
@@ -1880,25 +1837,18 @@
 .rc-card:focus-visible {
   box-shadow: var(--cm-shadow-lg), inset 0 0 0 3px rgba(96, 165, 250, 0.7);
 }
-/* moldura + tom por posição — as 4 artes (`card_frame_gk/def/mid/fwd.webp`)
-   existiam mas a carta nunca recebia a classe `cm-role-*`, então toda
-   recompensa/oferta saía com a moldura de goleiro e o brilho azul padrão,
-   não importa a posição real do jogador. */
+/* tom por posição: tinge borda, brilho e o glow atrás do retrato */
 .rc-card.cm-role-gk {
   --tone: 252, 211, 77;
-  --card-frame: url('/assets/cards/card_frame_gk.webp');
 }
 .rc-card.cm-role-def {
   --tone: 147, 197, 253;
-  --card-frame: url('/assets/cards/card_frame_def.webp');
 }
 .rc-card.cm-role-mid {
   --tone: 134, 239, 172;
-  --card-frame: url('/assets/cards/card_frame_mid.webp');
 }
 .rc-card.cm-role-fwd {
   --tone: 252, 165, 165;
-  --card-frame: url('/assets/cards/card_frame_fwd.webp');
 }
 .rc-card:nth-child(2) {
   animation-delay: 0.08s;
@@ -2665,58 +2615,6 @@
   text-shadow: 0 0 8px rgba(var(--potion), 0.55);
 }
 
-/* poção CLICÁVEL no pop-up de recompensa: clique para pegar (vai pro cabeçalho) */
-.rq-potion-earned {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  margin: -6px 0 16px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  text-align: left;
-  font: inherit;
-  background:
-    radial-gradient(80% 160% at 8% 0%, rgba(var(--potion), 0.22), rgba(var(--potion), 0) 55%),
-    rgba(var(--potion), 0.08);
-  border: 1px solid rgba(var(--potion), 0.5);
-  color: var(--potion-text);
-  line-height: 1.45;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-.rq-potion-earned:hover {
-  border-color: rgba(var(--potion), 0.95);
-  background:
-    radial-gradient(80% 160% at 8% 0%, rgba(var(--potion), 0.28), rgba(var(--potion), 0) 55%),
-    rgba(var(--potion), 0.14);
-}
-.rq-potion-earned-ico {
-  flex: none;
-  filter: drop-shadow(0 0 6px rgba(var(--potion), 0.55));
-}
-.rq-potion-earned-txt {
-  flex: 1;
-  min-width: 0;
-}
-.rq-potion-earned-txt strong {
-  display: block;
-  font-size: 15px;
-}
-.rq-potion-earned-txt small {
-  color: var(--cm-muted);
-  font-size: 12px;
-}
-.rq-potion-grab {
-  flex: none;
-  padding: 7px 16px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 13px;
-  color: #08101d;
-  background: linear-gradient(180deg, rgba(var(--potion), 0.95), rgba(var(--potion), 0.7));
-  box-shadow: 0 2px 8px rgba(var(--potion), 0.35);
-}
 
 /* ---- pop-up de uso: cabeçalho luminoso na cor da poção + lista dos 11 ---- */
 .rq-potion-modal {
@@ -3050,24 +2948,6 @@
   line-height: 1.4;
   color: #dbe6f7;
 }
-/* CTA da carta: vira "botão" de verdade no hover da carta */
-.rq-bless-take {
-  margin-top: auto;
-  padding: 7px 26px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, rgb(var(--tone)) 55%, #fff);
-  border: 1px solid rgba(var(--tone), 0.45);
-  background: rgba(var(--tone), 0.1);
-  transition: background 0.15s, color 0.15s;
-}
-.rq-bless-card:hover .rq-bless-take {
-  background: rgba(var(--tone), 0.85);
-  color: #08101d;
-}
 .rq-bless-num {
   font-style: normal;
   font-weight: 800;
@@ -3116,9 +2996,6 @@
   .rq-bless-desc {
     grid-area: desc;
     font-size: 13.5px;
-  }
-  .rq-bless-take {
-    display: none;
   }
 }
 
@@ -3245,11 +3122,6 @@
     font-size: 9px;
     padding: 1px 5px;
   }
-  .tv-chip-num {
-    min-width: 12px;
-    height: 12px;
-    font-size: 8px;
-  }
   .tv-chip-ovr {
     font-size: 9px;
     padding: 0 4px;
@@ -3301,7 +3173,7 @@
   .cm-ribbon {
     font-size: 16px;
     min-width: 0;
-    padding: 18px 52px 24px;
+    padding: 13px 52px;
   }
   .rc-sub {
     font-size: 12.5px;
@@ -3370,12 +3242,6 @@
   .rc-card .ps-attr-bar {
     display: block;
   }
-  .rq-potion-earned {
-    margin-bottom: 10px;
-    padding: 8px 10px;
-    gap: 8px;
-  }
-
 }
 
 /* Cartela de atributos (rodapé): o painel flutuante ao lado (ver bloco
@@ -3593,35 +3459,6 @@
   font-size: 10px;
   font-weight: 700;
 }
-/* tela bem estreita: nome do adversário + 3 ações do cabeçalho já disputam
-   espaço sozinhos — o placar de nota é o primeiro a ceder lugar. */
-@media (max-width: 420px) {
-  .rq-prematch-vs {
-    display: none;
-  }
-}
-.rq-prematch-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: none;
-}
-.rq-prematch-auto {
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
-}
-/* nome do adversário tem prioridade sobre o rótulo do botão utilitário —
-   abaixo de 480px (celular estreito) "Organizar" vira só o ícone. */
-@media (max-width: 480px) {
-  .rq-prematch-auto-label {
-    display: none;
-  }
-  .rq-prematch-auto {
-    padding-left: 9px;
-    padding-right: 9px;
-  }
-}
 .rq-prematch-board {
   flex: 1 1 auto;
   min-height: 0;
@@ -3629,9 +3466,6 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-}
-.rq-prematch-board .tv-presets-wrap {
-  flex: none;
 }
 .rq-prematch-board .tv-pitch {
   flex: 1 1 0;
@@ -3735,18 +3569,13 @@
   margin-top: 0;
   align-content: start;
 }
-/* carta compacta (deitada): retrato à esquerda, dados à direita — moldura
-   única dourada (não há mais rótulo/moldura de posição) */
+/* carta compacta (deitada): retrato à esquerda, dados à direita */
 .pb-card {
-  --card-frame: url('/assets/cards/card_frame_gk.webp');
-  --tone: 252, 211, 77;
   flex-direction: row;
   align-items: center;
   gap: 6px;
-  /* respiro em % da largura: a moldura pintada estica junto com o card */
-  padding: 14px 9% 14px 6%;
+  padding: 12px 16px;
   border-radius: 14px;
-  touch-action: none; /* o arrasto da carta não pode rolar a página */
 }
 .pb-card .rc-card-portrait {
   flex: none;
@@ -3770,21 +3599,6 @@
   cursor: not-allowed;
   filter: saturate(0.4);
 }
-.pb-card.is-armed {
-  transform: translateY(-2px) scale(1.02);
-  z-index: 1;
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.65), 0 18px 40px rgba(0, 0, 0, 0.5);
-}
-/* celular estreito (~480px): a lista de atributos vira 1 coluna (ver regra
-   acima), o que deixa o card bem mais alto — o `padding-bottom: 14px` fixo
-   (pensado pra carta deitada curta, com 2 colunas de atributo) não sobra pra
-   última linha ("Goleiro"), que acaba entrando no floreio ornamentado do
-   canto da moldura e fica ilegível. Mais respiro embaixo evita a colisão. */
-@media (max-width: 480px) {
-  .pb-card {
-    padding-bottom: 34px;
-  }
-}
 .pb-card-price {
   display: inline-flex;
   align-items: center;
@@ -3800,36 +3614,50 @@
   border: 1px solid rgba(251, 191, 36, 0.35);
   border-radius: 999px;
 }
-/* selo "isto é clicável" no card ainda não armado — ensina sem precisar ler o texto de cima */
-.pb-card-tap {
-  width: fit-content;
-  margin-top: 2px;
-  padding: 2px 9px;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-}
-/* fantasma que segue o dedo durante o arrasto da carta */
-.pb-ghost {
-  position: fixed;
-  z-index: 1000;
-  transform: translate(-50%, -110%);
+/* CTA de 1 clique no rodapé da carta: quem sai + antes → depois da nota do
+   slot — a "flechinha" que fecha a decisão sem precisar armar/arrastar nada */
+.pb-card-go {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(10, 18, 32, 0.95);
-  border: 1px solid var(--cm-gold);
-  color: #fff;
-  font-size: 13px;
+  gap: 4px 7px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
   font-weight: 700;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.45);
+}
+/* troca que NÃO melhora nenhum slot: neutro, sem vender como recomendação */
+.pb-card-go.is-down {
+  background: rgba(148, 163, 189, 0.08);
+  border-color: var(--cm-line);
+}
+.pb-card-go-swap {
+  font-size: 15px;
+  font-weight: 800;
+  color: #4ade80;
+}
+.pb-card-go.is-down .pb-card-go-swap {
+  color: var(--cm-muted);
+}
+.pb-card-go-txt {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+.pb-card-go-ovr {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  pointer-events: none;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55);
+}
+.pb-card-go .pb-arrow {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 10px;
 }
 /* campinho-alvo do encaixe */
 .pb-board {
@@ -3839,18 +3667,9 @@
 .pb-board .tv-pitch {
   width: min(100%, max(300px, calc((100dvh - 380px) * 68 / 105)));
 }
-/* altura reservada pro botão "melhor lugar" (ou o aviso de "nenhum ganho")
-   MESMO sem carta armada — sem isto, o campinho pula pra baixo assim que a
-   carta arma (o conteúdo aparece e empurra tudo), o que atrapalha um
-   arraste contínuo (carta → jogador): o chip já não está mais onde o
-   dedo/cursor mirou no começo do gesto. 59px = altura do botão (49px) +
-   sua margem (10px) — o aviso é mais baixo e cabe folgado no mesmo espaço. */
-.pb-auto-slot {
-  min-height: 59px;
-}
 /* nota do time: rótulo neutro + número(s) coloridos pela faixa — mesmo
    idioma visual do placar "seu time × rival" do vestiário. Sem animação:
-   o número já muda sozinho ao armar/desarmar a carta, chamativo o bastante. */
+   o número já muda sozinho ao passar o mouse pela carta, chamativo o bastante. */
 .pb-team-rating {
   display: flex;
   align-items: baseline;
@@ -3868,9 +3687,6 @@
 .pb-team-rating .pb-arrow {
   color: var(--cm-muted);
   font-size: 11px;
-}
-.pb-board.is-armed .tv-chip {
-  cursor: pointer;
 }
 /* antes → depois da nota se o reforço entrar naquele slot */
 .pb-preview {
@@ -3898,21 +3714,6 @@
 .pb-skip {
   margin-top: 14px;
 }
-/* botão de um toque: encaixa o reforço direto no slot que mais ganha nota */
-.pb-auto {
-  margin-bottom: 10px;
-}
-/* aviso no lugar do botão de melhor encaixe, quando nenhum slot melhora com este reforço */
-.pb-no-gain {
-  margin: 0 0 10px;
-  padding: 8px 12px;
-  border-radius: var(--cm-radius);
-  background: rgba(148, 163, 189, 0.09);
-  border: 1px solid var(--cm-line);
-  color: var(--cm-muted);
-  font-size: 12.5px;
-  text-align: center;
-}
 /* chip sugerido como melhor encaixe pro reforço armado: anel firme, sem
    pulsar — a cor verde + o rótulo "★ melhor encaixe" já entregam o recado,
    um terceiro sinal piscando por cima só compete por atenção à toa. */
@@ -3936,12 +3737,12 @@
   .pb-layout {
     grid-template-columns: 1fr;
   }
-  /* sem carta armada, o campinho inteiro (11 chips) empilhado abaixo das
-     cartas empurrava o 3º reforço e o botão "Recusar" pra fora da tela —
-     ele só importa pra decidir o encaixe, então fica escondido até armar
-     uma carta; a "Nota do time" continua visível pra dar contexto. */
-  .pb-board:not(.is-armed) .tv-pitch,
-  .pb-board:not(.is-armed) .tv-presets-wrap {
+  /* o campinho inteiro (11 chips) empilhado abaixo das cartas empurrava o 3º
+     reforço e o botão "Recusar" pra fora da tela — e a própria carta já diz
+     quem sai e o antes → depois da nota, então no celular ele some; a
+     "Nota do time" continua visível pra dar contexto. */
+  .pb-board .tv-pitch,
+  .pb-board .tv-presets-wrap {
     display: none;
   }
   /* linhas de atributo mais enxutas nas cartas de reforço/mercado — sem isto,
@@ -3957,15 +3758,6 @@
   .pb-layout .rc-card .mk-attrs {
     padding: 5px 0 0;
     margin-top: 2px;
-  }
-  .pb-layout .pb-card-tap {
-    margin-top: 0;
-  }
-  /* com as linhas mais enxutas acima, sobra folga antes do floreio da moldura
-     no canto — o respiro de 34px (pensado pra 1 coluna com linha alta) pode
-     encolher bastante sem a última linha colidir com o ornamento. */
-  .pb-layout .pb-card {
-    padding-bottom: 16px;
   }
 }
 
@@ -3998,9 +3790,6 @@
 }
 .rq-scene-reward .rc-sub {
   margin: 6px 0 10px;
-}
-.rq-scene-reward .rq-potion-earned {
-  margin-bottom: 8px;
 }
 /* mercado largo: ofertas em 2 colunas pra caber sem rolar */
 @media (min-width: 1100px) {

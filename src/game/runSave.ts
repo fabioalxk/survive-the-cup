@@ -1,10 +1,12 @@
 import type { RunState } from './runTypes'
+import { clampAscension } from './ascension'
 import { defaultFormation } from '../sim/formation'
 import { ensureIdAbove } from './generate'
 import { lineupFor } from './lineup'
 import { refreshSquadRatings, START_LIVES } from './run'
 
 const KEY = 'cm-run-save-v1'
+const ASCENSION_KEY = 'cm-ascension-unlocked-v1'
 
 /** Há uma corrida salva no navegador? */
 export const hasRunSave = (): boolean => {
@@ -77,5 +79,26 @@ export const clearRunSave = (): void => {
     localStorage.removeItem(KEY)
   } catch {
     /* ignora */
+  }
+}
+
+/** Maior ascension já liberada (0 = só a dificuldade normal, ainda ninguém venceu o chefão). */
+export const getUnlockedAscension = (): number => {
+  try {
+    const raw = localStorage.getItem(ASCENSION_KEY)
+    return raw ? clampAscension(Number(raw)) : 0
+  } catch {
+    return 0
+  }
+}
+
+/** Vencer o chefão na ascension `n` libera a `n+1` — uma de cada vez, em ordem. */
+export const unlockNextAscension = (ascension: number): void => {
+  const next = clampAscension(ascension + 1)
+  if (next <= getUnlockedAscension()) return
+  try {
+    localStorage.setItem(ASCENSION_KEY, String(next))
+  } catch {
+    /* armazenamento indisponível — ignora silenciosamente */
   }
 }

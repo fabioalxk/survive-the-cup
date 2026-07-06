@@ -1348,8 +1348,15 @@ a:focus-visible {
   color: var(--cm-muted);
   font-size: 15px;
 }
-.cm-sb-clock {
+/* canto direito do placar: relógio + tela cheia lado a lado (a tela cheia mora
+   aqui, perto do relógio, e some em retrato — ver @media mais abaixo) */
+.cm-sb-right {
   justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cm-sb-clock {
   background: linear-gradient(180deg, #3b82f6, var(--cm-primary-2));
   color: #fff;
   font-family: var(--cm-font-display);

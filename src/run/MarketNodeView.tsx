@@ -11,10 +11,9 @@ import PlacePlayerBoard, { CandidateCard } from './PlacePlayerBoard'
 import type { RunApi } from './useRun'
 
 /**
- * Evento de MERCADO no mapa: só COMPRA — e comprar é encaixar. Toque na carta
- * e depois no botão "melhor lugar" (ou num jogador do campinho) — dá pra
- * arrastar a oferta também, mas não é preciso. O contratado entra naquele
- * slot e quem saiu deixa o time de vez.
+ * Evento de MERCADO no mapa: só COMPRA — e comprar é encaixar. A própria
+ * oferta diz no lugar de quem o jogador entra (o slot que mais eleva a nota)
+ * e UM clique fecha a compra. Quem saiu deixa o time de vez.
  */
 export default function MarketNodeView({
   state,
@@ -26,7 +25,7 @@ export default function MarketNodeView({
   /** abre "Como jogar" — o cabeçalho do mapa fica atrás do modal, então cada tela de decisão tem seu próprio atalho. */
   onHelp: () => void
 }) {
-  const [armed, setArmed] = useState<number | null>(null)
+  const [hovered, setHovered] = useState<number | null>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
   const hasMore = useScrollOverflow(bodyRef)
   // celular estreito: só cabe UMA oferta cheia por vez sem rolar (ver
@@ -48,13 +47,13 @@ export default function MarketNodeView({
   const owned = (p: { name: string; age: number }) =>
     state.squad.some((s) => s.name === p.name && s.age === p.age)
   const offers = baseOffers.filter((o) => !owned(o.player)).sort((a, b) => b.fee - a.fee)
-  const candidate = armed !== null ? (offers[armed]?.player ?? null) : null
+  const candidate = hovered !== null ? (offers[hovered]?.player ?? null) : null
   const shown = isNarrow ? offers.map((_, i) => i).filter((i) => i === page) : offers.map((_, i) => i)
 
   const place = (offerIndex: number, slotIndex: number) => {
     buySfx()
     act((s) => buyPlayer(s, offers[offerIndex], slotIndex))
-    setArmed(null)
+    setHovered(null)
   }
 
   // comprar (ou o mercador renovar as ofertas) encolhe a lista — sem isto a
@@ -74,11 +73,9 @@ export default function MarketNodeView({
           <div>
             <h2 className="cm-ribbon cm-ribbon-sm">Mercador de jogadores</h2>
             <p>
-              {candidate
-                ? `Toque em quem sai — ${candidate.name} entra no lugar dele.`
-                : offers.length === 0
-                  ? 'Nada por aqui desta vez — siga viagem.'
-                  : 'Toque numa oferta pra ver onde ela rende mais no seu time.'}
+              {offers.length === 0
+                ? 'Nada por aqui desta vez — siga viagem.'
+                : 'Um clique compra — cada oferta já mostra quem sai do time.'}
             </p>
           </div>
           <div className="rq-market-wallet">
@@ -96,7 +93,7 @@ export default function MarketNodeView({
           </div>
         </header>
 
-        {isNarrow && !candidate && offers.length > 0 && (
+        {isNarrow && offers.length > 0 && (
           <CandidatePager count={offers.length} index={page} onSelect={setPage} />
         )}
         <div className={`rq-market-body pb-layout${hasMore ? ' has-more' : ''}`} ref={bodyRef}>
@@ -110,25 +107,21 @@ export default function MarketNodeView({
                   <CandidateCard
                     key={o.player.id}
                     p={o.player}
-                    armed={armed === i}
+                    state={state}
                     disabled={state.coins < o.fee}
                     price={
                       <>
                         <CoinIcon size={16} /> {o.fee}
                       </>
                     }
-                    onArm={(on) => setArmed(on ? i : null)}
-                    onPlace={(slot) => place(i, slot)}
+                    onHover={(on) => setHovered(on ? i : null)}
+                    onPick={(slot) => place(i, slot)}
                   />
                 )
               })}
             </div>
           )}
-          <PlacePlayerBoard
-            state={state}
-            candidate={candidate}
-            onPlace={(slot) => armed !== null && place(armed, slot)}
-          />
+          <PlacePlayerBoard state={state} candidate={candidate} />
         </div>
 
         <footer className="rq-market-foot">

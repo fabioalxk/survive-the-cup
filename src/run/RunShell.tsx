@@ -117,9 +117,7 @@ export default function RunShell({ api }: { api: RunApi }) {
       {state.status === 'blessing' && (
         <BlessingView state={state} act={act} onHelp={() => setShowHelp(true)} />
       )}
-      {state.status === 'prematch' && (
-        <PreMatchView state={state} act={act} onHelp={() => setShowHelp(true)} />
-      )}
+      {state.status === 'prematch' && <PreMatchView state={state} act={act} />}
       {state.status === 'reward' && (
         <RewardCards state={state} act={act} onHelp={() => setShowHelp(true)} />
       )}

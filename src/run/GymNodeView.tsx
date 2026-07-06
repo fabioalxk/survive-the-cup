@@ -179,7 +179,7 @@ export default function GymNodeView({
             </div>
             <FormationEditor
               slots={slots}
-              xi={state.squad.map((p) => ({ id: p.id, number: p.number, name: p.name, ovr: p.overall }))}
+              xi={state.squad.map((p) => ({ id: p.id, name: p.name, ovr: p.overall }))}
               teamId={state.clubId}
               selected={selIdx}
               onPreset={(presetSlots) => act((s) => setFormation(s, presetSlots))}

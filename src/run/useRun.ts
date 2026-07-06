@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import type { RunState } from '../game/runTypes'
 import { newRun } from '../game/run'
-import { clearRunSave, loadRun, saveRun } from '../game/runSave'
+import { clearRunSave, loadRun, saveRun, unlockNextAscension } from '../game/runSave'
 
 /** Estado da corrida. Mesmo padrão do `useCareer`: mutação in-place + versão p/ re-render. */
 export interface RunApi {
@@ -21,6 +21,7 @@ export const useRun = (): RunApi => {
     (fn: (s: RunState) => void) => {
       if (!ref.current) return
       fn(ref.current)
+      if (ref.current.status === 'victory') unlockNextAscension(ref.current.ascension)
       saveRun(ref.current)
       render()
     },

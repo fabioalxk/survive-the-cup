@@ -135,26 +135,6 @@ export function PauseIcon(p: IconProps) {
   )
 }
 
-/** Avançar até o fim — pular a partida. */
-export function SkipIcon(p: IconProps) {
-  return (
-    <svg {...svgProps(p)}>
-      <path d="M5 5.5a1 1 0 0 1 1.55-.84l8.1 5.5a1 1 0 0 1 0 1.68l-8.1 5.5A1 1 0 0 1 5 16.5Z" fill="currentColor" />
-      <rect x="16.4" y="4.4" width="2.8" height="15.2" rx="1.2" fill="currentColor" />
-    </svg>
-  )
-}
-
-/** Faísca de 4 pontas — organização automática/"num só toque" (distinto do ícone de trocar). */
-export function AutoIcon(p: IconProps) {
-  return (
-    <svg {...svgProps(p)} fill="currentColor">
-      <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z" />
-      <path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z" />
-    </svg>
-  )
-}
-
 /** Prancheta tática — aba "Tática". */
 export function ClipboardIcon(p: IconProps) {
   return (

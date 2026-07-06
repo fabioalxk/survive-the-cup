@@ -76,7 +76,6 @@ export default function BlessingView({
                 </span>
                 <strong className="rq-bless-name">{info.label}</strong>
                 <span className="rq-bless-desc">{emphasize(info.desc)}</span>
-                <span className="rq-bless-take">Escolher</span>
               </button>
             )
           })}

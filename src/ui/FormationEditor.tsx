@@ -23,7 +23,6 @@ const toScreen = (p: Vec2) => ({
 /** O que o campinho precisa saber de cada titular para desenhar o chip do slot. */
 export interface SlotPlayer {
   id: number
-  number: number
   name: string
   /** nota geral no slot atual — o chip mostra o número, nunca um rótulo de posição */
   ovr?: number
@@ -184,14 +183,8 @@ export default function FormationEditor({
             >
               <span className="tv-chip-photo-wrap">
                 <PlayerAvatar teamId={teamId} name={p.name} id={p.id} size={32} className="tv-chip-photo" />
-                <span className="tv-chip-num" aria-hidden>
-                  {p.number}
-                </span>
                 {p.ovr !== undefined && (
-                  <span
-                    className="tv-chip-ovr"
-                    style={{ color: attrColor(p.ovr), borderColor: attrColor(p.ovr) }}
-                  >
+                  <span className="tv-chip-ovr" style={{ color: attrColor(p.ovr) }}>
                     {p.ovr}
                   </span>
                 )}

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useRun } from './useRun'
-import { hasRunSave } from '../game/runSave'
+import { getUnlockedAscension, hasRunSave } from '../game/runSave'
 import { uiClick } from '../sfx/crowd'
 import NewRun from './NewRun'
 import { RunErrorBoundary } from './RunErrorBoundary'
@@ -25,7 +25,12 @@ export default function RunApp() {
   return (
     <RunErrorBoundary>
       {!api.state ? (
-        <NewRun onStart={api.start} hasSave={hasRunSave()} onContinue={() => window.location.reload()} />
+        <NewRun
+          onStart={api.start}
+          hasSave={hasRunSave()}
+          unlockedAscension={getUnlockedAscension()}
+          onContinue={() => window.location.reload()}
+        />
       ) : (
         <RunShell api={api} />
       )}

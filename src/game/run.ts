@@ -25,13 +25,11 @@ export const START_LIVES = 2
 /** Quanto cada melhoramento da academia soma ao atributo (teto 100). */
 export const GYM_GAIN = 20
 
-// ---- Poções: ganhas ao vencer, usadas num jogador, valem por UMA partida ----
+// ---- Poções: usadas num jogador, valem por UMA partida ----
 /** Quanto a poção soma ao atributo — pode PASSAR de 100 (teto 150). */
 export const POTION_BOOST = 50
 export const POTION_ATTR_CAP = 150
 export const POTIONS_MAX = 3
-/** Chance de uma vitória (fora o chefão) render uma poção. */
-const POTION_DROP_CHANCE = 0.5
 export const POTION_KINDS: PotionKind[] = ['strength', 'pace']
 export const POTION_INFO: Record<PotionKind, { label: string; emoji: string }> = {
   strength: { label: 'Poção de Força', emoji: '💪' },
@@ -307,16 +305,11 @@ const expirePotions = (state: RunState): void => {
   log(state, '🧪 O efeito das poções acabou — atributos de volta ao normal.')
 }
 
-/** Vitória pode OFERECER uma poção (se houver espaço) — pegar é um clique na recompensa. */
-const maybeDropPotion = (state: RunState, rng: Rng): void => {
-  state.pendingPotion = null
-  if (state.potions.length >= POTIONS_MAX || rng.next() >= POTION_DROP_CHANCE) return
-  const kind = rng.pick(POTION_KINDS)
-  state.pendingPotion = kind
-  log(state, `${POTION_INFO[kind].emoji} A vitória rendeu uma ${POTION_INFO[kind].label} — pegue-a na recompensa!`)
-}
-
-/** Pega a poção oferecida na tela de recompensa: vai para o inventário do cabeçalho. */
+/**
+ * Pega a poção oferecida na tela de recompensa: vai para o inventário do
+ * cabeçalho. (O drop pós-vitória foi DESLIGADO por enquanto — a tela de
+ * recompensa não oferece mais poção; só o Kit do Preparador ainda dá poções.)
+ */
 export const claimPotion = (state: RunState): boolean => {
   if (state.status !== 'reward' || !state.pendingPotion) return false
   if (state.potions.length >= POTIONS_MAX) return false
@@ -445,7 +438,6 @@ export const finishMatch = (state: RunState, homeGoals: number, awayGoals: numbe
   }
 
   state.pendingReward = generateRewardCards(node.stage, rng, state.ascension)
-  maybeDropPotion(state, rng)
   clearNode(state, node)
   state.status = 'reward'
 }
@@ -545,73 +537,6 @@ export const moveFormationSlot = (state: RunState, index: number, pos: Vec2): vo
   if (index <= 0 || index >= state.formationSlots.length) return
   state.formationSlots[index] = clampSlot(pos)
   refreshSquadRatings(state)
-}
-
-const popcount = (x: number): number => {
-  let c = 0
-  while (x) {
-    x &= x - 1
-    c++
-  }
-  return c
-}
-
-/**
- * Reorganiza o time inteiro nos 11 slots num só toque: encaixa cada jogador
- * onde ele mais eleva a nota (a função vem do slot, não de um rótulo fixo do
- * jogador), sem precisar trocar par a par. Ótimo de verdade, não guloso: com
- * só 11 jogadores um DP por bitmask (2^11 estados × 11 jogadores, irrisório)
- * acha a escalação que maximiza a nota TOTAL do time — o guloso anterior
- * (pegava sempre o melhor par jogador↔slot solto) podia render um encaixe
- * ótimo pra alguém à custa de deixar outro preso num slot péssimo mais tarde,
- * quebrando a própria promessa do botão ("cada jogador onde mais rende").
- */
-export const autoOrganizeSquad = (state: RunState): void => {
-  const slots = state.formationSlots
-  const players = state.squad
-  const n = players.length
-  // score[slot][jogador] = nota se esse jogador jogasse nesse slot
-  const score = slots.map((slot, si) => players.map((p) => slotOverallOf(si, slot, p.attrs)))
-
-  const full = 1 << n
-  const dp = new Float64Array(full).fill(-Infinity)
-  dp[0] = 0
-  // parent[mask]: jogador escalado no slot (popcount(mask)-1) pra chegar em `mask`
-  const parent = new Int8Array(full).fill(-1)
-  for (let mask = 0; mask < full; mask++) {
-    if (dp[mask] === -Infinity) continue
-    const slotIndex = popcount(mask)
-    if (slotIndex >= n) continue
-    for (let p = 0; p < n; p++) {
-      if (mask & (1 << p)) continue
-      const nextMask = mask | (1 << p)
-      const candidate = dp[mask] + score[slotIndex][p]
-      if (candidate > dp[nextMask]) {
-        dp[nextMask] = candidate
-        parent[nextMask] = p
-      }
-    }
-  }
-
-  // reconstrói a escalação de trás pra frente a partir do estado "todos usados"
-  const next = new Array<GenPlayer>(n)
-  let mask = full - 1
-  for (let slotIndex = n - 1; slotIndex >= 0; slotIndex--) {
-    const p = parent[mask]
-    next[slotIndex] = players[p]
-    mask &= ~(1 << p)
-  }
-  state.squad = next
-  refreshSquadRatings(state)
-  log(state, '🔁 Time reorganizado automaticamente — cada jogador no slot onde mais rende.')
-}
-
-/** Restaura a ordem exata do time nos slots — o "desfazer" de uma troca ou organização automática. */
-export const setSquadOrder = (state: RunState, order: GenPlayer[]): void => {
-  if (order.length !== state.squad.length) return
-  state.squad = order.slice()
-  refreshSquadRatings(state)
-  log(state, '↩️ Mudança desfeita — time como estava antes.')
 }
 
 // =====================================================================

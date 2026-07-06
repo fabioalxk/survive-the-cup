@@ -146,9 +146,9 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
             mercado e bênçãos.
           </li>
           <li>
-            <b>Contratar (mercado/recompensa):</b> toque numa carta pra escolher o reforço, depois
-            toque em <b>"★ Encaixar no melhor lugar"</b> — o jogo já sugere quem sai. Prefere
-            escolher você mesmo? Toque direto no jogador do campinho que dá o lugar.
+            <b>Contratar (mercado/recompensa):</b> cada carta já mostra no lugar de quem o reforço
+            entra e o antes → depois da nota — <b>um clique na carta fecha a troca</b>. Não gostou
+            de nenhum? Recuse e siga em frente.
           </li>
           <li>
             <b>Substituir posição (vestiário):</b> toque em <b>"Organizar"</b> pra montar a melhor

@@ -126,12 +126,18 @@ const CARDS = {
     prompt: `${CARD_FRAME_STYLE} Border theme: crimson red and dark ruby metal with a fiery red glow.`,
     opts: FRAME_OPTS,
   },
+  // Faixa RETA preenchendo o canvas inteiro: o CSS estica com background-size
+  // 100% 100%, então qualquer margem transparente ou caudas grandes viram área
+  // morta onde o texto parece "sair" da arte. Pontas pequenas (~8% de cada
+  // lado) + miolo chapado = área útil previsível em qualquer largura de título.
   ribbon_title: {
     prompt:
-      'A wide horizontal parchment ribbon banner for a video game title, hand-painted deck-builder card game style. ' +
-      'Aged tan paper gently curved like cloth, folded darker swallow-tail ends on both sides, thin golden trim, ' +
-      'soft painterly shading. The center of the ribbon is completely empty for a title to be typed over it. ' +
-      'Transparent background, no text anywhere.',
+      'A long STRAIGHT horizontal parchment ribbon banner for a video game title, hand-painted deck-builder card game style. ' +
+      'The ribbon fills the ENTIRE canvas edge to edge, top to bottom and left to right — no margin, no empty space around it. ' +
+      'Perfectly straight and flat (not curved, not arched), aged golden tan paper with a thin gold trim along the top and ' +
+      'bottom edges, soft painterly shading. Small folded darker swallow-tail ends confined to the outermost 8% on each side. ' +
+      'The whole center of the ribbon is a clean, flat, empty writing area for a title to be typed over it. ' +
+      'No text anywhere.',
     opts: { model: 'gpt-image-1.5', size: '1536x1024' },
   },
 }
