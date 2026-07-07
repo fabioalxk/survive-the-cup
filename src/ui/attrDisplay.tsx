@@ -161,6 +161,60 @@ export const byRole = <T extends { role: Role; overall: number }>(a: T, b: T): n
 export const attrGroupsFor = (role?: Role) =>
   ATTR_GROUPS.filter((g) => g.title !== 'Goleiro' || role === undefined || role === 'GK')
 
+/** Uma das 3 categorias do treino simplificado da academia. */
+export interface TrainCategory {
+  id: string
+  label: string
+  /** emoji do botão (apresentação) */
+  icon: string
+  /** frase curta do que a categoria melhora */
+  hint: string
+  /** atributos que a categoria eleva, de forma equilibrada */
+  keys: (keyof Attrs)[]
+}
+
+/**
+ * As 3 categorias do treino simplificado, DEPENDENTES da posição do jogador —
+ * cada uma melhora seus atributos de forma equilibrada (ver `distributeGain`):
+ *  • jogador de linha → Físico / Técnica / Mental (não mostra "Goleiro");
+ *  • goleiro → Físico / Goleiro / Mental (esconde as técnicas de linha que ele
+ *    não precisa: drible, finalização, desarme, domínio).
+ * Só três botões, sempre — nada de escolher atributo a atributo.
+ */
+export const trainCategoriesFor = (role: Role): TrainCategory[] => {
+  const fisico: TrainCategory = {
+    id: 'fisico',
+    label: 'Físico',
+    icon: '💪',
+    hint: 'Velocidade, aceleração e força',
+    keys: ['pace', 'acceleration', 'strength'],
+  }
+  const mental: TrainCategory = {
+    id: 'mental',
+    label: 'Mental',
+    icon: '🧠',
+    hint: 'Posicionamento e frieza (QI de jogo)',
+    keys: ['positioning'],
+  }
+  const middle: TrainCategory =
+    role === 'GK'
+      ? {
+          id: 'goleiro',
+          label: 'Goleiro',
+          icon: '🧤',
+          hint: 'Defesas, reflexo e saída de bola',
+          keys: ['goalkeeping', 'passing'],
+        }
+      : {
+          id: 'tecnica',
+          label: 'Técnica',
+          icon: '⚽',
+          hint: 'Drible, domínio, passe, finalização e defesa',
+          keys: ['dribbling', 'firstTouch', 'passing', 'finishing', 'tackling'],
+        }
+  return [fisico, middle, mental]
+}
+
 /** Rótulo de posição com a cor da função (mesma paleta dos chips do campinho tático). */
 export function RoleTag({ role }: { role: Role }) {
   return <span className={`cm-role cm-role-${role.toLowerCase()}`}>{ROLE_LABEL[role]}</span>

@@ -1341,6 +1341,10 @@
      `@media` de largura de TELA não pega esse caso. */
   container-type: inline-size;
   container-name: pitch;
+  /* contexto de empilhamento próprio: deixa TODAS as fotos numa camada acima de
+     TODOS os nomes/notas dos chips (ver z-index em `.tv-chip-photo` × `-name`),
+     pra o texto do vizinho nunca cobrir um rosto. */
+  isolation: isolate;
   /* cresce até quase a altura da tela (proporção 68/105), nunca menor que antes */
   width: min(100%, max(400px, calc((100dvh - 320px) * 68 / 105)));
   margin: 0 auto;
@@ -1497,11 +1501,15 @@
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-  z-index: 2;
+  /* SEM z-index aqui de propósito: o chip não pode virar um contexto de
+     empilhamento, senão foto e nome ficam presos na mesma camada e o texto de
+     um chip volta a cobrir a foto do vizinho. As camadas moram nos filhos
+     (`.tv-chip-photo` acima, `.tv-chip-ovr`/`.tv-chip-name` abaixo). */
 }
+/* arrastando: aí sim o chip inteiro (foto + nome) sobe acima de todo o resto */
 .tv-chip.is-drag {
   cursor: grabbing;
-  z-index: 3;
+  z-index: 10;
 }
 .tv-role-gk {
   cursor: default;
@@ -1525,6 +1533,9 @@
   border: 2px solid rgba(255, 255, 255, 0.85);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
   transition: transform 0.12s ease, border-color 0.12s;
+  /* camada de CIMA: todo rosto fica acima de qualquer nome/nota na tela */
+  position: relative;
+  z-index: 3;
 }
 .tv-chip-lock {
   position: absolute;
@@ -1556,21 +1567,13 @@
   font-size: 10.5px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(180deg, rgba(10, 15, 26, 0.82), rgba(10, 15, 26, 0.68));
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  padding: 1.5px 8px;
-  /* nomes gerados (fictícios) podem sair bem compridos ("Wellington
-     Cavalcanti") — sem isso a pílula estourava pra fora do campinho e podia
-     encostar no chip vizinho. Ainda dá pra reconhecer o jogador pelo começo
-     do nome + retrato.
-     96px ainda deixava 2 nomes compridos ADJACENTES se tocarem (defensores
-     ficam só uns 60px de centro a centro na formação padrão) — 72px cobre
-     esse caso mais apertado com folga e ainda mostra nomes reais curtos
-     ("Raphinha", "Casemiro") inteiros, sem cortar pra "Raphi…"/"Case…". */
-  max-width: 72px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* sem caixa/fundo: só o texto branco com sombra forte, que lê bem por cima da
+     grama e deixa o nome INTEIRO à mostra (nada de "Marquin…"). */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 3px rgba(0, 0, 0, 0.8),
+    0 0 6px rgba(0, 0, 0, 0.5);
+  /* camada de BAIXO: o nome fica atrás das fotos dos jogadores vizinhos */
+  position: relative;
+  z-index: 1;
 }
 /* nota geral do slot: selo centralizado ACIMA da foto, inteiramente fora do
    círculo — encostado no canto ele tampava um pedaço do rosto numa foto de só
@@ -1581,6 +1584,8 @@
   bottom: calc(100% + 1px);
   left: 50%;
   transform: translateX(-50%);
+  /* camada de BAIXO (junto do nome): fica atrás das fotos dos vizinhos */
+  z-index: 1;
   font-family: var(--cm-font-display);
   font-weight: 800;
   font-size: 9.5px;
@@ -1610,8 +1615,6 @@
   }
   .tv-chip-name {
     font-size: 8px;
-    padding: 1px 4px;
-    max-width: 60px;
   }
 }
 
@@ -2046,7 +2049,9 @@
    corpo rola por dentro — nada é cortado em nenhuma altura de tela. O 100dvh
    desconta a barra do navegador no celular (o vh clássico fica de fallback). */
 .cm-modal.rq-gym {
-  max-width: min(1150px, 100%);
+  /* campinho é retrato: um modal largo deixava metros de preto nas laterais.
+     Estreito, o campo domina a tela e ocupa o espaço de verdade. */
+  max-width: min(600px, 100%);
   height: calc(100vh - 40px);
   height: calc(100dvh - 40px);
   max-height: none;
@@ -2069,7 +2074,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 15px 22px;
+  padding: 12px 22px;
   border-bottom: 1px solid var(--cm-line);
   background: linear-gradient(180deg, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0));
 }
@@ -2106,13 +2111,6 @@
   color: var(--cm-muted);
   margin-top: 2px;
 }
-.rq-gym-count.is-done {
-  border-color: rgba(34, 197, 94, 0.5);
-  background: linear-gradient(180deg, rgba(34, 197, 94, 0.18), rgba(34, 197, 94, 0.05));
-}
-.rq-gym-count.is-done strong {
-  color: var(--cm-green);
-}
 .rq-gym-ico {
   flex: none;
   width: 50px;
@@ -2139,13 +2137,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-}
-
-/* as duas colunas rolam por dentro */
-.rq-gym-field,
-.rq-gym-attrs {
-  overflow-y: auto;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* coluna esquerda: campinho tático com os 11 do time */
@@ -2154,8 +2146,12 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  /* o campinho se dimensiona pela ALTURA desta coluna (ver `.tv-pitch` abaixo,
+     via `cqh`), então a coluna não precisa rolar por dentro — nada é cortado. */
+  min-height: 0;
+  overflow: hidden;
+  container-type: size;
   padding: 14px 18px;
-  border-right: 1px solid var(--cm-line);
   /* holofote suave atrás do campo — clima de treino noturno */
   background:
     radial-gradient(70% 55% at 50% 42%, rgba(34, 197, 94, 0.08), transparent 70%),
@@ -2182,240 +2178,249 @@
 .rq-gym-field-head .tv-name {
   font-size: 16px;
 }
-.rq-gym-field .tv-presets {
-  justify-content: center;
-}
-/* o campinho cede espaço pro cabeçalho e rodapé do modal */
+/* O campinho é dimensionado pela ALTURA da coluna (100cqh menos a barra "Seu
+   time" e as folgas) mantendo a proporção 68/105 — assim o time inteiro,
+   goleiro incluído, cabe sempre na tela sem rolagem, em vez de partir de uma
+   largura fixa alta demais pra telas baixas. O `min(100%, …)` garante que em
+   telas estreitas ele nunca vaze na horizontal (aí a largura manda e a altura
+   sobra, sem distorcer). */
 .rq-gym-field .tv-pitch {
-  width: min(100%, max(300px, calc((100dvh - 440px) * 68 / 105)));
-}
-/* esmaece a borda de baixo só quando o campinho sobra fora da vista (.has-more,
-   calculado em JS — mesmo padrão do mercado/poções): sem isto o goleiro cortado
-   no rodapé parecia bug, não pista de "role pra ver mais". */
-.rq-gym-field.has-more {
-  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+  width: min(100%, calc((100cqh - 58px) * 68 / 105));
+  margin: 0 auto;
 }
 /* mesma pista na coluna de atributos: numa tela baixa, os grupos de baixo
    (às vezes o de Goleiro, o mais relevante pra quem treina o goleiro) cortam
    sem aviso — mesmo risco de "parecer bug" que o campinho ao lado já tinha. */
-.rq-gym-attrs.has-more {
-  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
-}
-
-/* chip do campinho destacado como selecionado (jogador aberto no painel de
-   treino): anel firme, sem pulsar — é uma seleção, não precisa chamar atenção
+/* chip do campinho destacado como selecionado (jogador com o popup de treino
+   aberto): anel firme, sem pulsar — é uma seleção, não precisa chamar atenção
    com brilho piscando por cima de tudo mais na tela. */
 .tv-chip.is-sel .tv-chip-photo {
   border-color: var(--cm-gold);
   box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.55), 0 4px 10px rgba(0, 0, 0, 0.45);
 }
+/* convite discreto sob o campinho */
+.rq-gym-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--cm-muted);
+  text-align: center;
+}
 
-/* coluna direita: identidade + grupos de atributos treináveis */
-.rq-gym-attrs {
+/* ---------- Popup de treino (ancorado no jogador tocado) ---------- */
+.rq-train-pop {
+  position: fixed;
+  z-index: 60;
+  width: min(300px, calc(100vw - 24px));
+  /* abre AO LADO do jogador (nunca por cima): `x` é a borda esquerda do balão,
+     `y` o centro vertical alinhado ao chip. */
+  transform: translateY(-50%);
+  padding: 12px 12px 10px;
+  border: 1px solid var(--cm-line-strong);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(18, 27, 45, 0.98), rgba(10, 16, 28, 0.98));
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: rq-gym-pop 0.16s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.rq-train-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--cm-muted);
+  cursor: pointer;
+}
+.rq-train-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--cm-text);
+}
+.rq-train-head {
   display: flex;
-  flex-direction: column;
-  padding: 15px 20px 20px;
-  background: rgba(10, 18, 32, 0.35);
-}
-/* mesmo tratamento do campinho ao lado (.rq-gym-field.has-more): com muitos
-   grupos de atributo a coluna também rola por dentro, e sem o fade o último
-   grupo cortado no rodapé parecia bug em vez de convite a rolar. */
-.rq-gym-attrs.has-more {
-  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
-}
-.rq-gym-attrs > .rq-gym-group {
-  flex: none;
-}
-/* na academia o convite "toque num jogador" vale enquanto a coluna existir
-   (a regra de 900px do .tv-side-empty é pensada pra aba Tática) */
-.rq-gym-attrs .tv-side-empty {
-  display: flex;
-  flex: 1;
-}
-.rq-gym-attrs .cm-squad-detail-head {
-  margin-bottom: 14px;
-  animation: cm-fade 0.2s ease both;
-}
-/* o valor do atributo "pula" quando muda (o key remonta o elemento a cada treino) */
-.rq-chip-val {
-  display: inline-block;
-  animation: rq-gym-pop 0.3s cubic-bezier(0.3, 1.4, 0.5, 1);
-}
-/* botão de voltar pro campinho — só faz sentido no celular (uma coluna) */
-.rq-gym-back {
-  display: none;
-  align-self: flex-start;
   align-items: center;
-  gap: 6px;
+  gap: 9px;
+  padding-right: 26px;
   margin-bottom: 10px;
 }
-/* mesmo badge de seta pintado do botão voltar principal (ver .rq-back) */
-.rq-gym-back::before {
-  content: '';
-  width: 16px;
-  height: 16px;
-  flex: none;
-  background: url('/assets/ui/btn_round_back.webp') center / contain no-repeat;
-}
-.rq-gym-group {
-  margin-bottom: 15px;
-}
-.rq-gym-group:last-child {
-  margin-bottom: 0;
-}
-.rq-gym-group h4 {
+.rq-train-head-id {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 9px;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+.rq-train-head-id strong {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rq-train-head-id span {
   font-size: 11px;
-  letter-spacing: 0.09em;
+  color: var(--cm-muted);
+}
+.rq-train-head-ovr {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+.rq-train-head-ovr b {
+  font-size: 20px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.rq-train-head-ovr small {
+  margin-top: 2px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--cm-muted);
 }
-.rq-gym-group h4::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--cm-line);
-}
-.rq-gym-chips {
+.rq-train-cats {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 7px;
 }
-.rq-chip {
-  display: inline-flex;
+/* cada categoria é um botão grande: um toque já treina (sem confirmar) */
+.rq-train-cat {
+  display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
   border: 1px solid var(--cm-line-strong);
   background: var(--cm-glass), var(--cm-panel-2);
   color: var(--cm-text);
   font-family: var(--cm-font);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 12.5px;
+  border-radius: 11px;
+  padding: 9px 11px;
   cursor: pointer;
-  transition: border-color 0.12s, background 0.12s, box-shadow 0.12s, transform 0.1s;
+  transition: border-color 0.12s, background 0.12s, transform 0.1s, box-shadow 0.12s;
 }
-.rq-chip b {
-  font-variant-numeric: tabular-nums;
-}
-.rq-chip:hover:not(:disabled):not(.active) {
-  border-color: rgba(148, 163, 189, 0.55);
-  transform: translateY(-1px);
-}
-.rq-chip.active {
+.rq-train-cat:hover:not(:disabled) {
   border-color: var(--cm-gold);
-  background: linear-gradient(180deg, rgba(251, 191, 36, 0.2), rgba(251, 191, 36, 0.08));
-  box-shadow: 0 0 0 1px var(--cm-gold), 0 4px 14px rgba(251, 191, 36, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.14);
 }
-.rq-chip:disabled {
+.rq-train-cat:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+.rq-train-cat:disabled {
   cursor: default;
-  opacity: 0.55;
+  opacity: 0.5;
 }
-.rq-chip-gain {
+.rq-train-cat-ico {
+  font-size: 22px;
+  line-height: 1;
+  flex: none;
+}
+.rq-train-cat-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.rq-train-cat-main b {
+  font-size: 13.5px;
+}
+.rq-train-cat-main small {
   font-size: 10.5px;
+  color: var(--cm-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* barrinha do nível médio atual da categoria */
+.rq-train-cat-bar {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.rq-train-cat-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+.rq-train-cat-gain {
+  flex: none;
+  font-size: 12px;
   font-weight: 800;
   color: #86efac;
   background: rgba(34, 197, 94, 0.16);
   border-radius: 999px;
-  padding: 2px 7px;
+  padding: 4px 9px;
   white-space: nowrap;
 }
-.rq-chip-max {
+.rq-train-cat-max {
+  flex: none;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.5px;
   color: var(--cm-gold);
 }
-
-/* rodapé fixo: resumo do treino + botão de ação */
-.rq-gym-foot {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 13px 20px 17px;
-  border-top: 1px solid var(--cm-line);
-  background: rgba(7, 11, 20, 0.6);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-.rq-gym-summary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  font-size: 14px;
-  min-height: 30px;
-  /* remontado via key a cada treino — o resumo dá um pulinho de confirmação */
+.rq-train-last {
+  margin: 9px 0 0;
+  font-size: 11.5px;
+  text-align: center;
+  color: var(--cm-muted);
+  font-variant-numeric: tabular-nums;
   animation: rq-gym-pop 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
 }
-.rq-gym-summary-name {
-  font-weight: 700;
+.rq-train-last b {
+  color: var(--cm-text);
 }
-.rq-gym-delta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--cm-muted);
-}
-.rq-gym-delta b {
-  font-variant-numeric: tabular-nums;
-}
+
 .rq-gym-arrow {
   color: var(--cm-green);
   font-weight: 800;
 }
-.rq-gym-ovr-badge {
-  font-size: 11.5px;
-  font-weight: 800;
-  color: #86efac;
-  background: rgba(34, 197, 94, 0.14);
-  border: 1px solid rgba(34, 197, 94, 0.35);
-  border-radius: 999px;
-  padding: 3px 9px;
-  white-space: nowrap;
-}
-.rq-gym-history {
+
+/* ---------- Cartão de treino concluído (só uma ação: seguir viagem) ---------- */
+.cm-modal.rq-gym-finish {
+  max-width: min(400px, 100%);
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px 8px;
-}
-.rq-gym-history-item {
-  display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--cm-muted);
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  border-radius: 999px;
-  padding: 3px 9px;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
+  text-align: center;
+  gap: 12px;
+  padding: 30px 26px 26px;
+  animation: cm-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
-.rq-gym-done {
-  animation: rq-gym-pop 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
-}
-.rq-gym-done-ico {
-  display: inline-grid;
+.rq-gym-finish-ico {
+  display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   background: var(--cm-green);
   color: #06210f;
-  font-size: 14px;
+  font-size: 32px;
   font-weight: 900;
-  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+  animation: rq-gym-pop 0.4s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+.rq-gym-finish h2 {
+  font-size: 18px;
+}
+.rq-gym-finish p {
+  margin: 0;
+  color: var(--cm-muted);
+  font-size: 13.5px;
+}
+.rq-gym-finish .cm-btn-go {
+  margin-top: 4px;
 }
 @keyframes rq-gym-pop {
   from {
@@ -2534,29 +2539,6 @@
   }
   .rq-gym-field {
     padding: 10px 12px 12px;
-    border-right: none;
-  }
-  .rq-gym-field .tv-pitch {
-    width: min(100%, max(260px, calc((100dvh - 470px) * 68 / 105)));
-  }
-  .rq-gym.has-sel .rq-gym-field {
-    display: none;
-  }
-  .rq-gym:not(.has-sel) .rq-gym-attrs {
-    display: none;
-  }
-  .rq-gym-attrs {
-    padding: 12px 14px 14px;
-    animation: cm-rise 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
-  }
-  .rq-gym-back {
-    display: inline-flex;
-  }
-  .rq-gym-foot {
-    padding: 10px 14px 13px;
-  }
-  .rq-gym-summary {
-    font-size: 13px;
   }
 }
 
@@ -2740,6 +2722,24 @@
 /* valor acima de 100: só a poção chega lá — brilha para marcar o "super" */
 .rq-potion-super {
   text-shadow: 0 0 9px color-mix(in srgb, var(--cm-green-super) 85%, transparent);
+}
+/* selo "MAX" / ganho de OVR do pop-up de poções (únicos usos que restaram
+   dessas classes depois que o treino virou popup de categorias). */
+.rq-chip-max {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--cm-gold);
+}
+.rq-gym-ovr-badge {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  border-radius: 999px;
+  padding: 3px 9px;
+  white-space: nowrap;
 }
 .rq-potion-foot {
   padding: 10px 14px 14px;
@@ -3120,7 +3120,6 @@
   }
   .tv-chip-name {
     font-size: 9px;
-    padding: 1px 5px;
   }
   .tv-chip-ovr {
     font-size: 9px;
@@ -3527,9 +3526,14 @@
   .rq-gym-body {
     overflow: visible;
   }
-  .rq-gym-field,
-  .rq-gym-attrs {
-    overflow-y: visible;
+  .rq-gym-field {
+    overflow: visible;
+  }
+  /* aqui o modal cresce e rola: a coluna NÃO tem altura definida, então o
+     dimensionamento por `cqh` do campinho não vale — volta a uma largura fixa
+     e desliga o container de tamanho pra coluna poder crescer. */
+  .rq-gym-field {
+    container-type: normal;
   }
   .rq-gym-field .tv-pitch {
     width: min(100%, 175px);
@@ -3665,7 +3669,12 @@
   min-width: 0;
 }
 .pb-board .tv-pitch {
-  width: min(100%, max(300px, calc((100dvh - 380px) * 68 / 105)));
+  /* era `100dvh - 380px`: sobrava folga vertical não usada em telas comuns
+     (~900px de altura) e o campinho ficava bem menor que a coluna de 420px
+     disponível. Menos px descontados = campinho maior sempre que a altura
+     permitir; abaixo de ~760px de altura seguia batendo no mesmo piso de
+     300px de antes (nada muda pra quem já via nesse tamanho). */
+  width: min(100%, max(300px, calc((100dvh - 300px) * 68 / 105)));
 }
 /* nota do time: rótulo neutro + número(s) coloridos pela faixa — mesmo
    idioma visual do placar "seu time × rival" do vestiário. Sem animação:
@@ -3688,8 +3697,17 @@
   color: var(--cm-muted);
   font-size: 11px;
 }
-/* antes → depois da nota se o reforço entrar naquele slot */
+/* antes → depois da nota se o reforço entrar naquele slot — ABSOLUTO (não
+   entra no fluxo do `.tv-chip`): esse chip é recentralizado via
+   `translate(-50%, -50%)` a partir da própria altura, então um filho normal
+   que aparece/some no hover mudava a altura e fazia o chip inteiro (foto,
+   nome...) "pular" de lugar a cada passada de mouse — a tremida reportada. */
 .pb-preview {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 3px;
   display: flex;
   align-items: center;
   gap: 3px;
@@ -3699,6 +3717,8 @@
   background: rgba(0, 0, 0, 0.62);
   border-radius: 999px;
   padding: 1px 7px;
+  white-space: nowrap;
+  z-index: 5;
 }
 .pb-preview .pb-arrow {
   color: rgba(255, 255, 255, 0.55);

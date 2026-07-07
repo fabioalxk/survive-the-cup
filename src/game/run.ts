@@ -590,6 +590,53 @@ export const boostAttribute = (state: RunState, playerId: number, attr: keyof At
   return true
 }
 
+/**
+ * Distribui `budget` pontos entre `keys` de forma EQUILIBRADA: sobe sempre o(s)
+ * atributo(s) mais BAIXO(s) primeiro (nivelamento por "enchimento"), teto 100
+ * por atributo. Retorna NOVOS atributos (não muta) — fonte única do treino por
+ * categoria, usada tanto no preview da UI quanto no mutador `boostCategory`.
+ */
+export const distributeGain = (
+  attrs: Attrs,
+  keys: readonly (keyof Attrs)[],
+  budget: number = GYM_GAIN,
+): Attrs => {
+  const next = { ...attrs }
+  while (budget > 0) {
+    const open = keys.filter((k) => next[k] < 100)
+    if (open.length === 0) break
+    const floor = Math.min(...open.map((k) => next[k]))
+    for (const k of open.filter((k) => next[k] === floor)) {
+      if (budget <= 0) break
+      next[k] += 1
+      budget--
+    }
+  }
+  return next
+}
+
+/**
+ * Treina uma CATEGORIA inteira: +GYM_GAIN pontos distribuídos entre `keys`,
+ * subindo os atributos mais fracos primeiro (ver `distributeGain`), teto 100.
+ * Usos por nó de academia limitados por `gymTrains`.
+ */
+export const boostCategory = (
+  state: RunState,
+  playerId: number,
+  keys: readonly (keyof Attrs)[],
+): boolean => {
+  if (state.status !== 'gym') return false
+  const p = state.squad.find((pl) => pl.id === playerId)
+  // todos os atributos da categoria já no teto — nada a treinar
+  if (!p || keys.every((k) => p.attrs[k] >= 100)) return false
+  const before = p.overall
+  const next = distributeGain(p.attrs, keys)
+  for (const k of keys) p.attrs[k] = next[k]
+  refreshSquadRatings(state)
+  log(state, `${p.name} treinou forte, agora ${p.overall} OVR (era ${before}).`)
+  return true
+}
+
 // =====================================================================
 // AUTO-PLAY — joga a run inteira sozinha (usado por testes headless e por um
 // eventual botão de "simular resto" na UI).
