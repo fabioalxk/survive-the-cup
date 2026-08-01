@@ -12,7 +12,8 @@ import type {
 import { applyFormation, type Rosters } from './sim/formation'
 import { MATCH, PHYS } from './sim/constants'
 import { createMatch, setMatchTeamNames, step, stepCelebration } from './sim/engine'
-import { drawMatch, setMatchKits } from './render/renderer'
+import { createMatchRenderer, releaseMatchRenderer, setMatchKits } from './render/renderer'
+import type { MatchRenderer } from './render/three'
 import { goalRoar, refWhistle } from './sfx/crowd'
 
 /** Configuração opcional da partida (modo carreira): elencos, cores e nomes reais. */
@@ -84,9 +85,40 @@ export const useMatchLoop = (
   }, [setup])
 
   useEffect(() => {
-    const ctx = canvasRef.current?.getContext('2d')
-    if (!ctx) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    // o renderer 3D chega por import() dinâmico; até ele existir a simulação já
+    // roda (só não há o que desenhar), então o relógio não fica devendo passos.
+    let view: MatchRenderer | null = null
+    let dropped = false
+    void createMatchRenderer(canvas).then((v) => {
+      if (dropped) return v.dispose()
+      view = v
+      ro.observe(canvas)
+    })
 
+    // O buffer 3D acompanha o tamanho EXIBIDO para não sair borrado, mas a
+    // PROPORÇÃO é sempre a nativa do campo. Duas armadilhas aqui:
+    //  - o CSS dimensiona o canvas por `width:100%;height:auto` (e, em retrato,
+    //    o inverso) — ou seja, a altura sai da proporção INTRÍNSECA do elemento,
+    //    que é justamente `width`/`height`. Se o renderer gravasse outra
+    //    proporção nesses atributos, o layout realimentaria e colapsaria;
+    //  - em retrato o canvas é girado 90° no CSS, e `getBoundingClientRect()`
+    //    devolve a caixa JÁ girada (lados trocados) — daí a tela preta.
+    // `contentRect` do ResizeObserver é a caixa de layout, sem a rotação.
+    const aspect = canvas.width / canvas.height
+    // ARREDONDAR é essencial: o CSS deriva o tamanho exibido da proporção
+    // intrínseca do <canvas>, então gravar um buffer novo muda o layout e
+    // reentra no observer. Com a largura fracionária, `setSize` alternava entre
+    // 971 e 972 px para sempre — e cada troca LIMPA o buffer, deixando a tela
+    // preta. Fixando em px inteiros o laço converge no primeiro quadro.
+    let lastW = 0
+    const ro = new ResizeObserver(([entry]) => {
+      const w = Math.round(entry.contentRect.width)
+      if (w <= 0 || w === lastW) return
+      lastW = w
+      view?.resize(w, w / aspect)
+    })
     let raf = 0
     let last = performance.now()
     let acc = 0
@@ -136,7 +168,7 @@ export const useMatchLoop = (
       // Se uma transição de fase acabou de congelar (introPause), não interpola —
       // evita um "pulo" no frame em que os jogadores são recolocados na saída.
       const alpha = stepping && m.introPause === 0 ? Math.min(1, acc / PHYS.dt) : 1
-      drawMatch(ctx, m, scale, alpha)
+      view?.render(m, alpha)
 
       // HUD atualiza ao mudar o segundo, surgir evento, acabar ou (des)comemorar
       const sec = Math.floor(m.time / MATCH.clockRate)
@@ -167,7 +199,15 @@ export const useMatchLoop = (
     }
 
     raf = requestAnimationFrame(frame)
-    return () => cancelAnimationFrame(raf)
+    return () => {
+      dropped = true
+      cancelAnimationFrame(raf)
+      ro.disconnect()
+      if (view) {
+        releaseMatchRenderer(view)
+        view.dispose()
+      }
+    }
   }, [canvasRef, scale])
 
   const reset = () => {

@@ -46,7 +46,12 @@ export default function MarketNodeView({
   // quem já foi comprado é reconhecido por nome+idade (não por id, que muda).
   const owned = (p: { name: string; age: number }) =>
     state.squad.some((s) => s.name === p.name && s.age === p.age)
-  const offers = baseOffers.filter((o) => !owned(o.player)).sort((a, b) => b.fee - a.fee)
+  // COMPRÁVEL primeiro, e só então o mais caro: ordenar só por preço abria a
+  // tela com as duas cartas mais caras (e desabilitadas) na frente — o mercado
+  // parecia morto antes de o jogador rolar até o que ele pode pagar.
+  const offers = baseOffers
+    .filter((o) => !owned(o.player))
+    .sort((a, b) => Number(state.coins < a.fee) - Number(state.coins < b.fee) || b.fee - a.fee)
   const candidate = hovered !== null ? (offers[hovered]?.player ?? null) : null
   const shown = isNarrow ? offers.map((_, i) => i).filter((i) => i === page) : offers.map((_, i) => i)
 
@@ -103,15 +108,20 @@ export default function MarketNodeView({
             <div className="rc-grid mk-offers">
               {shown.map((i) => {
                 const o = offers[i]
+                const short = o.fee - state.coins
                 return (
                   <CandidateCard
                     key={o.player.id}
                     p={o.player}
                     state={state}
-                    disabled={state.coins < o.fee}
+                    disabled={short > 0}
                     price={
                       <>
                         <CoinIcon size={16} /> {o.fee}
+                        {/* o cinza da carta desabilitada só era explicado por um
+                            title (invisível no toque) — o quanto falta fica na
+                            própria etiqueta de preço. */}
+                        {short > 0 && <span style={{ color: 'var(--cm-red)' }}>· faltam {short}</span>}
                       </>
                     }
                     onHover={(on) => setHovered(on ? i : null)}

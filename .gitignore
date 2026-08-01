@@ -10,6 +10,9 @@ dist-ssr/
 .test-build/
 .tmp-*
 
+# Prints de revisão visual (gerados por tools/scene.mjs)
+reports/shots/
+
 # Logs
 *.log
 npm-debug.log*

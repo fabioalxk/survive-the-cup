@@ -70,6 +70,7 @@ export default function NewRun({
     return stopMainTheme
   }, [])
 
+  const isMenu = screen === 'menu'
   const start = () => onStart('Técnico', clubId, ascension)
   const chosen = WC_TEAM_LIST.find((c) => c.id === clubId)!
   // Brasil primeiro (jogável); as demais aparecem bloqueadas — conteúdo futuro.
@@ -77,15 +78,15 @@ export default function NewRun({
 
   return (
     <div className="cm-newgame rq-title" onClick={resumeMainTheme}>
+      {/* fora do menu, a MESMA arte cinematográfica do setup (o campo top-down em
+          ilustração cartoon `surviveTheCup_background.png` que a ajuda usava era
+          de outra direção de arte e quebrava a promessa da capa no primeiro
+          clique). O recorte `-select` empurra o logo embutido pra fora do quadro
+          e deixa o painel de texto sobre a escadaria, sem disputar com o título
+          pintado — que é o que acontecia com a arte do menu. */}
       <img
-        className={`rq-title-bg ${screen === 'setup' ? 'rq-title-bg-select' : ''}`}
-        src={
-          screen === 'menu'
-            ? '/assets/surviveTheCup.png'
-            : screen === 'setup'
-              ? '/assets/surviveTheCupSplash2.png'
-              : '/assets/surviveTheCup_background.png'
-        }
+        className={`rq-title-bg ${isMenu ? '' : 'rq-title-bg-select'}`}
+        src={isMenu ? '/assets/surviveTheCup.png' : '/assets/surviveTheCupSplash2.png'}
         alt=""
         aria-hidden
       />
@@ -96,7 +97,7 @@ export default function NewRun({
           canto pra fora do quadro por completo, deixando vazar um fragmento
           distorcido atrás do chip de perfil. Este véu extra escurece só esse
           canto, na mesma linguagem visual do `.rq-title-veil`. */}
-      {screen === 'setup' && <div className="rq-select-corner-veil" aria-hidden />}
+      {!isMenu && <div className="rq-select-corner-veil" aria-hidden />}
       {screen === 'setup' && (
         <div className="rq-select-fx" aria-hidden>
           <span className="rq-select-ray rq-select-ray-a" />

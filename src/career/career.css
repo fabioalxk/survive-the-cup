@@ -117,13 +117,20 @@ a:focus-visible {
   border-image-source: url('/assets/ui/btn_plate_primary.webp');
 }
 /* o `clip-path` acima recorta a placa pintada nos cantos arredondados — mas
-   também recorta FORA o anel de foco (`button:focus-visible { box-shadow }`),
-   que rende sempre invisível em qualquer `.cm-btn` (some silenciosamente, sem
-   erro). Sem o clip-path, o `border-radius` equivalente já arredonda a placa
-   o bastante enquanto o anel precisa aparecer. */
-.cm-btn:focus-visible {
-  clip-path: none;
-  border-radius: 10px;
+   também recorta FORA o anel de foco (`button:focus-visible { box-shadow }`).
+   Desligar o clip pra deixar o anel aparecer é pior: `border-radius` NÃO
+   recorta `border-image`, então voltam os cantos quadrados da placa e o anel
+   claro lê como uma segunda borda desalinhada (bem visível no CTA grande dos
+   modais, que nasce focado). Por isso o foco aqui é uma linha DENTRO da placa,
+   que o clip preserva — e num pseudo-elemento porque `box-shadow: inset` fica
+   ATRÁS do preenchimento do `border-image` (não aparece). */
+.cm-btn:focus-visible::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 7px;
+  pointer-events: none;
 }
 .cm-btn-primary {
   border-image-source: url('/assets/ui/btn_plate_primary.webp');
@@ -149,17 +156,11 @@ a:focus-visible {
   font-size: 13px;
   clip-path: inset(0 round 8px);
 }
-.cm-btn-sm:focus-visible {
-  border-radius: 8px;
-}
 .cm-btn-lg {
   border-width: 8px;
   padding: 13px 22px;
   font-size: 16px;
   clip-path: inset(0 round 13px);
-}
-.cm-btn-lg:focus-visible {
-  border-radius: 13px;
 }
 .cm-btn-block {
   width: 100%;
@@ -555,14 +556,15 @@ a:focus-visible {
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
-/* contain (não cover): bandeiras com faixas verticais/horizontais finas (Peru,
-   Holanda) perdiam a identidade quando cortadas cheias num círculo pequeno —
-   sobrava quase só a faixa central. Full bleed 100% mostra o padrão inteiro;
-   o fundo escuro do badge preenche o que sobra nos cantos do círculo. */
+/* cover: com `contain` a bandeira (3:2) virava um retângulo encaixotado no disco,
+   com duas faixas mortas do fundo escuro em cima e embaixo — bem visível no
+   medalhão-herói de 104px da seleção. O corte central mantém a identidade: em
+   faixas horizontais (Holanda) a altura fica inteira, e em faixas verticais
+   (Peru) sobram os 2/3 centrais, ou seja as três cores continuam à vista. */
 .cm-crest-flag-img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 /* Foto do jogador (componente PlayerAvatar) */
@@ -1768,6 +1770,24 @@ a:focus-visible {
   overflow-y: auto;
   animation: cm-fade 0.2s ease both;
 }
+/* Desfecho da jornada: um facho de luz atrás do card ancora o painel no cenário
+   em vez de deixá-lo boiando sobre um fundo quase preto — ouro na vitória,
+   vermelho na derrota. `:has` limita isso a essas telas (nenhum outro popup do
+   jogo muda de registro). */
+.cm-backdrop:has(.cm-modal-won) {
+  background: radial-gradient(46% 44% at 50% 50%, rgba(251, 191, 36, 0.22), transparent 70%),
+    rgba(3, 6, 12, 0.72);
+}
+.cm-backdrop:has(.cm-modal-over) {
+  background: radial-gradient(46% 44% at 50% 50%, rgba(239, 68, 68, 0.2), transparent 70%),
+    rgba(3, 6, 12, 0.72);
+}
+/* vida perdida: mesmo facho das irmãs, no rosa do painel. O `:has` não pode ser
+   aninhado, então o alvo é descrito pelo caminho backdrop > modal > herói. */
+.cm-backdrop:has(> .cm-modal:not(.cm-modal-over, .cm-modal-confirm) > .rq-over-emoji) {
+  background: radial-gradient(46% 44% at 50% 50%, rgba(244, 63, 94, 0.18), transparent 70%),
+    rgba(3, 6, 12, 0.72);
+}
 .cm-modal {
   width: 100%;
   max-width: 460px;
@@ -1820,22 +1840,93 @@ a:focus-visible {
   color: var(--cm-muted);
   font-size: 12px;
 }
+/* ---------- Desfecho da partida (vitória / eliminado / vida perdida) ----------
+   O clímax da corrida não pode ter o mesmo peso de um popup qualquer: card mais
+   largo, título grande e um ritmo vertical próprio — gap fixo com margem zero
+   nos filhos, e o dobro do gap antes da CTA pra o vão bater com o padding do
+   card (antes a CTA quase encostava na linha de stats).
+   UMA base de geometria pras TRÊS telas; só o tom muda (ouro / vermelho / rosa).
+   A vida perdida não tem classe própria no TSX (arquivo de outro time), então
+   entra pelo herói de desfecho `.rq-over-emoji` — que ela divide com o gameover;
+   o único outro modal com esse herói é o de confirmação, que não é desfecho e
+   fica de fora. Antes ela caía no `.cm-modal` genérico: 460px contra 560px das
+   irmãs, título de 23px contra 40px e nenhum acento — lia como outra tela. */
+.cm-modal-won,
+.cm-modal:has(> .rq-over-emoji):not(.cm-modal-confirm) {
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.cm-modal-won > *,
+.cm-modal:has(> .rq-over-emoji):not(.cm-modal-confirm) > * {
+  margin: 0;
+}
+.cm-modal-won > .cm-btn,
+.cm-modal:has(> .rq-over-emoji):not(.cm-modal-confirm) > .cm-btn {
+  margin-top: 14px;
+}
+.cm-modal-won h2,
+.cm-modal:has(> .rq-over-emoji):not(.cm-modal-confirm) h2 {
+  font-size: clamp(26px, 5.6vw, 40px);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  /* no celular não cabe em uma linha: `balance` reparte em duas linhas iguais
+     em vez de largar uma órfã ("CHEFÃO!") sozinha embaixo */
+  text-wrap: balance;
+}
 .cm-modal-won {
   border-color: rgba(251, 191, 36, 0.55);
+  /* mesma família quente do topo à base: cruzar pro azul-marinho no meio do card
+     criava uma faixa embarrada exatamente atrás do subtítulo */
+  /* o radial curto/fraco morria antes da metade do card e o resultado lia como
+     caqui: alcance e alpha maiores acendem o ouro até a base, e o friso âmbar
+     interno (mesmo acabamento do .rq-prematch) dá aresta ao painel */
   background:
-    radial-gradient(130% 100% at 50% -10%, rgba(251, 191, 36, 0.18), transparent 55%),
-    linear-gradient(180deg, rgba(30, 27, 12, 0.95), rgba(14, 22, 38, 0.97));
+    radial-gradient(120% 90% at 50% -5%, rgba(251, 191, 36, 0.28), transparent 62%),
+    linear-gradient(180deg, rgba(38, 30, 12, 0.96), rgba(22, 16, 8, 0.97));
   box-shadow: var(--cm-shadow-lg), 0 0 60px rgba(251, 191, 36, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    inset 0 0 0 1px rgba(251, 191, 36, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+/* o cinza-azulado do --cm-muted sobre o âmbar dá um texto esverdeado/apagado */
+.cm-modal-won .cm-modal-sub {
+  color: color-mix(in srgb, var(--cm-gold) 32%, var(--cm-text));
+}
+/* Vida perdida: mesmo acabamento das irmãs (friso de acento + facho) no rosa do
+   coração partido — derrota recuperável, um degrau abaixo do vermelho fechado da
+   eliminação. Precisa excluir `.cm-modal-over` porque este seletor é mais
+   específico que o `.cm-modal-over` de run.css e apagaria o tom vermelho. */
+.cm-modal:has(> .rq-over-emoji):not(.cm-modal-over, .cm-modal-confirm) {
+  border-color: rgba(244, 63, 94, 0.5);
+  background:
+    radial-gradient(130% 100% at 50% -10%, rgba(244, 63, 94, 0.14), transparent 55%),
+    linear-gradient(180deg, rgba(32, 16, 26, 0.95), rgba(19, 11, 17, 0.97));
+  box-shadow: var(--cm-shadow-lg), 0 0 60px rgba(244, 63, 94, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 -1px 0 rgba(244, 63, 94, 0.3);
+}
+/* o corpo aqui era o mais apagado das três telas e é ele que carrega a
+   informação decisiva (quantas vidas sobraram): o cinza-azulado do --cm-muted
+   contra o painel quente lê desbotado, mesma razão do subtítulo da vitória. Vale
+   também pro gameover pra as duas telas de derrota lerem igual. */
+.cm-modal-over .cm-modal-sub,
+.cm-modal:has(> .rq-over-emoji):not(.cm-modal-over, .cm-modal-confirm) .cm-modal-sub {
+  color: color-mix(in srgb, #f43f5e 26%, var(--cm-text));
 }
 .cm-won-trophy {
-  font-size: 64px;
+  /* medida ÚNICA do herói, e responsiva: encolhe junto com o card no celular.
+     Vale para os dois troféus — o da carreira é <ArtIcon> (1em, segue este
+     font-size) e o da corrida é um <svg> com width/height fixos vindos do TSX,
+     sobrescritos na regra abaixo. */
+  font-size: clamp(56px, 16vw, 78px);
   filter: drop-shadow(0 8px 24px rgba(251, 191, 36, 0.4));
   animation: cm-trophy 0.7s cubic-bezier(0.3, 1.5, 0.5, 1) both;
 }
 .cm-won-trophy svg {
   display: block;
   margin: 0 auto;
+  width: 1em;
+  height: auto;
 }
 @keyframes cm-trophy {
   from {
@@ -1847,13 +1938,33 @@ a:focus-visible {
     opacity: 1;
   }
 }
+/* Balanço da corrida: o RunSummary emite DUAS linhas .cm-won-stats separadas, e
+   com flex+center cada linha se centrava sozinha — as colunas nunca casavam
+   (22px de desalinho entre a 1ª e a 2ª). Trilhos iguais + largura total fixa
+   fazem as duas linhas dividirem a mesma calha sem depender do TSX. */
 .cm-won-stats {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  margin: 6px 0 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 320px);
+  column-gap: 28px;
+  row-gap: 10px;
   color: var(--cm-gold);
   font-weight: 700;
+}
+/* valor à direita e rótulo à esquerda pra os 4 números formarem coluna de
+   verdade. `:has(> b)` porque o mesmo bloco veste o card de carreira, que traz
+   texto corrido ("3 temporadas") e continua centrado. */
+.cm-won-stats > span:has(> b) {
+  display: grid;
+  /* 2fr/3fr e não 1fr/1fr: o valor tem 3 dígitos no máximo e o rótulo é a parte
+     longa ("no elenco") — meio a meio quebrava o rótulo em duas linhas em 390px */
+  grid-template-columns: 2fr 3fr;
+  column-gap: 6px;
+  align-items: baseline;
+  text-align: right;
+}
+.cm-won-stats > span:has(> b) > small {
+  text-align: left;
 }
 
 /* ---------- Posição colorida (RoleTag) — paleta dos chips do campinho ---------- */
@@ -2134,9 +2245,6 @@ a:focus-visible {
   }
   .cm-title {
     font-size: 24px;
-  }
-  .cm-won-trophy {
-    font-size: 44px;
   }
   .cm-over-score strong {
     font-size: 28px;

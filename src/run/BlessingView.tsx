@@ -7,13 +7,21 @@ import { chooseSfx } from '../sfx/crowd'
 import { HelpIcon } from '../ui/icons'
 import type { RunApi } from './useRun'
 
-/** Risco por extenso — o texto visível já é claro pela cor/tom da carta, mas
- *  isso é invisível pra quem usa leitor de tela (só o `<button>` nativo, sem
- *  nada indicando "isso é a opção arriscada"). */
+/** Risco por extenso — vira selo visível no topo da carta E o rótulo do leitor
+ *  de tela: só a cor da borda/nome separava "segura" de "amaldiçoada", e pra
+ *  daltônico (protan/deutan) azul, dourado e rosa colapsam num tom só. */
 const TONE_LABEL: Record<string, string> = {
   safe: 'segura',
   power: 'de poder',
   cursed: 'amaldiçoada',
+}
+
+/** O selo herda a cor do próprio tom da carta (`--tone`, definido em .rq-bless-*),
+ *  então a cor continua com fonte única no CSS — aqui só reusa a pílula. */
+const TONE_SEAL_STYLE = {
+  color: 'rgb(var(--tone))',
+  background: 'rgba(var(--tone), 0.12)',
+  borderColor: 'rgba(var(--tone), 0.5)',
 }
 
 /** Realça números e palavras gritadas da descrição (estilo Slay the Spire). */
@@ -74,7 +82,12 @@ export default function BlessingView({
                 <span className="rq-bless-ico">
                   <ArtIcon name={`bless_${kind}`} />
                 </span>
-                <strong className="rq-bless-name">{info.label}</strong>
+                <strong className="rq-bless-name">
+                  <span className="pb-card-price" style={TONE_SEAL_STYLE}>
+                    {TONE_LABEL[info.tone].toUpperCase()}
+                  </span>{' '}
+                  {info.label}
+                </strong>
                 <span className="rq-bless-desc">{emphasize(info.desc)}</span>
               </button>
             )

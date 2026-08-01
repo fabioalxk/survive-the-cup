@@ -6,8 +6,9 @@ import { ALL_CLUBS } from '../game/worldcup'
 import { defeatSfx, victorySfx } from '../sfx/crowd'
 import { useEscapeKey } from '../shared/useEscapeKey'
 import { useScrollOverflow } from '../shared/useScrollOverflow'
-import { FlameIcon, HeartbreakIcon, RestartIcon, SkullIcon } from '../ui/icons'
-import { TrophyIcon } from './MapIcons'
+import { FlameIcon, HeartbreakIcon, RestartIcon } from '../ui/icons'
+import { SkullIcon, TrophyIcon } from './MapIcons'
+import { STAGE_COUNT } from '../game/runGen'
 
 function Backdrop({ children }: { children: React.ReactNode }) {
   return <div className="cm-backdrop">{children}</div>
@@ -46,17 +47,57 @@ const lastMatchLine = (state: RunState) =>
     </>
   )
 
+/**
+ * Balanço da corrida — MESMAS métricas na vitória e na derrota (uma marcação,
+ * dois usos): sem isto o gameover terminava uma jornada de várias fases sem
+ * dizer nada do que aconteceu nela.
+ *
+ * Duas linhas de 2 em vez de uma linha só: `.cm-won-stats` é flex sem quebra,
+ * então 4 métricas numa linha só espremiam os rótulos até sobrar palavra órfã.
+ */
+function RunSummary({ state }: { state: RunState }) {
+  const wins = state.nodes.filter((n) => n.cleared && n.opponent).length
+  const metrics: [string, string][] = [
+    [`${state.stage}/${STAGE_COUNT + 1}`, 'fase'],
+    [`${wins}`, wins === 1 ? 'vitória' : 'vitórias'],
+    [`${state.squad.length}`, 'no elenco'],
+    [`${state.coins}`, 'moedas'],
+  ]
+  return (
+    <>
+      {[metrics.slice(0, 2), metrics.slice(2)].map((row) => (
+        <div className="cm-won-stats" key={row[0][1]}>
+          {row.map(([value, label]) => (
+            <span key={label}>
+              <b style={{ fontSize: 19 }}>{value}</b>{' '}
+              <small style={{ color: 'var(--cm-muted)' }}>{label}</small>
+            </span>
+          ))}
+        </div>
+      ))}
+    </>
+  )
+}
+
 /** Tela de VIDA PERDIDA: perdeu uma partida mas ainda tem vida — a corrida continua. */
 export function LifeLostModal({ state, onContinue }: { state: RunState; onContinue: () => void }) {
   useEffect(() => { defeatSfx() }, [])
+  // sem partida registrada o <p> ficava vazio mas mantinha os 18px de margem
+  // de `.cm-modal-sub` — vão morto que mudava o espaçamento do cartão sem motivo.
+  const line = lastMatchLine(state)
   return (
     <Backdrop>
-      <ModalPanel className="cm-modal cm-modal-over" label="Você perdeu 1 vida">
+      {/* registro COMPACTO (`.cm-modal` puro): perder 1 vida é recuperável e não
+          pode pesar mais que o fim da jornada. Com `.cm-modal-over` esta tela
+          herdava o card de 560px, o título de 40px e o facho vermelho do backdrop
+          (`.cm-backdrop:has(.cm-modal-over)`) — e "VOCÊ PERDEU 1 VIDA" ocupava
+          mais tela que "ELIMINADO". O desfecho fica só no gameover/vitória. */}
+      <ModalPanel className="cm-modal" label="Você perdeu 1 vida">
         <div className="rq-over-emoji rq-over-red">
           <HeartbreakIcon size={56} />
         </div>
         <h2>VOCÊ PERDEU 1 VIDA</h2>
-        <p className="cm-modal-sub">{lastMatchLine(state)}</p>
+        {line && <p className="cm-modal-sub">{line}</p>}
         <p className="cm-modal-sub">
           {state.lives === 1 ? 'Resta 1 vida' : `Restam ${state.lives} vidas`}: a próxima derrota
           elimina. O confronto continua no mapa — tente a revanche ou reforce o time antes.
@@ -72,11 +113,14 @@ export function LifeLostModal({ state, onContinue }: { state: RunState; onContin
 /** Tela de ELIMINAÇÃO: as vidas acabaram, a corrida acaba — só reinicia do zero. */
 export function GameOverModal({ state, onNewRun }: { state: RunState; onNewRun: () => void }) {
   useEffect(() => { defeatSfx() }, [])
+  const line = lastMatchLine(state)
   return (
     <Backdrop>
       <ModalPanel className="cm-modal cm-modal-over" label="Eliminado">
+        {/* mesmo tamanho do troféu da vitória: as duas telas irmãs fecham a
+            jornada com o mesmo peso visual. */}
         <div className="rq-over-emoji rq-over-bone">
-          <SkullIcon size={56} />
+          <SkullIcon size={78} />
         </div>
         <h2>ELIMINADO</h2>
         {state.ascension > 0 && (
@@ -84,9 +128,14 @@ export function GameOverModal({ state, onNewRun }: { state: RunState; onNewRun: 
             <FlameIcon size={13} /> A{state.ascension}
           </span>
         )}
-        <p className="cm-modal-sub">{lastMatchLine(state)}</p>
+        {line && <p className="cm-modal-sub">{line}</p>}
         <p className="cm-modal-sub">Suas vidas acabaram. Fim de jornada — comece uma corrida nova do zero.</p>
-        <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onNewRun} autoFocus>
+        <RunSummary state={state} />
+        {/* MESMA ação = MESMA placa da vitória (`cm-btn-go`). A placa azul aqui era
+            a mesma do "Continuar a corrida" do lifelost — duas ações opostas na
+            mesma cor — e era o objeto mais saturado da tela, brilhando mais que o
+            próprio título. O azul fica exclusivo de "continuar". */}
+        <button className="cm-btn cm-btn-go cm-btn-lg cm-btn-block" onClick={onNewRun} autoFocus>
           <RestartIcon size={15} className="cm-btn-ico-lead" /> Nova corrida
         </button>
       </ModalPanel>
@@ -191,6 +240,13 @@ export function VictoryModal({ state, onNewRun }: { state: RunState; onNewRun: (
           <TrophyIcon size={78} />
         </div>
         <h2>VOCÊ VENCEU O CHEFÃO!</h2>
+        {/* o chip sai da linha de números e vem pro título, como no GameOverModal:
+            na linha de stats ele entrava como 3ª coluna e quebrava o alinhamento. */}
+        {state.ascension > 0 && (
+          <span className="rq-asc-chip" title={`Ascension ${state.ascension} — dificuldade aumentada`}>
+            <FlameIcon size={13} /> A{state.ascension}
+          </span>
+        )}
         <p className="cm-modal-sub">
           {state.managerName} levou o {club?.name ?? state.clubId} do primeiro quadradinho até o topo do
           mapa — jornada completa!
@@ -200,16 +256,19 @@ export function VictoryModal({ state, onNewRun }: { state: RunState; onNewRun: (
               ? ` Na Ascension ${state.ascension}.`
               : ''}
         </p>
-        <div className="cm-won-stats">
-          {state.ascension > 0 && (
-            <span className="rq-asc-chip" title={`Ascension ${state.ascension} — dificuldade aumentada`}>
-              <FlameIcon size={13} /> A{state.ascension}
+        <RunSummary state={state} />
+        {/* a única recompensa meta da corrida só aparecia escondida na Ajuda —
+            é aqui que ela vira o gancho pra próxima jornada. */}
+        {state.ascension < ASCENSION_MAX && (
+          <p className="cm-modal-sub">
+            <span className="rq-asc-chip">
+              <FlameIcon size={13} /> Ascension {state.ascension + 1} liberada
             </span>
-          )}
-          <span>{state.squad.length} jogadores no elenco final</span>
-          <span>{state.coins} moedas guardadas</span>
-        </div>
-        <button className="cm-btn cm-btn-primary cm-btn-lg cm-btn-block" onClick={onNewRun} autoFocus>
+          </p>
+        )}
+        {/* mesma placa verde de confirmação das outras telas: a placa azul era o
+            único elemento frio numa composição 100% ouro. */}
+        <button className="cm-btn cm-btn-go cm-btn-lg cm-btn-block" onClick={onNewRun} autoFocus>
           <RestartIcon size={15} className="cm-btn-ico-lead" /> Nova corrida
         </button>
       </ModalPanel>

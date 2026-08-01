@@ -7,6 +7,7 @@ import { ClubBadge } from '../ui/ClubBadge'
 import { PlayerDetailPop } from '../ui/PlayerDetail'
 import { PlayIcon } from '../ui/icons'
 import FormationEditor from '../ui/FormationEditor'
+import { formationName } from '../sim/formation'
 import type { RunApi } from './useRun'
 
 /** Nota média do time adversário — mesmo cálculo de `xiStrength`, mas pro time de fora. */
@@ -24,6 +25,7 @@ export default function PreMatchView({ state, act }: { state: RunState; act: Run
   const [selIdx, setSelIdx] = useState<number | null>(null)
   const node = state.nodes.find((n) => n.id === state.currentNodeId)
   const opp = node?.opponent ? ALL_CLUBS[node.opponent.clubId] : undefined
+  const myClub = ALL_CLUBS[state.clubId]
   const isBoss = node?.kind === 'boss'
   const sel = selIdx !== null ? state.squad[selIdx] : null
 
@@ -60,25 +62,36 @@ export default function PreMatchView({ state, act }: { state: RunState; act: Run
                 força pra resolver a partida (`xiStrength`) mas nunca mostrava —
                 todo squad-manager comercial expõe essa comparação antes do jogo,
                 é o contexto que falta pra "Jogar" fazer sentido como decisão. */}
+            {/* cada nota vem atrás do escudo de quem ela é: com o escudo do
+                rival logo à esquerda do chip, a leitura sugeria que o primeiro
+                número era o DELE (e o primeiro é o seu). */}
             <span
               className="rq-prematch-vs"
               title="Nota do seu time × nota do adversário"
               aria-label={`Sua nota ${myRating} contra a nota ${oppRating} do adversário`}
             >
+              {myClub && <ClubBadge club={myClub} size={16} />}
               <b style={{ color: attrColor(myRating) }} aria-hidden>
                 {myRating}
               </b>
               <span className="rq-prematch-vs-x" aria-hidden>
                 ×
               </span>
-              <b style={{ color: attrColor(oppRating) }} aria-hidden>
-                {oppRating}
-              </b>
+              {opp && <ClubBadge club={opp} size={16} />}
+              {/* a nota do RIVAL sai neutra: pela escala absoluta de `attrColor` um
+                  adversário fraco (36) saía em vermelho — e vermelho, na gramática
+                  do jogo, é perigo. O chip pintava de "ameaça" justamente o time
+                  mais fácil. Um critério só: a cor por faixa vale pra SUA nota. */}
+              <b aria-hidden>{oppRating}</b>
             </span>
           </div>
         </header>
 
         <div className="rq-prematch-board">
+          {/* o esquema em jogo nunca aparecia aqui (o PreMatchView não passa
+              `onPreset`, então a linha "Esquema" do FormationEditor fica de
+              fora) — mesma `.tv-name` que nomeia o esquema na academia. */}
+          <span className="tv-name">{formationName(state.formationSlots)}</span>
           <FormationEditor
             slots={state.formationSlots}
             xi={state.squad.map((p) => ({ id: p.id, name: p.name, ovr: p.overall }))}
@@ -87,6 +100,9 @@ export default function PreMatchView({ state, act }: { state: RunState; act: Run
             onMove={(index, pos) => act((s) => moveFormationSlot(s, index, pos))}
             onSelect={tap}
           />
+          {/* mesma dica do campinho da academia (`.rq-gym-hint`): sem ela nada
+              na tela diz que os 11 são editáveis. */}
+          <p className="rq-gym-hint">Toque em 2 jogadores pra trocar · arraste pra remodelar.</p>
         </div>
 
         {sel && (

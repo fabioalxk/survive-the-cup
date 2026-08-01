@@ -1,3 +1,5 @@
+import { ChevronSideIcon } from '../ui/icons'
+
 /**
  * Paginação de reforços (recompensa/mercado): no celular só cabe UMA carta
  * cheia (todos os atributos, sem esconder nada) por vez — isto navega entre
@@ -21,7 +23,7 @@ export function CandidatePager({
         onClick={() => onSelect(index - 1)}
         aria-label="Reforço anterior"
       >
-        ‹
+        <ChevronSideIcon dir="left" size={17} />
       </button>
       <span className="rc-pager-dots" role="tablist" aria-label="Reforços disponíveis">
         {Array.from({ length: count }, (_, i) => (
@@ -41,7 +43,7 @@ export function CandidatePager({
         onClick={() => onSelect(index + 1)}
         aria-label="Próximo reforço"
       >
-        ›
+        <ChevronSideIcon dir="right" size={17} />
       </button>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import type { RunState } from '../game/runTypes'
 import { GYM_GAIN, boostCategory, distributeGain, leaveNode, moveFormationSlot } from '../game/run'
@@ -13,14 +13,12 @@ import { ClipboardIcon, CloseIcon, HelpIcon } from '../ui/icons'
 import { GymIcon } from './MapIcons'
 import type { RunApi } from './useRun'
 
-/** Onde (na janela) o popup de treino se ancora, relativo ao chip do jogador.
- *  Sempre AO LADO do jogador (nunca por cima), pra não tapar quem foi tocado. */
-interface Anchor {
-  /** borda ESQUERDA do balão (px), já presa dentro da janela */
-  x: number
-  /** centro vertical do balão, alinhado ao jogador */
-  y: number
-}
+/** Folga entre o balão e o chip do jogador. */
+const GAP = 14
+/** Folga entre o balão e a borda INTERNA do painel da academia. */
+const EDGE = 12
+/** Meia-altura aproximada do balão — usada só pra ele não vazar do painel. */
+const POP_HALF = 150
 
 /** Registro de um treino concluído (para o histórico do rodapé). */
 interface TrainDelta {
@@ -52,9 +50,14 @@ export default function GymNodeView({
   const TRAINS = gymTrains(state.ascension)
   const slots = state.formationSlots
   const fieldRef = useRef<HTMLDivElement>(null)
+  // o balão é `position: fixed` fora do painel (portal), então precisa das medidas
+  // do painel pra nunca sair dele — e das do cabeçalho/rodapé pra não cobri-los.
+  const panelRef = useRef<HTMLDivElement>(null)
+  const headRef = useRef<HTMLElement>(null)
+  const hintRef = useRef<HTMLParagraphElement>(null)
 
   const [selIdx, setSelIdx] = useState<number | null>(null)
-  const [anchor, setAnchor] = useState<Anchor | null>(null)
+  const [pop, setPop] = useState<CSSProperties | null>(null)
   const [results, setResults] = useState<TrainDelta[]>([])
 
   const player = selIdx !== null ? state.squad[selIdx] : null
@@ -67,26 +70,48 @@ export default function GymNodeView({
   // goleiro. Fonte única em attrDisplay.
   const categories = player && selIdx !== null ? trainCategoriesFor(roleForSlot(selIdx, slots[selIdx])) : []
 
-  /** Mede o chip do jogador selecionado e posiciona o popup coladinho nele. */
+  /** Mede o chip do jogador selecionado e posiciona o popup coladinho nele —
+   *  sempre DENTRO do painel: medido contra a janela, no desktop metade do balão
+   *  boiava sobre o cenário pintado cru, fora da placa de vidro. */
   useEffect(() => {
     if (!showPop || selIdx === null) return
     const place = () => {
-      const el = fieldRef.current?.querySelector<HTMLElement>(`[data-slot="${selIdx}"]`)
-      if (!el) return
-      const r = el.getBoundingClientRect()
-      const gap = 14
-      const w = Math.min(300, window.innerWidth - 24) // largura do balão
-      // abre pro lado com mais espaço (nunca por cima do jogador); se não sobra
-      // espaço de nenhum lado (tela estreita), prende dentro da janela.
-      const roomRight = window.innerWidth - r.right - gap - 12 >= w
-      const roomLeft = r.left - gap - 12 >= w
-      const openRight = roomRight || (!roomLeft && r.left + r.width / 2 < window.innerWidth / 2)
-      const x = Math.max(
-        12,
-        Math.min(window.innerWidth - 12 - w, openRight ? r.right + gap : r.left - gap - w),
-      )
-      const y = Math.max(150, Math.min(window.innerHeight - 150, r.top + r.height / 2))
-      setAnchor({ x, y })
+      const panel = panelRef.current
+      const head = headRef.current
+      const hint = hintRef.current
+      const chip = fieldRef.current?.querySelector<HTMLElement>(`[data-slot="${selIdx}"]`)
+      if (!panel || !head || !hint || !chip) return
+      const p = panel.getBoundingClientRect()
+      const r = chip.getBoundingClientRect()
+      const w = Math.min(300, p.width - 2 * EDGE) // largura do balão
+      const roomRight = p.right - r.right - GAP - EDGE >= w
+      const roomLeft = r.left - p.left - GAP - EDGE >= w
+      if (roomRight || roomLeft) {
+        setPop({
+          left: Math.max(
+            p.left + EDGE,
+            Math.min(p.right - EDGE - w, roomRight ? r.right + GAP : r.left - GAP - w),
+          ),
+          top: Math.max(p.top + POP_HALF, Math.min(p.bottom - POP_HALF, r.top + r.height / 2)),
+        })
+        return
+      }
+      // NENHUM lado cabe (o balão sozinho é quase a largura do painel) — fingir
+      // ancoragem lateral aqui só jogava o balão POR CIMA do jogador tocado.
+      // Vira cartela entre o cabeçalho e a dica do rodapé, na metade oposta ao
+      // chip: o contador de "restantes" e a dica seguem visíveis justo na hora
+      // de gastar um treino.
+      const ceil = head.getBoundingClientRect().bottom + GAP
+      const floor = hint.getBoundingClientRect().top - GAP
+      const atTop = r.top + r.height / 2 > (ceil + floor) / 2
+      setPop({
+        left: p.left + EDGE,
+        right: window.innerWidth - p.right + EDGE,
+        width: 'auto',
+        transform: 'none',
+        top: atTop ? ceil : 'auto',
+        bottom: atTop ? 'auto' : window.innerHeight - floor,
+      })
     }
     place()
     window.addEventListener('resize', place)
@@ -140,8 +165,8 @@ export default function GymNodeView({
 
   return (
     <div className="cm-backdrop rq-scene rq-scene-gym">
-      <div className={`cm-modal rq-gym ${player ? 'has-sel' : ''}`}>
-        <header className="rq-gym-head">
+      <div className={`cm-modal rq-gym ${player ? 'has-sel' : ''}`} ref={panelRef}>
+        <header className="rq-gym-head" ref={headRef}>
           <span className="rq-gym-ico" aria-hidden>
             <GymIcon size={32} />
           </span>
@@ -181,19 +206,21 @@ export default function GymNodeView({
               onMove={(index, pos) => act((s) => moveFormationSlot(s, index, pos))}
               onSelect={setSelIdx}
             />
-            <p className="rq-gym-hint">Toque num jogador do campinho pra treinar.</p>
+            <p className="rq-gym-hint" ref={hintRef}>
+              Toque num jogador do campinho pra treinar.
+            </p>
           </div>
         </div>
       </div>
 
       {showPop &&
         player &&
-        anchor &&
+        pop &&
         createPortal(
           <div
             key={selIdx}
             className="rq-train-pop"
-            style={{ left: anchor.x, top: anchor.y }}
+            style={pop}
             role="dialog"
             aria-label={`Treinar ${player.name}`}
           >
@@ -239,10 +266,15 @@ export default function GymNodeView({
                         <span style={{ width: `${level}%`, background: attrColor(level) }} />
                       </span>
                     </span>
-                    {maxed ? (
-                      <span className="rq-train-cat-max">no máximo</span>
+                    {/* o verde de "+N nota" fica reservado a GANHO REAL: a pílula
+                        "treinar" era pintada igual e significava +0 de nota (no
+                        goleiro, 2 das 3 opções) — o jogador queimava 1 dos poucos
+                        melhoramentos achando que subia. Ganho zero usa a mesma
+                        pílula neutra do "no máximo": os dois dizem a mesma coisa. */}
+                    {maxed || gain <= 0 ? (
+                      <span className="rq-train-cat-max">{maxed ? 'no máximo' : 'sem ganho de nota'}</span>
                     ) : (
-                      <span className="rq-train-cat-gain">{gain > 0 ? `+${gain} nota` : 'treinar'}</span>
+                      <span className="rq-train-cat-gain">+{gain} nota</span>
                     )}
                   </button>
                 )

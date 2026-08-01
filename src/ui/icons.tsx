@@ -101,11 +101,6 @@ export function RestartIcon(p: IconProps) {
   )
 }
 
-/** Caveira — eliminação (game over). */
-export function SkullIcon(p: IconProps) {
-  return <ArtIcon name="skull" size={p.size ?? 18} className={p.className} />
-}
-
 /** Presente — recompensa pós-vitória. */
 export function GiftIcon(p: IconProps) {
   return <ArtIcon name="gift" size={p.size ?? 18} className={p.className} />
@@ -314,6 +309,24 @@ export function ChevronDownIcon(p: IconProps) {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** Seta lateral — navegar entre cartas (paginador de reforços). O MESMO desenho
+ *  espelhado nos dois lados (‹ e › de texto tinham peso e tamanho diferentes). */
+export function ChevronSideIcon({ dir, ...p }: IconProps & { dir: 'left' | 'right' }) {
+  return (
+    <svg {...svgProps(p)}>
+      <path
+        d="M14.5 5.5 8 12l6.5 6.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        transform={dir === 'right' ? 'scale(-1, 1) translate(-24, 0)' : undefined}
       />
     </svg>
   )

@@ -22,7 +22,7 @@ const rgb = (hex: string): [number, number, number] => {
 }
 
 /** Distância euclidiana entre duas cores (0 = idênticas, ~441 = máx). */
-const colorDist = (a: string, b: string): number => {
+export const colorDist = (a: string, b: string): number => {
   const [r1, g1, b1] = rgb(a)
   const [r2, g2, b2] = rgb(b)
   return Math.hypot(r1 - r2, g1 - g2, b1 - b2)
@@ -38,7 +38,7 @@ const isLight = (hex: string): boolean => {
 const textForShirt = (shirt: string): string => (isLight(shirt) ? '#111827' : '#f8fafc')
 
 /** Cores parecidas o bastante para confundir em campo. */
-const CLASH_THRESHOLD = 110
+export const CLASH_THRESHOLD = 110
 
 const WHITE = '#f8fafc'
 const BLACK = '#111827'

@@ -14,10 +14,20 @@ export const DRAG_THRESHOLD = 8
 /** Passo (m) de um nudge por teclado (setas) na âncora do slot. */
 const KEY_NUDGE = 3
 
+/**
+ * Folga (%) entre as âncoras extremas e a borda do campinho. Sem ela o goleiro
+ * (linha de fundo) cavalgava o friso branco interno e a placa de nome dele
+ * parecia vazar pro painel, enquanto os outros 10 flutuavam sobre grama com
+ * sobra — o mesmo aperto nas laterais. Mapear 0–100 do campo em 3–97 da tela dá
+ * o respiro sem mexer em NENHUMA posição real da partida.
+ */
+const INSET = 3
+const SPAN = 100 - 2 * INSET
+
 /** Campo vertical na tela (ataque para CIMA) ⇄ coordenadas do motor (ataque para a DIREITA). */
 const toScreen = (p: Vec2) => ({
-  left: `${(1 - p.y / FIELD.h) * 100}%`,
-  top: `${(1 - p.x / FIELD.w) * 100}%`,
+  left: `${INSET + (1 - p.y / FIELD.h) * SPAN}%`,
+  top: `${INSET + (1 - p.x / FIELD.w) * SPAN}%`,
 })
 
 /** O que o campinho precisa saber de cada titular para desenhar o chip do slot. */
@@ -77,9 +87,12 @@ export default function FormationEditor({
 
   const toField = (el: HTMLElement, clientX: number, clientY: number): Vec2 => {
     const r = el.getBoundingClientRect()
+    // inverso EXATO de `toScreen` (mesma folga de borda): com escalas diferentes
+    // o chip fugia do dedo alguns pixels a cada arrasto.
+    const frac = (v: number, size: number) => ((v / size) * 100 - INSET) / SPAN
     return clampSlot({
-      x: (1 - (clientY - r.top) / r.height) * FIELD.w,
-      y: (1 - (clientX - r.left) / r.width) * FIELD.h,
+      x: (1 - frac(clientY - r.top, r.height)) * FIELD.w,
+      y: (1 - frac(clientX - r.left, r.width)) * FIELD.h,
     })
   }
 

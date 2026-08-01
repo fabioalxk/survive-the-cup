@@ -1,0 +1,188 @@
+[
+ {
+  "tela": "Menu inicial (title screen) + tela de selecao de s",
+  "nota": 7,
+  "severity": "grave",
+  "problem": "Menu em retrato (390x844): a arte morre em ~y=310 (mask-image 78% + scale(1.5) ancorado no topo, run.css:56-74) e os ~63% restantes da tela sao um chapado quase preto. Os dois botoes flutuam num vazio, com ~200px mortos acima e ~240px mortos abaixo. Nao le como title screen no celular — le como pagina que nao carregou o fundo. O laptop 1366x640 prova que a arte funciona quando preenche; falta uma solucao de retrato que ocupe o quadro (crop vertical da mesma arte, extensao de gramado/arquibancada, ou ancorar o bloco de menu no rodape com a arte cobrindo)."
+ },
+ {
+  "tela": "Menu inicial (title screen) + tela de selecao de s",
+  "nota": 7,
+  "severity": "grave",
+  "problem": "Setup, bloco heroi: 'Brasil' (gradiente amarelo->verde) e o paragrafo de lore ficam SEM scrim local em cima da parte mais clara da escadaria dourada. A metade verde de 'Bra-sil' e o miolo do paragrafo ('de encher os olhos') caem na coluna estourada da arte e perdem contraste. Ver audit_setup_hero.png. Precisa de um veu/vinheta local atras do hero (na mesma linguagem do .rq-title-veil), nao so o veu global."
+ },
+ {
+  "tela": "Menu inicial (title screen) + tela de selecao de s",
+  "nota": 7,
+  "severity": "grave",
+  "problem": "Setup, CTA principal: o plate verde (btn_plate_go.webp, .rq-event-go run.css:589-603) e' o unico elemento saturado de verde numa tela inteiramente ambar/dourada, com luminancia muito acima de tudo em volta e textura metalica escovada. Alem do choque tonal, o jogador ve dois 'primarios' diferentes em duas telas seguidas: placa azul no menu, placa verde neon aqui. Numa vitrine da Steam esse botao e' a primeira coisa que denuncia o jogo como casual."
+ },
+ {
+  "tela": "Menu inicial (title screen) + tela de selecao de s",
+  "nota": 7,
+  "severity": "grave",
+  "problem": "Setup, carrossel de selecoes: a fileira e' cortada por uma aresta vertical DURA, sem mascara de fade. No desktop o escudo do Uruguai e' fatiado ao meio e o rotulo vira 'Urug'; no celular vira 'E' (Espanha). O chevron dourado ainda por cima fica pousado sobre o escudo fatiado. Le como bug de clipping, nao como affordance de rolagem (audit_setup_flags.png)."
+ },
+ {
+  "tela": "Menu inicial (title screen) + tela de selecao de s",
+  "nota": 7,
+  "severity": "medio",
+  "problem": "Setup: o estado bloqueado domina a tela. 11 caixas de Ascension vazias com cadeado minusculo (so a '0' habilitada) + 11 escudos dessaturados em cinza no qual Italia, Belgica e Franca ficam indistinguiveis entre si. O conjunto le como estado quebrado/vazio em vez de 'conteudo por vir'. Os escudos deveriam manter identidade cromatica reduzida (nao cinza total), e a trilha de Ascension deveria comprimir os niveis travados em vez de esticar 10 caixas ocas na largura toda."
+ },
+ {
+  "tela": "Mapa da jornada (cena `map`)",
+  "nota": 6.5,
+  "severity": "bloqueante",
+  "problem": "Os nós de evento (MERCADO, TREINAMENTO, INÍCIO) são emoji do sistema soltos, sem o medalhão/anel que TODO nó de país tem. Vide audit_map_right.png e audit_map_topleft.png: a lojinha 🏪 flutua sobre a grama sem disco, sem borda, sem sombra, e o badge de cadeado fica pendurado no vazio à direita dela porque não há disco para ancorar. No audit_map_start.png o INÍCIO é pior ainda: bandeirinha vermelha + bandeira quadriculada sobrepostas em escalas diferentes, com um mastro de 1px descendo. Numa vitrine da Steam isso lê como asset placeholder e quebra a única regra visual da tela (nó = medalhão circular). Todo nó precisa do mesmo disco/anel; o ícone de evento entra DENTRO dele, no mesmo diâmetro dos países."
+ },
+ {
+  "tela": "Mapa da jornada (cena `map`)",
+  "nota": 6.5,
+  "severity": "grave",
+  "problem": "Escada de rótulos: nós da mesma fileira têm o label em alturas diferentes e alguns descolam do próprio ícone. No audit_map_mob_mid.png a fileira Coreia do Sul / Panamá / Tunísia / Irã tem os pills em 4 alturas distintas, e o de TUNÍSIA fica ~130px abaixo do seu ícone, ligado por um fio de 1px quase invisível que ainda por cima corre em cima do caminho tracejado. O jogador não consegue dizer de quem é aquele rótulo. Mesmo defeito no desktop (audit_map_labels.png). O anti-colisão está empurrando em cascata em vez de resolver: ou fixa o label colado ao nó e resolve a colisão movendo o NÓ no layout, ou o leader precisa ser um conector visível e curto (nunca > ~1 diâmetro de nó)."
+ },
+ {
+  "tela": "Mapa da jornada (cena `map`)",
+  "nota": 6.5,
+  "severity": "grave",
+  "problem": "A barra de progresso 'Fase 1 de 7' está 100% vazia — trilho cinza chapado de ~400px sem nenhum preenchimento, sem marcações de fase, sem cor (audit_map_header.png, e igual no mobile). Na fase 1 de 7 ela deveria mostrar ~1/7 preenchido. Do jeito que está parece componente quebrado/não estilizado bem no meio do header, e é o elemento mais largo da barra superior."
+ },
+ {
+  "tela": "Mapa da jornada (cena `map`)",
+  "nota": 6.5,
+  "severity": "grave",
+  "problem": "Colisão no mobile 390px: o pill TREINAMENTO é largo e sua ponta direita encosta/invade o medalhão de EGITO e o pill EGITO (audit_map_mob_top.png). Na fileira de baixo, o pill COREIA DO SUL é empurrado bem para a esquerda, fica descentralizado em relação ao próprio ícone e quase toca a borda interna do card (audit_map_mob_mid.png). Rótulos de evento precisam de largura máxima / quebra ou de um layout que reserve a faixa horizontal."
+ },
+ {
+  "tela": "Mapa da jornada (cena `map`)",
+  "nota": 6.5,
+  "severity": "medio",
+  "problem": "O fade de scroll do topo no mobile corta os pills com uma linha horizontal dura em vez de desvanecê-los: MERCADO / EQUADOR / MERCADO aparecem fatiados ao meio no topo do card (audit_map_mobile.png e audit_map_mob_top.png). O mask parece se aplicar só à camada do mapa e não à camada dos labels, então o resultado lê como bug de clipping, não como 'tem mais conteúdo acima'."
+ },
+ {
+  "tela": "Mapa da jornada (cena `map`)",
+  "nota": 6.5,
+  "severity": "medio",
+  "problem": "Os caminhos tracejados não são aparados na borda dos nós: atravessam por cima/por baixo dos anéis (Japão e Austrália em audit_map_labels.png e audit_map_topleft.png) e terminam com traço cortado no meio ao encostar no MERCADO, com comprimentos de stub desiguais entrando e saindo do mesmo nó. Falta encurtar cada aresta ao raio do nó + um respiro constante, e alinhar a fase do tracejado."
+ },
+ {
+  "tela": "Bencao da largada (blessing) + Cartas de recompens",
+  "nota": 7.5,
+  "severity": "grave",
+  "problem": "Reward desktop / campinho: as plaquetas de nome 'Gabriel M.' e 'Marquinhos' se encostam e formam um bloco unico ilegivel, e ainda cruzam a linha da grande area. Alem disso a linha de 4 defensores esta escalonada em duas alturas (Wendell/Danilo acima, Gabriel M./Marquinhos abaixo) — le-se como bug de posicionamento, nao como formacao. Visivel em audit_reward_pitch.png."
+ },
+ {
+  "tela": "Bencao da largada (blessing) + Cartas de recompens",
+  "nota": 7.5,
+  "severity": "grave",
+  "problem": "Blessing desktop: as tres cartas tem altura fixa igualada e sobram ~35% de area vazia abaixo da descricao em TODAS elas (a carta 'Kit do Preparador' tem uma unica linha de texto e depois um vao morto de ~130px). As cartas parecem cortadas/inacabadas. Visivel em audit_blessing_cards.png."
+ },
+ {
+  "tela": "Bencao da largada (blessing) + Cartas de recompens",
+  "nota": 7.5,
+  "severity": "grave",
+  "problem": "Blessing desktop: o scrim/vinheta esmaga a arte de fundo ate preto puro em toda a faixa central — so sobra uma textura fraca nas bordas laterais e um trofeu quase invisivel atras das cartas. A mesma cena no mobile mostra o fundo rico e bonito. No desktop parece que o background nao carregou."
+ },
+ {
+  "tela": "Bencao da largada (blessing) + Cartas de recompens",
+  "nota": 7.5,
+  "severity": "medio",
+  "problem": "Inconsistencia de cabecalho entre as duas telas do mesmo fluxo: o pergaminho da blessing tem ~780px de largura e o da reward ~250px (3x menor); e o botao de ajuda '?' e um circulo dentro da pilula de subtitulo na blessing, mas vira um retangulo arredondado cinza orfao no canto superior direito na reward, desalinhado verticalmente do pergaminho."
+ },
+ {
+  "tela": "Bencao da largada (blessing) + Cartas de recompens",
+  "nota": 7.5,
+  "severity": "medio",
+  "problem": "Blessing mobile: o badge inline empurra o titulo e quebra a linha de forma feia — 'Braçadeira de / Capitão' e 'Pacto com o / Agente' viram cabecalhos de duas linhas com a segunda linha solta a esquerda, enquanto 'Kit do Preparador' cabe em uma linha. Ritmo das tres cartas fica desigual."
+ },
+ {
+  "tela": "Mercado (market) e Academia (gym)",
+  "nota": 6.5,
+  "severity": "grave",
+  "problem": "Mercado desktop: a grade de ofertas e' cortada por uma borda dura do rodape no meio da segunda linha de cards. O CTA 'Entra no lugar de Endrick' aparece com os numeros '47 -> 76' e '47 -> 83' fatiados exatamente ao meio, sem fade, sem sombra de rolagem e sem qualquer afordancia de scroll. Num print de vitrine isso le como bug de renderizacao, nao como lista rolavel (audit_market_desktop.png / audit_market_clip_bottom.png)."
+ },
+ {
+  "tela": "Mercado (market) e Academia (gym)",
+  "nota": 6.5,
+  "severity": "grave",
+  "problem": "Academia desktop: a tela continua sendo o layout de celular esticado — coluna unica de ~740px centrada num viewport de 1600px, com mais de metade da largura mostrando so o background. Enquanto o Mercado ocupa a largura toda com grade + campinho lado a lado, a Academia parece uma pagina nao adaptada. O campinho vertical gigante come a tela inteira sem nenhum painel de apoio (lista de treinos, ganhos, jogador selecionado) ao lado."
+ },
+ {
+  "tela": "Mercado (market) e Academia (gym)",
+  "nota": 6.5,
+  "severity": "grave",
+  "problem": "Campinho (nas DUAS telas): as etiquetas de nome colidem. 'Gabriel M.' e 'Marquinhos' ficam encostadas uma na outra formando um bloco unico, e o badge '53' do Alisson sobe entre elas invadindo a linha dos nomes; 'Bruno G.' tambem encosta na fileira de baixo. Em 4-3-3 a defesa vira uma tarja de texto continua (audit_market_clip_pitch.png / audit_gym_clip_pitch.png)."
+ },
+ {
+  "tela": "Mercado (market) e Academia (gym)",
+  "nota": 6.5,
+  "severity": "medio",
+  "problem": "Academia nao tem nenhum botao primario nem rodape: o painel termina numa dica cinza pequena ('Toque num jogador do campinho pra treinar.') seguida de espaco morto. O Mercado, tela irma, fecha com uma barra verde enorme 'Seguir viagem'. As duas telas do mesmo bloco de intervalo tem hierarquia e ritmo de saida completamente diferentes."
+ },
+ {
+  "tela": "Mercado (market) e Academia (gym)",
+  "nota": 6.5,
+  "severity": "medio",
+  "problem": "Mercado: card sem saldo (Igor Dias, '184 · faltam 84') mantem o card em brilho total e o CTA verde 'Entra no lugar de Endrick' exatamente igual ao dos cards compraveis. O unico sinal de indisponibilidade e' um texto vermelho pequeno no preco — falta estado desabilitado (dessaturacao/opacidade/CTA neutro)."
+ },
+ {
+  "tela": "Vestiario pre-jogo (prematch) + campinho tatico. P",
+  "nota": 6.5,
+  "severity": "bloqueante",
+  "problem": "Celular: o chip de rating do Alisson (53) e' atropelado e cortado ao meio pelos chips de nome de 'Gabriel M.' e 'Marquin...'. Sobra so' a metade de baixo do numero, ilegivel. Reproduz em seed 7/stage 0 e seed 21/stage 4 (ver audit_m_defense.png). E' colisao de layout + z-order, nao ruido de dados."
+ },
+ {
+  "tela": "Vestiario pre-jogo (prematch) + campinho tatico. P",
+  "nota": 6.5,
+  "severity": "grave",
+  "problem": "Celular: os dois zagueiros centrais tem os chips de nome encostados (gap ~0px), formando uma barra unica 'Gabriel M. Marquin...' que atravessa a area. Alem disso 'Marquinhos' e' truncado com reticencias enquanto sobra espaco lateral livre no campo — no desktop o mesmo nome cabe inteiro."
+ },
+ {
+  "tela": "Vestiario pre-jogo (prematch) + campinho tatico. P",
+  "nota": 6.5,
+  "severity": "grave",
+  "problem": "Celular: vazio morto de ~120px (14% da tela) entre o texto de dica e o botao Jogar, enquanto o campinho esta comprimido a ponto de os rotulos colidirem. O espaco existe e nao esta sendo dado ao campo — o problema 1 e 2 sao consequencia direta disso."
+ },
+ {
+  "tela": "Vestiario pre-jogo (prematch) + campinho tatico. P",
+  "nota": 6.5,
+  "severity": "medio",
+  "problem": "O badge de cadeado do goleiro (Alisson travado) fica metade escondido atras do chip de nome, tanto no desktop quanto no celular (audit_d_gkbadge.png). Um indicador de estado nunca pode ficar parcialmente oculto — ou sai do caminho do rotulo, ou o rotulo desce."
+ },
+ {
+  "tela": "Vestiario pre-jogo (prematch) + campinho tatico. P",
+  "nota": 6.5,
+  "severity": "medio",
+  "problem": "Desktop 1600x1000: o painel e' uma coluna de ~520px centrada, com ~65% da largura ocupada so' por arte de fundo. Le como tela de celular esticada num monitor, nao como layout desktop. Numa vitrine da Steam o print desktop e' o primeiro que o jogador ve."
+ },
+ {
+  "tela": "Telas de fim de partida/corrida",
+  "nota": 7,
+  "severity": "grave",
+  "problem": "Arte-herói das três telas é emoji do sistema operacional (🏆, 💀, 💔) escalado para ~90px. No clip 1:1 (af_vic_head.png, af_ll_panel.png) dá pra ver o glifo de fonte Apple, com estilo, luz e paleta que não pertencem ao jogo. É o sinal mais alto de 'não finalizado' numa vitrine da Steam — o momento de clímax da run é ilustrado por um emoji de teclado."
+ },
+ {
+  "tela": "Telas de fim de partida/corrida",
+  "nota": 7,
+  "severity": "grave",
+  "problem": "O CTA de derrota é idêntico ao de vitória: mesmo botão verde-sucesso com o mesmo rótulo 'Nova corrida' em ELIMINADO e em VOCÊ VENCEU. O único ponto de luz forte do painel vermelho de morte é verde comemorativo, e as duas telas terminam com o mesmo payoff visual — a derrota não pesa. Precisa de tratamento neutro/discreto (ou vermelho-escuro) no gameover, reservando o verde para a vitória."
+ },
+ {
+  "tela": "Telas de fim de partida/corrida",
+  "nota": 7,
+  "severity": "grave",
+  "problem": "lifelost quebra a família de modais das outras duas: painel navy genérico sem borda/glow de acento (victory tem borda dourada + glow, gameover borda vermelha + glow), largura menor (~575px contra ~700px das irmãs em desktop), título em corpo menor, sem linha de stats e com scrim bem mais fraco — em af_ll_panel.png o mapa atrás aparece nítido (bandeiras e rótulos 'TUNÍSIA', 'EQUADOR' legíveis) enquanto victory/gameover escurecem quase a preto. Lado a lado parece outra tela, de outro jogo."
+ },
+ {
+  "tela": "Telas de fim de partida/corrida",
+  "nota": 7,
+  "severity": "medio",
+  "problem": "Copy da vitória com cara de rascunho: 'Técnico levou o Brasil do primeiro quadradinho até o topo do mapa — jornada completa!'. 'Técnico' lido isolado parece variável de nome não preenchida, 'quadradinho' é registro infantil no beat mais épico do jogo, e o badge mistura idiomas ('Ascension 1 liberada') numa UI 100% PT-BR."
+ },
+ {
+  "tela": "Telas de fim de partida/corrida",
+  "nota": 7,
+  "severity": "medio",
+  "problem": "lifelost fala 'Restam 2 vidas: a próxima derrota elimina' só em texto corrido cinza-azulado de baixo contraste, sem nenhuma representação visual das vidas (pips de coração cheios/vazios). A informação mais importante da tela — quanto fôlego sobrou — é a menos visível, e o corpo de texto está mais apagado que o das outras duas telas."
+ }
+]
