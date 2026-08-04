@@ -9,7 +9,7 @@ import type { MatchState, Player } from '../../sim/types'
 import { FIELD, PHYS } from '../../sim/constants'
 import { CLASH_THRESHOLD, colorDist } from '../../game/kits'
 import { buildBall, rollBall, type BallView } from './ball'
-import { SHADOW_DIR, SPREAD } from './decals'
+import { SHADOW_DIR } from './decals'
 import { buildFx, type Fx } from './fx'
 import { buildPiece, disposePiece, type KitColors, type PlayerPiece } from './players'
 import { animateStadium, buildStadium, type Stadium } from './stadium'
@@ -24,22 +24,41 @@ import { skyTexture } from './textures'
 
 /** Ângulo da câmera acima do gramado. Alto o bastante p/ ler a partida inteira
  *  como um tabuleiro, baixo o bastante p/ ver arquibancada, gols e volume. */
-const CAM_ELEVATION = THREE.MathUtils.degToRad(62)
+const CAM_ELEVATION = THREE.MathUtils.degToRad(56)
 /** Margem do enquadramento: 1 = campo colado nas bordas. */
 const FIT = 0.985
+/**
+ * Quanto a TIGELA avança sobre o campo, do fundo do gramado até o beiral da
+ * cobertura (m), e a altura desse beiral. O enquadramento tem que caber o
+ * ESTÁDIO, não só o campo: ajustando pelos cantos do gramado a borda do canvas
+ * cortava a torcida no meio e a cobertura nunca entrava no quadro — ROOF e BACK
+ * viravam geometria morta paga a cada frame.
+ */
+const BOWL_OUT = 17
+const BOWL_TOP = 21.2
 /** Bloom em jogo normal e no estouro da comemoração de gol. */
 const BLOOM_IDLE = 0.16
 /** Raio DESENHADO da peça do jogador — espelha o `R` de `players.ts`. */
 const PIECE_R = PHYS.playerRadius * 1.5
+/** Fator do lábio do pedestal (o ponto mais externo da peça) — espelha o perfil
+ *  da base em `players.ts`; é sobre ele que o botão deita. */
+const PIECE_LIP = 1.08
+/** Altura do centro de massa da peça (m), de novo espelhando `players.ts`: é o
+ *  braço que desloca a sombra quando o botão tomba. */
+const PIECE_MID = 0.62
 /** Raio DESENHADO da bola — espelha o fator de exagero da esfera em `ball.ts`. */
 const BALL_DRAW_R = PHYS.ballRadius * 1.55
 /**
- * Diâmetro da mancha de contato do botão. Bem acima do `SPREAD` da bola de
- * propósito: a peça é larga e baixa, e com a mancha do tamanho do próprio
- * botão ela ficava inteira ESCONDIDA embaixo dele — o jogador lia como adesivo
- * chapado, sem nenhuma âncora no gramado.
+ * Diâmetro da mancha de contato, em raios do corpo. Bem acima do `SPREAD`
+ * padrão de propósito: com a mancha do tamanho do próprio corpo ela ficava
+ * inteira ESCONDIDA embaixo dele — a peça (e a bola) liam como adesivo chapado,
+ * sem nenhuma âncora no gramado. Aqui sobra sempre um anel escuro em volta.
  */
-const PLAYER_SHADOW = PIECE_R * 4
+const CONTACT_SPREAD = 4
+const PLAYER_SHADOW = PIECE_R * CONTACT_SPREAD
+/** Altura (m) a partir da qual a sombra da bola para de escorrer. Sem teto ela
+ *  ia parar a 20 m da bola num lançamento e lia como sujeira no gramado. */
+const SHADOW_REACH = 3.5
 /**
  * Ângulo do tombo. Passa do reto de propósito: em 90° a peça ficava equilibrada
  * na aresta, como uma moeda em pé; passando um pouco ela DESCANSA sobre a lateral.
@@ -52,6 +71,18 @@ const BLOOM_GOAL = 0.42
  * rótulo passa a ser o Z do mundo — sem inverter, os nomes voltavam a colidir.
  */
 const LABEL_GAP = { long: 7.5, short: 2.6 }
+/**
+ * Quanto o rótulo cai ABAIXO da peça na tela, convertido para o gramado. O
+ * sprite é ancorado por cima (center.y > 1), então ele ocupa o pedaço de campo
+ * à frente do botão — e é ali que ele tapava o número do vizinho. Em retrato a
+ * `rotation` do sprite gira TAMBÉM esse deslocamento (a three rotaciona o quadro
+ * inteiro, âncora inclusa), e o rótulo passa a cair no X do mundo.
+ */
+const LABEL_DROP = 2.7
+/** Limiar de posse: o mesmo valor acende o aro e cola a bola no dono. */
+const CTRL_MIN = 0.02
+/** Posse EFETIVA: quem está caído não conduz nada. */
+const ctrlOf = (p: Player): number => p.ctrlAmt * (1 - p.downAmt)
 /**
  * Vinheta MULTIPLICATIVA. A `VignetteShader` da three MISTURA a imagem com um
  * cinza (`mix(texel, 1-darkness, dot(uv,uv))`): além de apagar as duas grandes
@@ -103,7 +134,7 @@ export class MatchRenderer {
   // direção do ALVO, adiantá-lo sobe o campo no quadro. É o que corta a faixa
   // morta de teto escuro no topo (era 22% da altura) e devolve espaço à
   // arquibancada da frente, que fechava a moldura cortada crua.
-  private target = new THREE.Vector3(FIELD.cx, 0, FIELD.cy + 4)
+  private target = new THREE.Vector3(FIELD.cx, 0, FIELD.cy - 3)
   private labelRotation = 0
   private showNames = false
   private clock = new THREE.Clock()
@@ -258,6 +289,11 @@ export class MatchRenderer {
     const corners: THREE.Vector3[] = []
     for (const x of [-m, FIELD.w + m])
       for (const z of [-m, FIELD.h + m]) for (const y of [0, 3]) corners.push(new THREE.Vector3(x, y, z))
+    // topo da tigela atrás dos dois gols e no fundo — é o que garante teto e
+    // aresta contra o céu no quadro. O lado de CÁ fica de fora de propósito: a
+    // câmera de transmissão olha POR CIMA da arquibancada da frente.
+    for (const x of [-BOWL_OUT, FIELD.w / 2, FIELD.w + BOWL_OUT])
+      for (const z of [-BOWL_OUT, FIELD.h / 2]) corners.push(new THREE.Vector3(x, BOWL_TOP, z))
 
     let dist = 150
     for (let i = 0; i < 12; i++) {
@@ -331,7 +367,7 @@ export class MatchRenderer {
       if (hit) {
         const pulse = 0.5 + 0.5 * Math.sin(cel!.t * 9)
         mat.color.set(this.kits[cel!.team].shirt)
-        mat.emissive?.set(this.kits[cel!.team].shirt)
+        mat.emissive.set(this.kits[cel!.team].shirt)
         mat.emissiveIntensity = 0.35 + pulse * 0.5
       } else {
         mat.color.set('#eef3fb')
@@ -382,6 +418,7 @@ export class MatchRenderer {
       if (dir) this.falls.delete(p.id)
       dir = undefined
       piece.tilt.rotation.set(0, 0, 0)
+      piece.tilt.position.y = 0
     } else {
       if (!dir) {
         const sp = Math.hypot(p.vel.x, p.vel.y)
@@ -391,13 +428,19 @@ export class MatchRenderer {
       }
       const ang = down * FALL_ANGLE
       piece.tilt.rotation.set(dir.y * ang, 0, -dir.x * ang)
+      // ...e SOBE junto: girando em torno da base (y=0), o lábio do pedestal
+      // afundava mais que a altura inteira do botão no gramado — a peça encolhia
+      // em vez de deitar. Subindo o pivô, a borda encosta no chão e ela deita.
+      piece.tilt.position.y = Math.sin(ang) * PIECE_R * PIECE_LIP
     }
 
     // Mancha de contato. Vive no espaço do `group`, então acompanha o tombo na
-    // mão: o corpo deitado se afasta ~R do pivô e, parada no pivô, a mancha
-    // deixava o caído boiando sem sombra nenhuma.
+    // mão: parada no pivô, ela deixava o caído boiando sem sombra nenhuma. O
+    // braço é a ALTURA do centro da peça (não o raio): o corpo gira em torno da
+    // base, então o centroide anda `sen(ang) × altura` — com o raio a mancha
+    // saía 1 m de baixo do botão e virava "sombra de ninguém" no gramado.
     const sk = 1 - hop * 0.22 // no pulo a peça sobe e a mancha encolhe
-    const lay = dir ? Math.sin(down * FALL_ANGLE) * PIECE_R : 0
+    const lay = dir ? Math.sin(down * FALL_ANGLE) * PIECE_MID : 0
     const dx = dir ? dir.x : 0
     const dz = dir ? dir.y : 0
     piece.shadow.position.set(
@@ -411,10 +454,14 @@ export class MatchRenderer {
     // valor antigo a peça continuava lendo como adesivo chapado no gramado
     piece.shadowMat.opacity = 0.78 * sk * (1 - down * 0.35)
 
-    // aro: dono da bola (amarelo) ou cartão amarelo pendurado (âmbar fraco)
-    const ctrl = p.ctrlAmt * (1 - down)
+    // aro: dono da bola (ciano) ou cartão amarelo pendurado (âmbar fraco). O aro
+    // de posse NÃO pode depender do uniforme — em amarelo ele sumia dentro do
+    // time amarelo, justo o indicador mais importante da partida. O ciano tem
+    // contraste contra grama e contra qualquer kit, e deixa o âmbar exclusivo
+    // do cartão (os dois estados param de se distinguir só por luminância).
+    const ctrl = ctrlOf(p)
     piece.ringMat.opacity = Math.max(ctrl * 0.9, p.yellow ? 0.28 : 0)
-    piece.ringMat.color.set(ctrl > 0.02 ? '#fde047' : '#f59e0b')
+    piece.ringMat.color.set(ctrl > CTRL_MIN ? '#22d3ee' : '#f59e0b')
 
     // número apaga por fade enquanto a peça tomba (o corte binário estalava)
     const numberMat = piece.numberMesh.material as THREE.Material
@@ -424,23 +471,46 @@ export class MatchRenderer {
   /**
    * Um nome por região: em aglomeração (escanteio, bola parada) dois rótulos
    * vizinhos viravam um borrão ilegível. Esconde o de quem já tem um nome
-   * colado — a elipse é larga em X porque o texto é deitado.
+   * colado — a elipse é larga em X porque o texto é deitado — e também o de
+   * quem escreveria POR CIMA de outro botão: o sprite não tem depthTest, então
+   * um nome mal colocado apagava o número do vizinho.
    */
   private layoutLabels(players: Player[]): void {
     const shown: THREE.Vector3[] = []
-    for (const p of players) {
-      const piece = this.pieces.get(p.id)
+    const pieces = players.map((p) => this.pieces.get(p.id))
+    const upright = this.labelRotation !== 0
+    const dropX = upright ? LABEL_DROP : 0
+    const dropZ = upright ? 0 : LABEL_DROP
+    for (let i = 0; i < players.length; i++) {
+      const piece = pieces[i]
       if (!piece) continue
       const at = piece.group.position
-      const upright = this.labelRotation !== 0
-      const clash = shown.some((s) => {
-        const dx = (s.x - at.x) / (upright ? LABEL_GAP.short : LABEL_GAP.long)
-        const dz = (s.z - at.z) / (upright ? LABEL_GAP.long : LABEL_GAP.short)
-        return dx * dx + dz * dz < 1
-      })
+      const clash =
+        shown.some((s) => this.overlaps(s.x - at.x, s.z - at.z, LABEL_GAP.long, LABEL_GAP.short)) ||
+        pieces.some((o, j) => {
+          if (j === i || !o) return false
+          // o rótulo é desenhado à FRENTE da peça; o teste é contra a elipse já
+          // deslocada, com o raio do botão vizinho somado à zona proibida
+          const q = o.group.position
+          return this.overlaps(
+            q.x - at.x - dropX,
+            q.z - at.z - dropZ,
+            LABEL_GAP.long / 2 + PIECE_R,
+            LABEL_GAP.short / 2 + PIECE_R,
+          )
+        })
       piece.label.visible = !clash
       if (!clash) shown.push(at)
     }
+  }
+
+  /** Elipse de exclusão do rótulo. Em retrato o canvas gira 90°, então o eixo
+   *  longo do texto passa a ser o Z do mundo — daí a troca dos eixos aqui. */
+  private overlaps(dx: number, dz: number, long: number, short: number): boolean {
+    const upright = this.labelRotation !== 0
+    const a = dx / (upright ? short : long)
+    const b = dz / (upright ? long : short)
+    return a * a + b * b < 1
   }
 
   private updateBall(state: MatchState, alpha: number): void {
@@ -456,15 +526,22 @@ export class MatchRenderer {
     // sentido em que o jogador corre. Bola alta passa por cima e não é tocada.
     const reach = PIECE_R + BALL_DRAW_R
     if (h < 0.9) {
-      let near: Player | undefined
+      // manda o DONO (mesma fonte que acende o aro em `updatePlayer`). Pela
+      // distância pura a bola colava na peça mais PRÓXIMA e o quadro exibia dois
+      // sinais de posse se contradizendo: aro num jogador, bola no vizinho.
+      let near = state.players.reduce<Player | undefined>(
+        (a, p) => (ctrlOf(p) > CTRL_MIN && (!a || ctrlOf(p) > ctrlOf(a)) ? p : a),
+        undefined,
+      )
       let best = reach * reach
-      for (const p of state.players) {
-        const d = (p.pos.x - x) ** 2 + (p.pos.y - z) ** 2
-        if (d < best) {
-          best = d
-          near = p
+      if (!near)
+        for (const p of state.players) {
+          const d = (p.pos.x - x) ** 2 + (p.pos.y - z) ** 2
+          if (d < best) {
+            best = d
+            near = p
+          }
         }
-      }
       if (near) {
         const ox = near.prevPos.x + (near.pos.x - near.prevPos.x) * alpha
         const oz = near.prevPos.y + (near.pos.y - near.prevPos.y) * alpha
@@ -485,9 +562,13 @@ export class MatchRenderer {
     // separação entre as duas que "vende" o voo numa câmera de cima.
     const shK = 1 / (1 + h * 0.16)
     const sh = this.shadowPerMeter
-    this.ball.shadow.position.set(x + sh.x * h, 0.02, z + sh.y * h)
-    this.ball.shadow.scale.setScalar(BALL_DRAW_R * SPREAD * shK)
-    this.ball.shadowMat.opacity = 0.62 * shK
+    // altura CLAMPADA só no deslocamento: a separação continua vendendo o voo,
+    // mas num lançamento a mancha parava a 14 m da bola e lia como sujeira no
+    // gramado — e com o piso de opacidade ela não some justo no ponto mais alto.
+    const off = Math.min(h, SHADOW_REACH)
+    this.ball.shadow.position.set(x + sh.x * off, 0.02, z + sh.y * off)
+    this.ball.shadow.scale.setScalar(BALL_DRAW_R * CONTACT_SPREAD * shK)
+    this.ball.shadowMat.opacity = Math.max(0.3, 0.62 * shK)
 
     const dx = x - this.prevBall.x
     const dz = z - this.prevBall.y
@@ -500,7 +581,9 @@ export class MatchRenderer {
     const speed = Math.hypot(b.pos.x - b.prevPos.x, b.pos.y - b.prevPos.y) * 60
     const k = THREE.MathUtils.clamp((speed - 14) / 26, 0, 1)
     this.ball.trailMat.opacity = k * 0.5
-    this.ball.trail.scale.set(1.2 + k * 3.4, 1.2 + k * 1.2, 1)
+    // a cauda NUNCA pode ser mais larga que a bola: crescendo nos dois eixos ela
+    // virava uma poça de luz deitada no gramado, maior que a própria esfera.
+    this.ball.trail.scale.set(1.2 + k * 3.4, BALL_DRAW_R * 2, 1)
     if (k > 0 && Math.hypot(dx, dz) > 1e-3) {
       const y = BALL_DRAW_R + h
       this.tmp.set(x, y, z).project(this.camera)

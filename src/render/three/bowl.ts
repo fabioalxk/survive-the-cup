@@ -70,6 +70,21 @@ export const profileLength = (profile: ProfilePoint[]): number => {
   return v[v.length - 1]
 }
 
+/** Perímetro do caminho FECHADO (m) — o u da varredura dá a volta inteira. */
+export const pathLength = (path: THREE.Vector2[]): number => {
+  let len = 0
+  for (let i = 0; i < path.length; i++) len += path[i].distanceTo(path[(i + 1) % path.length])
+  return len
+}
+
+/**
+ * `repeat` que faz caber um número INTEIRO de tiles em `len` metros (as UVs
+ * saem em metros). Vale para os DOIS eixos: no u, o caminho é fechado, então um
+ * repeat fora de fase deixa uma costura vertical na emenda do anel.
+ */
+export const fitTiles = (len: number, tile: number): number =>
+  Math.max(1, Math.round(len / tile)) / len
+
 /**
  * Constrói a casca gerada por `profile` varrido em `path` (fechado). A face
  * gerada aponta para DENTRO do estádio (é o que a câmera vê); use

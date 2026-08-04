@@ -6,8 +6,8 @@ import { ALL_CLUBS } from '../game/worldcup'
 import { defeatSfx, victorySfx } from '../sfx/crowd'
 import { useEscapeKey } from '../shared/useEscapeKey'
 import { useScrollOverflow } from '../shared/useScrollOverflow'
-import { FlameIcon, HeartbreakIcon, RestartIcon } from '../ui/icons'
-import { SkullIcon, TrophyIcon } from './MapIcons'
+import { FlameIcon, RestartIcon } from '../ui/icons'
+import { HeartbreakIcon, SkullIcon, TrophyIcon } from './MapIcons'
 import { STAGE_COUNT } from '../game/runGen'
 
 function Backdrop({ children }: { children: React.ReactNode }) {
@@ -131,12 +131,13 @@ export function GameOverModal({ state, onNewRun }: { state: RunState; onNewRun: 
         {line && <p className="cm-modal-sub">{line}</p>}
         <p className="cm-modal-sub">Suas vidas acabaram. Fim de jornada — comece uma corrida nova do zero.</p>
         <RunSummary state={state} />
-        {/* MESMA ação = MESMA placa da vitória (`cm-btn-go`). A placa azul aqui era
-            a mesma do "Continuar a corrida" do lifelost — duas ações opostas na
-            mesma cor — e era o objeto mais saturado da tela, brilhando mais que o
-            próprio título. O azul fica exclusivo de "continuar". */}
-        <button className="cm-btn cm-btn-go cm-btn-lg cm-btn-block" onClick={onNewRun} autoFocus>
-          <RestartIcon size={15} className="cm-btn-ico-lead" /> Nova corrida
+        {/* nem a placa verde da vitória, nem a azul de "continuar": as duas telas
+            de fim fechavam com o MESMO botão verde comemorativo e o MESMO rótulo,
+            e o único ponto de luz forte do painel de morte era o de festa. Aqui
+            a saída é discreta (`cm-btn-ghost`, sem placa pintada) e o rótulo diz
+            revanche, não recompensa — o verde fica reservado à vitória. */}
+        <button className="cm-btn cm-btn-ghost cm-btn-lg cm-btn-block" onClick={onNewRun} autoFocus>
+          <RestartIcon size={15} className="cm-btn-ico-lead" /> Tentar de novo
         </button>
       </ModalPanel>
     </Backdrop>
@@ -247,8 +248,11 @@ export function VictoryModal({ state, onNewRun }: { state: RunState; onNewRun: (
             <FlameIcon size={13} /> A{state.ascension}
           </span>
         )}
+        {/* "Téc." na frente do nome (mesmo tratamento do cabeçalho da corrida):
+            solto, o nome padrão "Técnico" lia como variável não preenchida. E
+            "primeiro quadradinho" era registro infantil no beat mais épico. */}
         <p className="cm-modal-sub">
-          {state.managerName} levou o {club?.name ?? state.clubId} do primeiro quadradinho até o topo do
+          Téc. {state.managerName} levou o {club?.name ?? state.clubId} da primeira fase até o topo do
           mapa — jornada completa!
           {state.ascension === ASCENSION_MAX
             ? ' No nível máximo de Ascension — não foi sorte.'

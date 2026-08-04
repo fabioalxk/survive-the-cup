@@ -64,14 +64,20 @@
        FAIXA de 26% da tela com o resto chapado, e ancorá-la em `top: 0` sem
        ampliar joga o wordmark pra dentro da barra fixa (o chip de perfil cobria
        o "SU" de SURVIVE). Ampliando pelo topo o wordmark desce pra ~45% da
-       altura da arte — passa longe da barra — e a arte cresce pra ~84vw sem
-       cortar as pontas do título (o corte lateral de 25% para bem antes dele). */
-    transform: scale(1.5);
+       altura da arte — passa longe da barra.
+       1.85 (era 1.5): a arte sai de ~84vw pra ~104vw de altura, cobrindo metade
+       da tela de um 390×844 em vez de ~37%. É o teto: o wordmark ocupa de 24% a
+       68% da largura da arte, e em 1.9 a janela visível (centrada, 1/escala da
+       largura) começa a comer o "S" de SURVIVE. */
+    transform: scale(1.85);
     transform-origin: 50% 0;
     animation: none;
-    /* a base morre no --cm-bg em vez de cortar em régua reta no meio do gramado */
-    mask-image: linear-gradient(to bottom, #000 78%, transparent);
-    -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent);
+    /* a base morre no --cm-bg em vez de cortar em régua reta no meio do gramado.
+       Dissolução LONGA (a partir de 55%, ~185px): com 78% o degradê durava ~86px
+       e ainda dava pra ver onde a imagem acabava — a linha do "fundo que não
+       carregou". Assim o gramado se apaga aos poucos na cor do painel. */
+    mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
   }
 }
 @keyframes rq-bg-drift-select {
@@ -191,11 +197,10 @@
   gap: 12px;
 }
 /* em telas em retrato, o fundo do menu (ver .rq-title-bg acima) fica ancorado
-   no topo com ~84vw de altura (56vw de arte × 1.5 de ampliação). Reserva essa
-   faixa como padding-top do painel e centraliza o menu no espaço restante
-   (`justify-content: center`) — em vez de só empurrar o menu pra baixo da arte
-   e deixar toda a sobra acumulada no rodapé (vão preto enorme em celulares
-   bem altos, ex. 390×844). */
+   no topo com ~104vw de altura (56vw de arte × 1.85 de ampliação). O menu é o
+   RODAPÉ da composição: arte em cima, menu na base do quadro. Centrado na
+   sobra, ele boiava no meio do vão com ~200px mortos acima e ~240px abaixo, e
+   os dois botões liam como conteúdo solto em vez de base do cartaz. */
 @media (max-aspect-ratio: 3/4) {
   /* sem calha extra no retrato: quem define as duas calhas (iguais) é o padding
      do painel — antes o menu somava um recuo à esquerda e ficava com ~37px de
@@ -205,15 +210,15 @@
   }
   /* :has() escopa isso só na tela de menu — setup/help têm seus próprios
      painéis de altura própria e não devem ganhar esse padding-top extra.
-     76vw (e não os 84vw cheios): o menu sobe pro trecho onde a máscara já
-     dissolveu a arte, fechando o vão morto entre o gramado e o primeiro botão. */
+     O padding-top é só o PISO (garante que o menu nunca suba por cima do
+     wordmark numa tela curta); quem posiciona é o `flex-end`. */
   .rq-title:has(> .rq-menu) {
     padding-top: max(76vw, 30vh);
-    justify-content: center;
+    justify-content: flex-end;
   }
   .rq-menu {
     width: 100%;
-    margin: 0;
+    margin: 0 0 6vh;
   }
   .rq-menu-item {
     width: 100%;
@@ -497,15 +502,20 @@
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  /* 34px à direita = a faixa do esmaecimento (32px) + folga: reserva o espaço
+  /* 76px à direita = a faixa do esmaecimento (72px) + folga: reserva o espaço
      da seta pra nenhum medalhão/rótulo ser desenhado por baixo dela. */
-  padding: 6px 34px 8px 2px;
+  padding: 6px 76px 8px 2px;
   /* sem `cursor: grab`: a fileira é scroll nativo, sem nenhum handler de
      arraste (o mapa, que TEM drag-scroll, é quem usa grab/grabbing) — o cursor
      prometia uma interação que não existe. */
-  /* esmaece a borda direita — sinaliza que a fileira continua pro lado */
-  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
+  /* esmaece a borda direita — sinaliza que a fileira continua pro lado.
+     72px (era 32px): um medalhão tem 62px de diâmetro e o rótulo até 84px, então
+     um degradê de 32px pegava só o último terço do escudo cortado — o resultado
+     era um escudo fatiado por aresta DURA (o Uruguai partido ao meio, o rótulo
+     virando "Urug"), que lê como bug de clipping em vez de "role pro lado". Com
+     a faixa maior que o próprio medalhão, o item cortado desaparece inteiro. */
+  mask-image: linear-gradient(to right, black calc(100% - 72px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 72px), transparent 100%);
 }
 .rq-flag {
   flex: none;
@@ -584,8 +594,13 @@
   display: block;
 }
 
-/* CTA de largada: banner largo — o "GO" da cena. Reaproveita a mesma placa
-   verde pintada dos botões genéricos (ver .cm-btn-go). */
+/* CTA de largada: banner largo — o "GO" da cena. Usa a placa PRIMÁRIA (a mesma
+   do primeiro item do menu, `.rq-menu-item:first-child`), não a verde do
+   `.cm-btn-go`: menu e setup são duas telas seguidas e o jogador via dois
+   "primários" diferentes em sequência (placa azul, depois placa verde neon), o
+   único ponto saturado de verde numa cena inteiramente âmbar/dourada. Um
+   primário só pra "começar"; o verde fica reservado ao "avançar" de dentro da
+   corrida (Jogar / Seguir viagem). */
 .rq-event-go {
   display: block;
   width: 100%;
@@ -594,13 +609,14 @@
   font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: #06210f;
+  color: #eef2fb;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
   border-style: solid;
   border-width: 10px;
-  border-image: url('/assets/ui/btn_plate_go.webp') 15% fill / 1 / 0 stretch;
+  border-image: url('/assets/ui/btn_plate_primary.webp') 15% fill / 1 / 0 stretch;
   clip-path: inset(0 round 14px);
   cursor: pointer;
-  box-shadow: 0 10px 28px rgba(34, 197, 94, 0.3);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.3);
 }
 /* mesmo problema do `.cm-btn:focus-visible` em career.css: o `clip-path`
    arredondado recorta o próprio anel de foco (box-shadow) de quem navega
@@ -708,6 +724,21 @@
   align-items: center;
   gap: 26px;
   padding: 6px 12px 0;
+}
+/* véu LOCAL atrás do herói, na mesma linguagem do `.rq-title-veil` (só que preso
+   ao bloco em vez de cobrir a tela): o nome em gradiente amarelo→verde e o
+   parágrafo de lore caem exatamente na coluna estourada da escadaria dourada da
+   arte, onde o véu global — calibrado pra tela inteira — não segura o contraste.
+   `z-index: -1` fica dentro do contexto de empilhamento do próprio herói
+   (`z-index: 1` acima), então passa atrás do texto sem sumir no fundo da página. */
+.rq-select-hero::before {
+  content: '';
+  position: absolute;
+  inset: -18px -26px;
+  z-index: -1;
+  border-radius: 28px;
+  background: radial-gradient(72% 100% at 32% 50%, rgba(4, 7, 14, 0.8) 0%, rgba(4, 7, 14, 0.52) 58%, rgba(4, 7, 14, 0) 100%);
+  pointer-events: none;
 }
 .rq-select-badge {
   position: relative;
@@ -961,23 +992,24 @@
   font-family: var(--cm-font-display);
   font-size: 15px;
 }
-/* largura limitada (não `flex: 1`): esticada de ponta a ponta do cabeçalho, na
-   Fase 1 (preenchimento 0%) ela virava um tubo cinza de ~870px dominando o
-   centro da barra e lendo como elemento quebrado/carregando. */
-.rq-map-progress {
-  flex: 0 1 200px;
-  height: 7px;
-  border-radius: 999px;
-  background: rgba(148, 163, 189, 0.14);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
+/* um pip por fase (e não uma barra de preenchimento): na fase 1 o trilho ficava
+   0% cheio — um tubo cinza no meio do cabeçalho, lendo como componente quebrado.
+   O pip apagado é conteúdo por vir, não estado vazio. */
+.rq-map-pips {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
-.rq-map-progress-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--cm-gold-2), var(--cm-gold));
-  box-shadow: 0 0 10px rgba(251, 191, 36, 0.45);
-  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+.rq-map-pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(148, 163, 189, 0.16);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+.rq-map-pip-on {
+  background: linear-gradient(180deg, var(--cm-gold-2), var(--cm-gold));
+  box-shadow: 0 0 7px rgba(251, 191, 36, 0.5);
 }
 /* moldura com SCROLL VERTICAL: o mapa é bem mais alto que a área visível */
 .rq-map-scroll {
@@ -1083,12 +1115,17 @@
 .rq-node:focus-visible .rq-node-badge {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 0 0 6px rgba(37, 99, 235, 0.7);
 }
-/* anel externo decorativo (medalha de 2 tons) */
+/* anel externo decorativo (medalha de 2 tons). O halo escuro em volta é o
+   "respiro" das trilhas: o pontilhado passa por baixo do nó e antes terminava
+   com um traço cortado ao meio no anel, com stubs de comprimentos diferentes
+   entrando e saindo do mesmo nó. Com o halo o traço se apaga sempre à mesma
+   distância do disco, em qualquer direção. */
 .rq-node-ring {
   position: absolute;
   inset: -3px;
   border-radius: 50%;
   background: conic-gradient(from 210deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02) 40%, rgba(0, 0, 0, 0.3));
+  box-shadow: 0 0 10px 6px rgba(4, 7, 14, 0.85);
 }
 /* medalhão metálico pintado atrás do escudo (tools/generate-art.mjs "nodes") —
    só o interior do disco fica visível por baixo do escudo/anel decorativo. */
@@ -1106,58 +1143,18 @@
   outline-offset: 1px;
   transition: outline-color 0.15s;
 }
-/* ---- nós de evento (academia/mercado): emblema SVG solto, sem círculo ---- */
+/* ---- nós de evento: o emblema SVG mora DENTRO do mesmo medalhão ---- */
+/* tamanho em % do disco (e não pela prop `size` do ícone): o emblema acompanha
+   o nó em todos os breakpoints sem repetir medida em cada media query. */
 .rq-node-art {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-}
-.rq-node-art svg {
   display: block;
+  width: 74%;
+  height: 74%;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
 }
 /* o "isso aqui é uma opção agora" já é o pulso de escala do nó inteiro
    (`rq-node-pulse`, ver mais abaixo) — balançar o ícone por cima seria o
    mesmo recado duas vezes. */
-/* halo colorido atrás do emblema (a "aura" que substitui o fundo do círculo) */
-.rq-node-halo {
-  position: absolute;
-  inset: -9px;
-  border-radius: 50%;
-  pointer-events: none;
-}
-/* anel orbital tracejado — só gira nos nós clicáveis agora */
-.rq-node-orbit {
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  border: 1.5px dashed transparent;
-  pointer-events: none;
-}
-/* sombra elíptica no "chão", ancorando o emblema flutuante no mapa */
-.rq-node-ground {
-  position: absolute;
-  left: 50%;
-  bottom: -3px;
-  width: 34px;
-  height: 8px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.55), transparent 70%);
-  pointer-events: none;
-}
-.rq-node-gym .rq-node-halo {
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.3), transparent 65%);
-}
-.rq-node-gym .rq-node-art svg {
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 7px rgba(56, 189, 248, 0.4));
-}
-.rq-node-market .rq-node-halo {
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.28), transparent 65%);
-}
-.rq-node-market .rq-node-art svg {
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 7px rgba(251, 191, 36, 0.35));
-}
 /* rótulos com a cor do tema do nó */
 .rq-node-gym .rq-node-cap {
   border-color: rgba(56, 189, 248, 0.5);
@@ -1231,54 +1228,43 @@
   max-width: 162px;
   box-shadow: 0 0 12px rgba(251, 191, 36, 0.25);
 }
-/* zigue-zague em 3 faixas: numa fase com 4-5 nós, as legendas (largura
-   variável, cada uma centralizada só sob o próprio nó) ficam mais perto uma
-   da outra do que a própria largura do texto — sem isto, colam/embaralham.
-   Com só 2 faixas (par/ímpar) uma fase de 5 nós ainda cola a raia 0 na 2 (as
-   duas caem na faixa par); com 3 faixas por raia (`lane % 3`) duas legendas
-   na MESMA faixa ficam sempre a pelo menos 3 raias de distância — espaço de
-   sobra até em telas bem estreitas. O passo entre faixas (20px) é maior que
-   a própria altura da legenda (~16px) DE PROPÓSITO: ícone de evento e escudo
-   de time têm alturas de botão levemente diferentes, então "100%" (a base de
-   cada faixa) não cai exatamente igual entre nós vizinhos — um passo justo
-   de 16px podia ainda encostar. Ainda cabe folga de sobra até a próxima fase
-   (ver `ROW_GAP` em MapView.tsx). */
+/* zigue-zague em DUAS faixas alternadas por raia (ver `band` em MapView.tsx):
+   em raias vizinhas as legendas (largura variável, cada uma centralizada sob o
+   próprio nó) ficam mais perto uma da outra do que a largura do texto — sem
+   isto, colam/embaralham. Com 2 faixas, duas legendas na MESMA faixa estão
+   sempre a 2 raias de distância: mesmo em 390px isso dá ~128px de passo, mais
+   que o `max-width` da pílula (96px), então nunca se encostam.
+   Três faixas (o desenho anterior) resolviam a colisão mas jogavam a última
+   legenda a ~50px do próprio ícone — mais perto da fileira de baixo que do
+   dono. Um único degrau de 20px fica DENTRO de um diâmetro de nó (38-46px):
+   o rótulo continua colado ao dono e o conector fica curto e legível. */
 .rq-node-cap-band-1 {
-  top: calc(100% + 27px);
+  top: calc(100% + 20px);
 }
-.rq-node-cap-band-2 {
-  top: calc(100% + 51px);
-}
-/* fio de 1px do nó até a pílula rebaixada: sem ele a legenda ficava boiando no
-   gramado, mais perto da fileira de baixo que do próprio dono, e o jogador
-   tinha que adivinhar qual pílula é de qual nó. Mora no NÓ (não no cap, que
-   tem `overflow: hidden` pro ellipsis). */
-.rq-node:has(> .rq-node-cap-band-1)::after,
-.rq-node:has(> .rq-node-cap-band-2)::after {
+/* conector do nó até a pílula rebaixada: 2px sólidos (e não um fio de 1px em
+   degradê, que sumia por cima do caminho tracejado e deixava a legenda órfã).
+   Mora no NÓ, não no cap — o cap tem `overflow: hidden` pro ellipsis. */
+.rq-node:has(> .rq-node-cap-band-1)::after {
   content: '';
   position: absolute;
   left: 50%;
   top: 100%;
-  width: 1px;
-  background: linear-gradient(to bottom, rgba(214, 184, 122, 0), rgba(214, 184, 122, 0.55));
+  margin-left: -1px;
+  width: 2px;
+  height: 19px;
+  border-radius: 1px;
+  background: rgba(214, 184, 122, 0.6);
+  box-shadow: 0 0 0 1px rgba(4, 7, 14, 0.75);
   pointer-events: none;
-}
-.rq-node:has(> .rq-node-cap-band-1)::after {
-  height: 26px;
-}
-.rq-node:has(> .rq-node-cap-band-2)::after {
-  height: 50px;
 }
 .rq-cap-ico {
   flex: none;
 }
 
 /* ---- temas por tipo de nó ---- */
-.rq-node-gym,
-.rq-node-market {
-  width: 56px;
-  height: 56px;
-}
+/* nó de evento tem EXATAMENTE o diâmetro do nó de país (nada de 56px): a única
+   regra visual da tela é "nó = medalhão", e um disco maior para mercado/treino
+   invadia o vizinho de raia em 390px. */
 .rq-node-boss {
   width: 66px;
   height: 66px;
@@ -1317,18 +1303,8 @@
   box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3), 0 0 16px rgba(251, 191, 36, 0.24),
     0 4px 12px rgba(0, 0, 0, 0.55);
 }
-/* disponível (nós de emblema solto): halo e anel orbital dourados, parados */
-.rq-node-available .rq-node-halo {
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3), 0 0 18px rgba(251, 191, 36, 0.26);
-}
-.rq-node-available .rq-node-orbit {
-  border-color: rgba(251, 191, 36, 0.75);
-}
 .rq-node-available:hover {
   transform: translate(-50%, -50%) scale(1.14);
-}
-.rq-node-available:hover .rq-node-art svg {
-  filter: drop-shadow(0 4px 7px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 12px rgba(251, 191, 36, 0.55));
 }
 /* concluído: só ganha a borda verde + o ✓; mantém a cor cheia */
 .rq-node-cleared .rq-node-badge {
@@ -1389,50 +1365,24 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 /* ---- ponto de partida (origem dos 3 caminhos) ---- */
+/* herda todo o medalhão de `.rq-node`; só não é clicável */
 .rq-start-node {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  z-index: 2;
-}
-/* bandeirada solta (SVG), mesma linguagem dos emblemas dos eventos */
-.rq-start-badge {
-  display: grid;
-  place-items: center;
-}
-.rq-start-badge svg {
-  display: block;
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.65));
+  cursor: default;
 }
 /* "você está aqui": seta vermelha flutuando sobre a posição atual, apontando
    pra baixo (pro nó/início onde o jogador de fato está agora) */
 .rq-here-arrow {
   position: absolute;
-  /* encostada no anel do nó (4px): os 30px de antes eram exatamente a faixa
-     onde moram as legendas rebaixadas (.rq-node-cap-band-1/2, +27px e +51px) —
-     a seta atravessava a pílula de OUTRO nó e apontava pra coisa errada. */
-  transform: translate(-50%, calc(-100% - 4px));
+  /* o `top` inline é o CENTRO do nó, então o deslocamento tem que descontar o
+     raio + o anel (23+3px): com os 4px de antes a ponta da seta caía dentro do
+     medalhão e tapava o escudo. Fica encostada no anel, sem invadi-lo. */
+  transform: translate(-50%, calc(-100% - 27px));
   font-size: 20px;
   line-height: 1;
   color: #ef4444;
   text-shadow: 0 0 8px rgba(239, 68, 68, 0.85), 0 2px 3px rgba(0, 0, 0, 0.6);
   z-index: 4;
   pointer-events: none;
-}
-.rq-start-cap {
-  font-size: 9px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--cm-text);
-  background: linear-gradient(180deg, rgba(24, 18, 10, 0.88), rgba(6, 10, 18, 0.88));
-  border: 1px solid rgba(214, 184, 122, 0.32);
-  padding: 1.5px 8px;
-  border-radius: 999px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .rq-simple-detail {
@@ -1455,7 +1405,7 @@
 /* ---------- Campinho tático compartilhado ---------- */
 /* sem moldura tracejada (lia como "placeholder vazio" quando a coluna toda vira
    essa caixa, ex. academia sem jogador selecionado) — só um halo suave atrás do
-   ícone, no mesmo idioma visual dos halos dos nós do mapa (.rq-node-halo) */
+   ícone */
 .tv-side-empty {
   position: relative;
   display: flex;
@@ -1748,8 +1698,13 @@
   position: relative;
   z-index: 3;
 }
+/* o cadeado viaja com a FOTO (mesma camada 3), não com o texto: sem z-index ele
+   ficava no piso do contexto de empilhamento do campinho, ou seja ABAIXO dos
+   nomes (z-index 1) dos chips vizinhos — metade do badge sumia atrás da placa
+   de nome do zagueiro ao lado. */
 .tv-chip-lock {
   position: absolute;
+  z-index: 3;
   bottom: -2px;
   right: -2px;
   width: 15px;
@@ -1775,13 +1730,15 @@
 }
 .tv-chip-name {
   white-space: nowrap;
-  /* teto proporcional ao campo: sem ele, duas placas vizinhas (os dois zagueiros
-     no celular) chegavam a ~2px uma da outra e liam como um bloco preto só — e
-     bastava um sobrenome maior (ou uma fileira de 5 num 3-5-2) pra colidirem de
-     vez. 20cqi é menor que o vão entre duas raias vizinhas em QUALQUER largura
-     de campinho, então as placas nunca se tocam. O `title` do chip continua
+  /* teto proporcional ao VÃO ENTRE RAIAS, menos um respiro fixo. A distância
+     entre dois vizinhos da mesma fileira é sempre ~19cqi (medido: 19.2cqi entre
+     os dois zagueiros de um 4-3-3, 20cqi numa linha de 5 do 3-5-2) — o teto
+     antigo de 20cqi era MAIOR que esse vão, então as duas placas centrais se
+     encostavam (0,5px de folga no celular) e liam como um bloco preto único.
+     Com `19cqi - 7px`, duas placas no teto guardam sempre ~7px de gramado entre
+     elas, em qualquer largura de campinho. O `title` do chip continua
      carregando o nome inteiro. */
-  max-width: 20cqi;
+  max-width: calc(19cqi - 7px);
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 10.5px;
@@ -1811,8 +1768,12 @@
   bottom: calc(100% + 1px);
   left: 50%;
   transform: translateX(-50%);
-  /* camada de BAIXO (junto do nome): fica atrás das fotos dos vizinhos */
-  z-index: 1;
+  /* camada DO MEIO: abaixo das fotos (2 < 3) mas acima de qualquer nome (> 1).
+     Empatada com o nome em z-index 1, a nota do goleiro — que nasce logo acima
+     da cabeça dele, no meio da fileira de nomes dos zagueiros — perdia a ordem
+     de pintura pro chip que vem DEPOIS no DOM e aparecia cortada ao meio. Um
+     indicador de estado nunca pode ficar parcialmente escondido. */
+  z-index: 2;
   font-family: var(--cm-font-display);
   font-weight: 800;
   font-size: 9.5px;
@@ -2289,10 +2250,15 @@
   padding: 16px 22px;
 }
 /* esmaece a borda de baixo só quando sobra oferta fora da vista (.has-more,
-   calculado em JS) — assim a lista nunca "escurece" à toa quando já cabe tudo */
+   calculado em JS) — assim a lista nunca "escurece" à toa quando já cabe tudo.
+   112px (e não 44px): um card de oferta tem ~536px de altura, então 44px de
+   degradê morriam DENTRO do CTA e o "47 → 76" da 2ª fileira aparecia fatiado ao
+   meio contra a borda do rodapé — lia como falha de renderização, não como
+   lista rolável. Com o degradê ocupando a altura inteira do CTA, a fileira
+   cortada se dissolve e o convite a rolar fica explícito. */
 .rq-market-body.has-more {
-  mask-image: linear-gradient(to bottom, black calc(100% - 44px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 44px), transparent 100%);
+  mask-image: linear-gradient(to bottom, black calc(100% - 112px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 112px), transparent 100%);
 }
 .rq-market-body h4 {
   display: flex;
@@ -3112,14 +3078,20 @@
    uma arte retrato numa tela 16:10 já corta o miolo pintado E ainda apagava os
    terços laterais em preto — o painel ficava boiando no vazio justamente na
    tela onde o asset é o cenário. Escurece só o suficiente pra leitura. */
+/* o `--scene-pos: center` que morava AQUI tinha especificidade 0,2,0 e vencia o
+   `.rq-scene-blessing`/`-market`/`-gym`/`-reward` (0,1,0) logo acima: TODO
+   enquadramento por cena era ignorado e o recorte caía sempre na faixa vertical
+   central da arte — justamente o vão vazio que o ilustrador deixou pro painel
+   sentar em cima. Daí a bênção no desktop parecer "fundo que não carregou".
+   O padrão vive no `var(…, center)` do próprio `background-position`, que não
+   compete na cascata com a variável de cada cena. */
 .cm-backdrop.rq-scene {
-  --scene-pos: center;
   background-color: #04070e;
   background-image:
     radial-gradient(120% 90% at 50% 40%, rgba(4, 7, 14, 0.2) 0%, rgba(4, 7, 14, 0.62) 100%),
     var(--scene);
   background-size: cover;
-  background-position: center, var(--scene-pos);
+  background-position: center, var(--scene-pos, center);
 }
 .rq-run-shell {
   position: relative;
@@ -3224,7 +3196,11 @@
      começam sempre no mesmo Y em qualquer combinação de quebra. */
   justify-content: flex-start;
   gap: 10px;
-  min-height: clamp(250px, 30vh, 340px);
+  /* sem piso de altura: a grade (`.rq-bless-list`) já iguala as 3 cartas pelo
+     `align-items: stretch`, então o piso só servia pra esticar TODAS até 30vh e
+     abrir ~35% de vão morto embaixo da descrição (a carta de uma linha ficava
+     com 130px vazios, lendo como carta cortada/inacabada). Sem ele, a mais alta
+     manda e as outras a acompanham — nunca mais que o conteúdo pede. */
   padding: 26px 18px 18px;
   text-align: center;
   color: inherit;
@@ -3276,7 +3252,8 @@
 .rq-bless-ico {
   display: grid;
   place-items: center;
-  /* escala com a viewport junto com a carta (ver min-height acima) */
+  /* medalhão escala com a viewport: em tela baixa ele é o primeiro a ceder
+     altura, antes de o texto da carta precisar apertar */
   width: clamp(74px, 7vh, 96px);
   height: clamp(74px, 7vh, 96px);
   font-size: 48px;
@@ -3285,22 +3262,6 @@
   border: 1px solid rgba(var(--tone), 0.55);
   box-shadow: 0 0 18px rgba(var(--tone), 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
-}
-/* selo de raridade em linha própria (fora da linha do nome): como pílula inline
-   dentro do <strong> ele comia metade da largura útil e empurrava "Braçadeira
-   de Capitão"/"Pacto com o Agente" pra uma segunda linha. Texto clareado a
-   partir do tom da carta — no vermelho, rgb(var(--tone)) puro sobre a face
-   escura fica em ~4.2:1, abaixo do mínimo AA de 4.5:1. */
-.rq-bless-seal {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 999px;
-  color: color-mix(in srgb, rgb(var(--tone)) 70%, #fff);
-  background: rgba(var(--tone), 0.12);
-  border: 1px solid rgba(var(--tone), 0.5);
 }
 .rq-bless-name {
   /* 2 linhas reservadas: mantém descrição e medalhão das 3 cartas na mesma
@@ -3344,7 +3305,6 @@
     gap: 10px;
   }
   .rq-bless-card {
-    min-height: 0;
     flex-direction: row;
     text-align: left;
     align-items: center;
@@ -3367,6 +3327,15 @@
        cada carta tem a própria altura e a reserva só abriria vão. */
     min-height: 0;
     font-size: 16px;
+    /* selo em LINHA PRÓPRIA: como pílula inline dentro do <strong>, ele comia
+       metade da largura útil da carta deitada e jogava "Braçadeira de Capitão"/
+       "Pacto com o Agente" pra uma 2ª linha começando solta à esquerda,
+       enquanto "Kit do Preparador" cabia numa — o ritmo das 3 cartas ficava
+       desigual. Empilhado, todo nome começa na mesma coluna e em uma linha. */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
   .rq-bless-desc {
     grid-area: desc;
@@ -3509,13 +3478,15 @@
     font-size: 9px;
     padding: 0 4px;
   }
+  /* calha menor SÓ no vestiário: aqui o campinho é limitado pela LARGURA do
+     cartão (a conta em `cqh` pede mais do que cabe, e por isso sobrava altura
+     morta), então cada px devolvido pelo padding de 28px do `.cm-modal` vira
+     campo maior — e vão maior entre as raias, que é a raiz da colisão de nomes
+     na defesa. 292px → 320px de gramado, sem mexer no cartão das outras telas. */
+  .cm-modal.rq-prematch {
+    padding: 14px;
+  }
 }
-/* celular estreito (~320-480px): fases com 5 raias colocam os nós de evento
-   (56px, mais largos que os 46px de partida) quase colados — o vão entre
-   raias vem de um % fixo da largura (ver LANE_MIN_X/LANE_MAX_X em
-   MapView.tsx), então em telas finas ele fica menor que o próprio nó e as
-   duas academias/mercados da mesma fase chegam a se sobrepor. Encolher os
-   nós aqui é mais simples que reescrever o espaçamento das raias. */
 /* poções ativas no cabeçalho do mapa: cada uma é um círculo de 40px — com 2
    ou mais ativas, a fileira (vidas + poções + moedas + som + ajuda + reset)
    passa da largura do celular e o botão de ajuda sobra sozinho numa 2ª linha
@@ -3540,21 +3511,24 @@
     padding: 5px;
   }
 }
+/* celular estreito (~320-480px): o vão entre raias vem de um % fixo da largura
+   (ver LANE_MIN_X/LANE_MAX_X em MapView.tsx), então em telas finas ele fica
+   perto do próprio diâmetro do nó. Encolher o nó aqui é mais simples que
+   reescrever o espaçamento das raias. */
 @media (max-width: 480px) {
   .rq-node {
     width: 38px;
     height: 38px;
-  }
-  .rq-node-gym,
-  .rq-node-market {
-    width: 44px;
-    height: 44px;
   }
   /* em 390px o vão entre raias é menor que a própria legenda: com 104px as
      pílulas passavam por baixo do medalhão do nó vizinho (colisão rótulo/nó).
      96px é o limite que ainda cabe "Coreia do Sul" inteiro sem truncar. */
   .rq-node-cap {
     max-width: 96px;
+  }
+  /* mesmo desconto de raio+anel da seta "você está aqui", com o nó de 38px */
+  .rq-here-arrow {
+    transform: translate(-50%, calc(-100% - 23px));
   }
 }
 @media (max-width: 760px) {
@@ -3857,6 +3831,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* mesma razão do `justify-content` da academia (.rq-gym-field): quando é a
+     LARGURA do cartão que limita o campinho, toda a folga vertical se acumulava
+     embaixo (~115px de painel vazio entre a dica e o botão Jogar no celular) e a
+     cena terminava num vão morto. Centrado, a folga se divide entre topo e base. */
+  justify-content: center;
   gap: 8px;
   /* container de TAMANHO: o campinho abaixo deriva a largura da altura desta
      coluna (mesma fórmula do campinho da academia, `.rq-gym-field .tv-pitch`). */

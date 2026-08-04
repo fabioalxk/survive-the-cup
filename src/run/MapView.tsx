@@ -17,11 +17,11 @@ const jitter = (id: string): number => {
 }
 
 /** Ponto de partida do mapa (embaixo, no centro) — de onde saem os 3 caminhos.
- *  Não encosta na base (92% e não 96%): a legenda "Início" agora fica SOB a
- *  bandeirada (como em todos os outros nós) e o rodapé do recorte tem uma faixa
- *  de fade de 32px — a 96% a bandeirada e o rótulo caíam apagados dentro dela. */
+ *  Não encosta na base (88% e não 96%): a legenda "Início" fica SOB o medalhão
+ *  (como em todos os outros nós) e o rodapé do recorte tem 150px de fade — mais
+ *  perto da base, medalhão e rótulo nasciam apagados dentro dele. */
 const START_X = 50
-const START_Y = 92
+const START_Y = 88
 /** Altura (%) da linha do chefão — o topo da jornada. */
 const TOP_Y = 6
 
@@ -57,8 +57,8 @@ const LINE_PROPS = {
 
 /**
  * Fase → % de cima. Linhas igualmente espaçadas do início (embaixo, "linha 0")
- * ao chefão (topo): início=96%, fase 1 logo acima, e assim por diante. O mesmo
- * vão de `ROW_GAP` separa a largada da fase 1 e as fases entre si.
+ * ao chefão (topo): início=START_Y, fase 1 logo acima, e assim por diante. O
+ * mesmo vão de `ROW_GAP` separa a largada da fase 1 e as fases entre si.
  */
 const yOf = (stage: number): number => START_Y - stage * ROW_GAP
 
@@ -111,7 +111,11 @@ function NodeButton({
   status: NodeStatus
   /** fog of war: fase distante (mais de 1 à frente) fica esmaecida — o chefão nunca. */
   far: boolean
-  /** degrau (0/1/2) de altura da legenda — só serve pra desempilhar fileira cheia. */
+  /** degrau (0/1) de altura da legenda — desempilha rótulos de raias vizinhas.
+   *  Vem de `lane % 2`: só raias VIZINHAS chegam perto o bastante pra colidir, e
+   *  fileiras espaçadas (a largada ocupa as raias 0/2/4) caem todas na faixa 0
+   *  sozinhas — escolhas de peso idêntico em alturas diferentes liam como
+   *  hierarquia falsa. */
   band: number
   onClick: () => void
 }) {
@@ -132,28 +136,19 @@ function NodeButton({
       title={`${KIND_LABEL[node.kind]}${club ? ' · ' + club.name : ''}`}
       aria-label={`${KIND_LABEL[node.kind]}${club ? ' · ' + club.name : ''} — ${STATUS_LABEL[status]}`}
     >
-      {club ? (
-        <>
-          {isBoss && (
-            <span className="rq-node-crown" aria-hidden>
-              <CrownIcon size={28} />
-            </span>
-          )}
-          <span className="rq-node-ring" aria-hidden />
-          <span className="rq-node-badge">
-            <ClubBadge club={club} size={isBoss ? 42 : 32} />
-          </span>
-        </>
-      ) : (
-        <>
-          <span className="rq-node-halo" aria-hidden />
-          <span className="rq-node-orbit" aria-hidden />
-          <span className="rq-node-art">
-            <Art size={isBoss ? 54 : 48} />
-          </span>
-          <span className="rq-node-ground" aria-hidden />
-        </>
+      {isBoss && (
+        <span className="rq-node-crown" aria-hidden>
+          <CrownIcon size={28} />
+        </span>
       )}
+      <span className="rq-node-ring" aria-hidden />
+      {/* O MESMO medalhão em todos os tipos de nó: o emblema de evento entra
+          DENTRO do disco, no diâmetro dos países. Solto sobre a grama ele lia
+          como asset placeholder e o cadeado ficava pendurado no vazio, sem
+          disco pra se ancorar. */}
+      <span className="rq-node-badge">
+        {club ? <ClubBadge club={club} size={isBoss ? 42 : 32} /> : <Art className="rq-node-art" />}
+      </span>
       {status === 'cleared' && <span className="rq-node-check">✓</span>}
       {status === 'locked' && (
         <span className="rq-node-lock" aria-hidden>
@@ -182,12 +177,6 @@ export default function MapView({ state, act }: { state: RunState; act: RunApi['
 
   const atStart = state.stage === 0
   const firstNodes = state.nodes.filter((n) => n.stage === 1)
-  // quantos nós existem em cada fase: as legendas só descem em degraus (0/27/51px)
-  // quando a fileira está CHEIA. Em fileiras de até 3 nós — a largada e a maioria
-  // das fases — os rótulos cabem todos na mesma linha de base, e três escolhas de
-  // peso idêntico em três alturas diferentes liam como hierarquia falsa.
-  const rowCount: Record<number, number> = {}
-  for (const n of state.nodes) rowCount[n.stage] = (rowCount[n.stage] ?? 0) + 1
   // "você está aqui": nó recém-concluído (o topo da trilha percorrida) — ou o
   // próprio início, enquanto o jogador ainda não deu o primeiro passo.
   const currentNode = atStart ? undefined : state.nodes.find((n) => n.cleared && n.stage === state.stage)
@@ -264,18 +253,18 @@ export default function MapView({ state, act }: { state: RunState; act: RunApi['
             node={n}
             status={statusOf(n)}
             far={n.kind !== 'boss' && n.stage > state.stage + 1}
-            band={rowCount[n.stage] > 3 ? n.lane % 3 : 0}
+            band={n.lane % 2}
             onClick={() => act((s) => enterNode(s, n.id))}
           />
         ))}
 
-        {/* ponto de partida: origem dos 3 caminhos */}
-        {/* emblema em cima e legenda embaixo, na MESMA `.rq-node-cap` dos outros
-            nós — o rótulo por cima era o único invertido do mapa e ainda batia
-            na ponta da seta "você está aqui". */}
-        <div className="rq-start-node" style={{ left: `${START_X}%`, top: `${START_Y}%` }}>
-          <span className="rq-start-badge">
-            <FlagIcon size={42} />
+        {/* ponto de partida: origem dos 3 caminhos. Mesmo medalhão e mesma
+            `.rq-node-cap` dos outros nós (só não é botão — a largada não é
+            clicável): a bandeirada solta era o último emblema sem disco. */}
+        <div className="rq-node rq-start-node" style={{ left: `${START_X}%`, top: `${START_Y}%` }}>
+          <span className="rq-node-ring" aria-hidden />
+          <span className="rq-node-badge">
+            <FlagIcon className="rq-node-art" />
           </span>
           <span className="rq-node-cap">Início</span>
         </div>

@@ -42,6 +42,8 @@ export default function RunShell({ api }: { api: RunApi }) {
   if (state.status === 'match') return <RunMatchView state={state} act={act} />
 
   const club = ALL_CLUBS[state.clubId]
+  // fase atual (1-based, o chefão é a última) — rótulo e pips leem do mesmo valor
+  const phase = Math.min(state.stage + 1, STAGE_COUNT + 1)
 
   return (
     <div className="cm-shell rq-run-shell">
@@ -55,13 +57,15 @@ export default function RunShell({ api }: { api: RunApi }) {
         </div>
         <div className="rq-topbar-phase">
           <span className="rq-topbar-stage">
-            Fase <b>{Math.min(state.stage + 1, STAGE_COUNT + 1)}</b> de {STAGE_COUNT + 1}
+            Fase <b>{phase}</b> de {STAGE_COUNT + 1}
           </span>
-          <div className="rq-map-progress" aria-hidden>
-            <div
-              className="rq-map-progress-fill"
-              style={{ width: `${Math.min(100, (state.stage / (STAGE_COUNT + 1)) * 100)}%` }}
-            />
+          {/* um pip por fase, acesos até a atual. A barra de preenchimento antiga
+              ficava 100% vazia na fase 1 (stage=0) e lia como componente
+              quebrado; com os pips o jogador ainda conta quanto falta. */}
+          <div className="rq-map-pips" aria-hidden>
+            {Array.from({ length: STAGE_COUNT + 1 }, (_, i) => (
+              <span key={i} className={`rq-map-pip${i < phase ? ' rq-map-pip-on' : ''}`} />
+            ))}
           </div>
         </div>
         <div className="cm-header-stats">

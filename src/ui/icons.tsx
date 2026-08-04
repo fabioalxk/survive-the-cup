@@ -27,10 +27,9 @@ export function HeartIcon(p: IconProps) {
   return <ArtIcon name="heart" size={p.size ?? 18} className={p.className} />
 }
 
-/** Coração partido — a vida perdida (rachadura no meio). */
-export function HeartbreakIcon(p: IconProps) {
-  return <ArtIcon name="heart_broken" size={p.size ?? 18} className={p.className} />
-}
+/* O coração PARTIDO (herói da tela de vida perdida) mora em run/MapIcons.tsx:
+   ali ele é um emblema de 64 com gradiente próprio, na família do troféu e da
+   caveira das outras duas telas de desfecho — e não um ícone de HUD. */
 
 /** Moeda de ouro — usada no chip de moedas e nos preços. */
 export function CoinIcon(p: IconProps) {

@@ -15,8 +15,10 @@ const R = PHYS.playerRadius * 1.5
 /** Altura do topo do domo (m). Alta o bastante p/ a silhueta ler como CALOTA —
  *  achatada demais o botão vira ficha de pôquer. */
 const H = 0.88
-/** Altura em que a parede colorida encontra o domo. */
-const WALL_TOP = 0.36
+/** Altura em que a parede colorida encontra o domo. Acima do lábio do pedestal:
+ *  em 0.36 a faixa da 2ª cor ficava escondida atrás do metal na câmera de 62° e
+ *  só aparecia quando a peça tombava. */
+const WALL_TOP = 0.42
 /** Altura do rótulo de nome, em metros de mundo. */
 const LABEL_H = 2.2
 
@@ -27,15 +29,16 @@ export interface KitColors {
   text: string
 }
 
-/** Perfil torneado do pedestal metálico (base larga com chanfro). O lábio é
- *  ESTREITO (1.08R): mais largo que isso ele tapava, nesta câmera alta, toda a
- *  faixa de cor secundária da parede. */
+/** Perfil torneado do pedestal metálico (base com chanfro). O lábio é RENTE à
+ *  parede (1.02R): qualquer saliência maior tapava, nesta câmera alta, a faixa
+ *  de cor secundária logo acima — o lábio serve como realce cromado, não como
+ *  aba. */
 const baseProfile = (): THREE.Vector2[] => [
   new THREE.Vector2(0, 0),
-  new THREE.Vector2(R * 1.06, 0),
-  new THREE.Vector2(R * 1.08, 0.045),
-  new THREE.Vector2(R * 1.05, 0.095),
-  new THREE.Vector2(R * 1.02, 0.125),
+  new THREE.Vector2(R * 1.0, 0),
+  new THREE.Vector2(R * 1.02, 0.045),
+  new THREE.Vector2(R * 1.01, 0.095),
+  new THREE.Vector2(R * 1.0, 0.125),
   new THREE.Vector2(R * 1.0, 0.15),
 ]
 
@@ -79,6 +82,17 @@ const numberGeo = (): THREE.BufferGeometry => {
   return geo
 }
 
+/**
+ * Tinta do número: preto ou branco, o que contrastar mais com a camisa. Usar
+ * `kit.text` cru dava verde-escuro sobre amarelo (Brasil) e azul sobre azul
+ * claro (Argentina) — ilegível no tamanho em que o botão aparece. Luminância
+ * Rec.709 no espaço linear (é o que `THREE.Color` guarda).
+ */
+const numberInk = (shirt: string): string => {
+  const c = new THREE.Color(shirt)
+  return c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722 > 0.2 ? '#0b1220' : '#f8fafc'
+}
+
 const BASE_GEO = new THREE.LatheGeometry(baseProfile(), 48)
 const WALL_GEO = new THREE.LatheGeometry(wallProfile(), 48)
 const CAP_GEO = new THREE.LatheGeometry(capProfile(), 48)
@@ -87,10 +101,13 @@ const CAP_GEO = new THREE.LatheGeometry(capProfile(), 48)
 const RING_GEO = new THREE.TorusGeometry(R * 1.45, 0.1, 10, 48)
 const NUMBER_GEO = numberGeo()
 
+// metal ESCOVADO, não espelho: com metalness 0.95/roughness 0.22 o cromado só
+// refletia o céu noturno e renderizava preto. Rugoso e menos metálico ele pega
+// a luz-chave e vira um realce cromado legível na escala de jogo.
 const BASE_MAT = new THREE.MeshStandardMaterial({
   color: '#cbd5e1',
-  metalness: 0.95,
-  roughness: 0.22,
+  metalness: 0.6,
+  roughness: 0.35,
 })
 
 /** Uma peça montada + os handles que mudam a cada frame. */
@@ -156,7 +173,7 @@ export const buildPiece = (p: Player, kit: KitColors, numberUp: number): PlayerP
   // Material que RECEBE luz: com MeshBasic o algarismo brilhava igual mesmo na
   // peça em sombra — o adesivo chapado.
   const numberMat = new THREE.MeshStandardMaterial({
-    map: numberTexture(p.number, kit.text),
+    map: numberTexture(p.number, numberInk(kit.shirt)),
     transparent: true,
     depthWrite: false,
     roughness: 0.32,

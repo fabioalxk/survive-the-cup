@@ -1,6 +1,13 @@
 import * as THREE from 'three'
 import { FIELD, GOAL } from '../../sim/constants'
-import { profileLength, roundedRectPath, sweepRing, type ProfilePoint } from './bowl'
+import {
+  fitTiles,
+  pathLength,
+  profileLength,
+  roundedRectPath,
+  sweepRing,
+  type ProfilePoint,
+} from './bowl'
 import {
   crowdTexture,
   CROWD_TILE,
@@ -42,6 +49,16 @@ export interface Stadium {
 }
 
 /**
+ * Passo do degrau medido AO LONGO do perfil (m). O tile da torcida encaixa
+ * inteiro em cada bandeja (~15-16 m) e pinta 28 fileiras nesse trecho, ou seja
+ * ~0.55 m por fileira: com 1.2 m cada degrau físico vale ~2 fileiras pintadas.
+ * Com os 7 degraus antigos eram 4 fileiras por degrau e a serrilha da
+ * geometria não caía em fileira nenhuma — virava só mais uma frequência de
+ * ruído concorrendo com a textura.
+ */
+const STEP_ARC = 1.2
+
+/**
  * Perfil serrilhado de uma bandeja: alterna piso e espelho de degrau. Uma
  * rampa lisa não tem silhueta de fileira nenhuma — a torcida vira um adesivo
  * chapado; é o degrau que devolve volume e sombra à arquibancada.
@@ -51,8 +68,8 @@ const steppedTier = (
   fromY: number,
   toOut: number,
   toY: number,
-  rows: number,
 ): ProfilePoint[] => {
+  const rows = Math.max(1, Math.round((toOut - fromOut + (toY - fromY)) / STEP_ARC))
   const dOut = (toOut - fromOut) / rows
   const dY = (toY - fromY) / rows
   const pts: ProfilePoint[] = []
@@ -67,20 +84,22 @@ const steppedTier = (
 /** Bandeja inferior: do muro de frente até o corredor. */
 const LOWER: ProfilePoint[] = [
   { out: 0.0, y: 1.9 }, // topo do muro de frente
-  ...steppedTier(1.6, 2.4, 10.0, 8.6, 7),
+  ...steppedTier(1.6, 2.4, 10.0, 8.6),
 ]
 /**
  * Corredor: parapeito + piso de concreto. É o que SEPARA as duas bandejas —
  * varrendo a mesma torcida do muro ao topo a tigela lia como uma parede única.
+ * Parapeito de 2.5 m e piso de 3.5 m porque a câmera é alta e rasante: com
+ * 1.2/2.0 a faixa projetava 2-3 px e continuava fundida no ruído da torcida.
  */
 const CONCOURSE: ProfilePoint[] = [
   { out: 10.0, y: 8.6 },
-  { out: 10.0, y: 9.8 }, // parapeito da bandeja inferior
-  { out: 12.0, y: 9.8 }, // piso do corredor
-  { out: 12.8, y: 10.4 }, // arranque da bandeja superior
+  { out: 10.0, y: 11.1 }, // parapeito da bandeja inferior
+  { out: 13.5, y: 11.1 }, // piso do corredor
+  { out: 14.3, y: 11.7 }, // arranque da bandeja superior
 ]
 /** Bandeja superior. */
-const UPPER: ProfilePoint[] = steppedTier(12.8, 10.4, 22.0, 18.6, 8)
+const UPPER: ProfilePoint[] = steppedTier(14.3, 11.7, 22.0, 18.6)
 
 /** Estrutura: muro da frente + casca externa fechando a tigela por trás. */
 const SHELL: ProfilePoint[] = [
@@ -104,9 +123,14 @@ const BACK: ProfilePoint[] = [
 ]
 /** Beiral interno da cobertura — a aresta que a câmera vê contra o gramado. */
 const ROOF_EDGE: ProfilePoint = { out: 8.0, y: 21.2 }
-/** Cobertura: avança do topo da bandeja superior para dentro, sobre a torcida. */
+/**
+ * Cobertura: avança do topo da bandeja superior para dentro, sobre a torcida.
+ * Arranca do PRÓPRIO coroamento da fachada (23.8/19.4): flutuando em 23.5/21.5
+ * sobravam 2.1 m de vão aberto entre fachada e teto, por onde o céu vazava
+ * para dentro da tigela.
+ */
 const ROOF: ProfilePoint[] = [
-  { out: 23.5, y: 21.5 },
+  { out: 23.8, y: 19.4 },
   { out: 22.6, y: 22.6 }, // aresta externa alta: silhueta contra o céu
   { out: 18.0, y: 22.2 },
   ROOF_EDGE,
@@ -119,7 +143,7 @@ const ROOF: ProfilePoint[] = [
  */
 const RIBBON: ProfilePoint[] = [
   { out: ROOF_EDGE.out, y: ROOF_EDGE.y + 0.06 },
-  { out: ROOF_EDGE.out + 1.0, y: ROOF_EDGE.y + 0.16 },
+  { out: ROOF_EDGE.out + 0.35, y: ROOF_EDGE.y + 0.1 },
 ]
 /** Anel de LED: um pouco DENTRO do muro, acompanhando a planta da tigela. */
 const LED: ProfilePoint[] = [
@@ -148,19 +172,24 @@ const buildGoal = (sign: -1 | 1, netMat: THREE.MeshStandardMaterial): THREE.Grou
     roughness: 0.18,
     metalness: 0.5, // o ambiente PBR do céu gera o realce que faz ler metal
   })
-  const framePart = (geo: THREE.BufferGeometry) => {
+  /**
+   * Só postes e travessão projetam. O shadow map dá ~8 cm por texel: as barras
+   * traseiras (R*0.55 = 10.5 cm) não cabem em um texel e saíam dilatadas em
+   * barras pretas 3-4x mais grossas que o tubo — sombra descolada do corpo.
+   */
+  const framePart = (geo: THREE.BufferGeometry, cast = false) => {
     const m = new THREE.Mesh(geo, frameMat)
-    m.castShadow = true // TODA peça do frame projeta: é a sombra do gol
+    m.castShadow = cast
     return m
   }
   const post = (z: number) => {
-    const m = framePart(new THREE.CylinderGeometry(R, R, GOAL.height, 16))
+    const m = framePart(new THREE.CylinderGeometry(R, R, GOAL.height, 16), true)
     m.position.set(lineX, GOAL.height / 2, z)
     return m
   }
   g.add(post(FIELD.cy - halfW), post(FIELD.cy + halfW))
 
-  const bar = framePart(new THREE.CylinderGeometry(R, R, GOAL.width + R * 2, 16))
+  const bar = framePart(new THREE.CylinderGeometry(R, R, GOAL.width + R * 2, 16), true)
   bar.rotation.x = Math.PI / 2
   bar.position.set(lineX, GOAL.height, FIELD.cy)
   g.add(bar)
@@ -250,22 +279,35 @@ const buildCornerFlags = (): { group: THREE.Group; flags: THREE.Object3D[] } => 
   const group = new THREE.Group()
   const flags: THREE.Object3D[] = []
   const poleMat = new THREE.MeshStandardMaterial({ color: '#eef3f9', roughness: 0.35 })
+  /**
+   * A luz de chave é rasante e bate de raspão num pano vertical: o vermelho
+   * saía em 11% do valor do material (uma cunha preta de 5 px). O emissive dá
+   * ao pano luz própria e devolve a cor da flâmula independente da chave.
+   */
   const clothMat = new THREE.MeshStandardMaterial({
     color: '#ef4444',
+    emissive: '#ef4444',
+    emissiveIntensity: 0.5,
     roughness: 0.8,
     side: THREE.DoubleSide,
   })
   for (const cx of [0, FIELD.w])
     for (const cz of [0, FIELD.h]) {
       // mastro e flâmula em escala VISUAL: a 5.6 cm o mastro era sub-pixel e
-      // sumia, e a sombra dele (8 cm/texel) sobrava como um risco preto solto.
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.5, 8), poleMat)
+      // sumia. 9 cm de raio (mesma escala já aplicada à trave) dá ~2 texels de
+      // shadow map, então a bandeirinha finalmente encosta no gramado.
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.5, 8), poleMat)
       pole.position.set(cx, 0.75, cz)
+      pole.castShadow = true
       group.add(pole)
       const pivot = new THREE.Group()
       pivot.position.set(cx, 1.3, cz)
       const cloth = new THREE.Mesh(new THREE.PlaneGeometry(0.65, 0.45), clothMat)
       cloth.position.x = (cx === 0 ? 1 : -1) * 0.325
+      // tira o pano da vertical: assim a normal aponta para cima e pega a
+      // chave (que vem de y=54) em vez de ficar de raspão.
+      cloth.rotation.x = -0.26
+      cloth.castShadow = true
       pivot.add(cloth)
       group.add(pivot)
       flags.push(pivot)
@@ -282,6 +324,7 @@ const buildCornerFlags = (): { group: THREE.Group; flags: THREE.Object3D[] } => 
 const buildRoofLights = (
   path: THREE.Vector2[],
   glow: THREE.Texture,
+  strutMat: THREE.Material,
 ): { group: THREE.Group; sprites: THREE.Sprite[] } => {
   const g = new THREE.Group()
   const sprites: THREE.Sprite[] = []
@@ -316,6 +359,23 @@ const buildRoofLights = (
     lamp.position.copy(pos)
     lamp.lookAt(aim)
     g.add(lamp)
+
+    // mão-francesa: a marquise avança 15 m em balanço: sem nenhuma peça sob ela
+    // a cobertura lê como uma placa flutuando sobre a arquibancada.
+    const foot = new THREE.Vector3(p.x, BACK[0].y, p.y).addScaledVector(inward, -BACK[0].out)
+    // encosta na face de baixo da cobertura: pendurada abaixo dela a peça
+    // viraria um tirante flutuando, que é o defeito que ela veio corrigir.
+    const head = new THREE.Vector3(p.x, ROOF_EDGE.y + 0.1, p.y).addScaledVector(
+      inward,
+      -(ROOF_EDGE.out + 2.5),
+    )
+    const strut = new THREE.Mesh(
+      new THREE.BoxGeometry(0.28, 0.28, foot.distanceTo(head)),
+      strutMat,
+    )
+    strut.position.lerpVectors(foot, head, 0.5)
+    strut.lookAt(head)
+    g.add(strut)
 
     const s = new THREE.Sprite(
       new THREE.SpriteMaterial({
@@ -395,12 +455,15 @@ export const buildStadium = (accentA: string, accentB: string): Stadium => {
   root.add(cf.group)
 
   const path = bowlPath()
+  // o caminho é FECHADO: o tile precisa fechar um número inteiro de vezes no
+  // perímetro, senão a emenda cai fora de fase e sobra uma costura vertical.
+  const perimeter = pathLength(path)
 
   // --- anel de LED rente ao muro ---
   // um anel único acompanhando a planta da tigela: com 4 placas retas soltas as
   // pontas não se encontravam e sobrava um vão preto aberto em cada quina.
   const ledTex = keep(ledTexture(accentA, accentB))
-  ledTex.repeat.set(1 / 14, 1 / profileLength(LED)) // UV em metros: 1 tile a cada 14 m
+  ledTex.repeat.set(fitTiles(perimeter, 14), 1 / profileLength(LED)) // UV em metros: ~14 m/tile
   const ledMat = keep(
     new THREE.MeshStandardMaterial({
       map: ledTex,
@@ -427,11 +490,17 @@ export const buildStadium = (accentA: string, accentB: string): Stadium => {
   const crowdMat = (profile: ProfilePoint[]) => {
     const tex = keep(crowd.clone())
     tex.needsUpdate = true
-    const len = profileLength(profile)
-    tex.repeat.set(1 / CROWD_TILE, Math.max(1, Math.round(len / CROWD_TILE)) / len)
+    tex.repeat.set(fitTiles(perimeter, CROWD_TILE), fitTiles(profileLength(profile), CROWD_TILE))
     return keep(
       new THREE.MeshStandardMaterial({
         map: tex,
+        // a torcida tem luz PRÓPRIA (a arquibancada real é iluminada por conta
+        // dela): sem isto a rampa do fundo, cuja normal aponta para longe da
+        // chave, ficava em preto puro e as duas laterais liam como materiais
+        // diferentes — e o pano de fundo dos lances não segurava nada.
+        emissiveMap: tex,
+        emissive: '#ffffff',
+        emissiveIntensity: 0.25,
         roughness: 0.95,
         metalness: 0,
         side: THREE.DoubleSide,
@@ -456,8 +525,11 @@ export const buildStadium = (accentA: string, accentB: string): Stadium => {
   // concreto CLARO no corredor e na fachada: num valor próximo do terreno a
   // traseira da tigela e o chão viram a mesma mancha preta, e o corredor entre
   // as bandejas lê como um vão vazio em vez de uma peça de concreto.
+  // #2c3a4e (e não #1a2432): a faixa do corredor precisa de contraste de VALOR
+  // contra a torcida, não só de cor — no valor antigo ela empatava com a
+  // multidão escura ao lado e não separava bandeja nenhuma.
   const facade = keep(
-    new THREE.MeshStandardMaterial({ color: '#1a2432', roughness: 0.8, side: THREE.DoubleSide }),
+    new THREE.MeshStandardMaterial({ color: '#2c3a4e', roughness: 0.8, side: THREE.DoubleSide }),
   )
   const concourse = new THREE.Mesh(keep(sweepRing(path, CONCOURSE)), facade)
   concourse.receiveShadow = true
@@ -485,19 +557,24 @@ export const buildStadium = (accentA: string, accentB: string): Stadium => {
 
   // --- refletores na borda da cobertura + fita de LED na mesma linha ---
   const glow = keep(glowTexture())
-  const lights = buildRoofLights(path, glow)
+  const lights = buildRoofLights(path, glow, roofMat)
   root.add(lights.group)
   const floodGlow = lights.sprites
 
   // fita luminosa na quina da cobertura, nas cores da partida: dá uma linha de
   // luz contínua no alto do estádio e amarra o topo do enquadramento.
+  // EMISSIVE, não Basic sem tone mapping: como barra chapada ela era o objeto
+  // mais brilhante do quadro e parecia fita adesiva colada na tela. Emissivo
+  // entra no tone mapping e no bloom — que é quem vende luz de verdade.
   const ribbon = new THREE.Mesh(
     keep(sweepRing(path, RIBBON)),
     keep(
-      new THREE.MeshBasicMaterial({
-        color: accentA,
+      new THREE.MeshStandardMaterial({
+        color: '#0b1119',
+        emissive: accentA,
+        emissiveIntensity: 2,
+        roughness: 0.5,
         side: THREE.DoubleSide,
-        toneMapped: false,
       }),
     ),
   )
@@ -527,7 +604,10 @@ export const animateStadium = (s: Stadium, t: number): void => {
   for (const m of s.led) if (m.map) m.map.offset.x = (t * 0.05) % 1
   for (let i = 0; i < s.flags.length; i++) {
     const f = s.flags[i]
-    f.rotation.y = Math.sin(t * 2.2 + i) * 0.4
-    f.rotation.z = Math.sin(t * 3.3 + i * 1.7) * 0.14
+    // girar em Y é girar o pano em torno do próprio mastro: com 0.4 rad a
+    // flâmula (8 px de largura) passava de perfil e SUMIA a cada ciclo — lia
+    // como flicker. 0.12 só insinua a direção do vento; o balanço fica no Z.
+    f.rotation.y = Math.sin(t * 2.2 + i) * 0.12
+    f.rotation.z = Math.sin(t * 3.3 + i * 1.7) * 0.2
   }
 }
